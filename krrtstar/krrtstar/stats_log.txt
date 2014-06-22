@@ -1,0 +1,1 @@
+time	number_of_nodes	target_number_of_nodes	cost_from_start	radius	number_of_orphans

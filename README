@@ -1,0 +1,26 @@
+This code currently compiles against Callisto 2.20 (http://www.nieuwenhuisen.nl/callisto/).
+
+Setup with Visual Studios 2010
+==============================
+Create a new Win32 Console Application
+--------------------------------------
+On Application Settings page of setup wizard select:
+1) Console Application
+2) Empty Project
+3) Click Finish
+
+
+After completing wizard
+-----------------------
+1) Add header files from include directory.
+2) Add source files from src directory.
+3) Edit project properties
+3.1) Select All Configurations from Configurations menu
+3.2) Under C/C++ add the includes directory and the callisto 2.20 directory to the Additional Include Directories.
+3.3) Under Linker -> General:
+3.3.1) Add the callisto 2.20 directory to the Additional Library Directories.
+3.3.2) Set Enable Incremental Linking to No.
+3.4) Under Linker -> Input add callisto.lib to Additional Dependencies.
+3.5) Add the callisto 2.20 directory to the Windows PATH environment variable.
+3.6) Restart Visual Studios.
+

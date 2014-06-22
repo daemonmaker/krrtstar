@@ -1,0 +1,1 @@
+int rpoly(double *op, int degree, double *zeror, double *zeroi, int info[] );
