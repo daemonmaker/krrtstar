@@ -22,7 +22,6 @@
 #include "callisto.h"
 //#define _POLY_DEBUG
 #include "polynomial.h"
-#include "rpoly.h"
 
 #include <bounds.h>
 #include <Worlds/World.hpp>
@@ -50,9 +49,9 @@
 #endif
 
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_FORWARD)
-#define computeCost computeCostClosedForm
+#define compute_cost compute_cost_closed_form
 #else
-#define computeCost computeCostRK4
+#define compute_cost compute_cost_RK4
 #endif
 
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_BACKWARD)
@@ -163,7 +162,6 @@ double sphere_volume;
 #endif
 
 #define REACHABILITY_CONSTANT 1.5
-unsigned int TWO_TO_X_DIM;
 double statespace_volume;
 const double X_DIM_INVERSE = 1.0/X_DIM;
 
@@ -183,7 +181,7 @@ typedef std::pair<double, node_id_t> node_cost_pair_t; // The first element is t
 typedef std::pair<double, state> state_time_t;
 typedef std::vector< state_time_t > state_time_list_t;
 
-BOUNDS x_bounds;
+//BOUNDS x_bounds;
 BOUNDS u_bounds;
 #if (DYNAMICS == QUADROTOR)
 #if (USE_OBSTACLES == 5)
@@ -590,6 +588,7 @@ public:
 		int total_nodes = 100000;
 
 		// Setup bounds
+		BOUNDS x_bounds;
 		x_bounds.resize(2);
 		x_bounds[0].first = x_bounds[1].first = -10;
 		x_bounds[0].second = x_bounds[1].second = 10;

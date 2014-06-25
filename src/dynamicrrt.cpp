@@ -11,7 +11,7 @@ void dynamicsError() {
 }
 
 void setupParameters(void) {
-	x_bounds.resize(X_DIM);
+	//x_bounds.resize(X_DIM);
 	u_bounds.resize(U_DIM);
 
 #if (DYNAMICS == QUADROTOR)
@@ -100,11 +100,12 @@ void setupParameters(void) {
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
 	control_penalty = 0.25;
 
+	/*
 	x_bounds[0] = std::make_pair(0, 100);
 	x_bounds[1] = std::make_pair(0, 100);
 	x_bounds[2] = std::make_pair(-10, 10);
 	x_bounds[3] = std::make_pair(-10, 10);
-
+	*/
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
@@ -920,7 +921,7 @@ bool state_order(const state_time_t& a, const state_time_t& b) {
 }
 
 template <class D>
-void visualize(const D& dynamics, const tree_t& tree) {
+void visualize(D& dynamics, const tree_t& tree) {
 	CAL_EmptyGroup(solution_group);
 	CAL_EmptyGroup(solution_marker_group);
 	CAL_SetGroupColor(solution_group, 0, 0, 1);
@@ -944,8 +945,8 @@ void visualize(const D& dynamics, const tree_t& tree) {
 	double current_time = 0.0;
 	for(vector<state>::iterator p = state_list.begin(); (p + 1) != state_list.end(); p++) {
 		segment.clear();
-		//computeCost(*p, *(p + 1), DBL_MAX, cost, tau, d_tau);
-		//checkPath(*p, *(p+1), tau, d_tau, false, &segment);
+		//dynamics.compute_cost(dynamics, *p, *(p + 1), DBL_MAX, cost, tau, d_tau);
+		//dynamics.checkPath(dynamics, *p, *(p+1), tau, d_tau, false, &segment);
 
 		connect(dynamics, *p, *(p+1), DBL_MAX, cost, tau, &segment);
 
@@ -1189,14 +1190,14 @@ inline double applyHeuristics(const state& x0, const state& x1) {
 
 	return cost;
 }
-*/
+
 
 template <class D>
-bool computeCostClosedForm(const D& dynamics, const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
+bool compute_cost_closed_form(D& dynamics, const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
 	if (dynamics.applyHeuristics(x0, x1) > radius) return false;
 
 #ifdef _DEBUG_COMPUTE_COST
-	cout << "~~~~~~~~~~~~~~~~~~~~~~~ computeCostClosedForm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+	cout << "~~~~~~~~~~~~~~~~~~~~~~~ compute_cost_closed_form ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
 #endif
 
 	Matrix<X_DIM> x1diffbarx0;
@@ -1217,17 +1218,16 @@ bool computeCostClosedForm(const D& dynamics, const state& x0, const state& x1, 
 	p[7] = (-0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x0[0] * x0[3] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[4] * x1[1] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[3] * x0[0] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[1] * x0[4] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[4] * x0[1] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[0] * x0[3] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[3] * x1[0] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x0[1] * x0[4]);
 	p[8] = - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x1[0], 0.2e1) - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x1[1], 0.2e1) - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x0[1], 0.2e1) + 0.705600e6 * pow(inertia, 0.2e1) * control_penalty * x1[0] * x0[0] + 0.705600e6 * pow(inertia, 0.2e1) * control_penalty * x1[1] * x0[1] - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x0[0], 0.2e1);
 
-	/*
-      MapleGenVar3 = g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z*_Z+(-8.0*j*j*r*g*g*x0_8*x0_8-m~*m*r*g*g*l*l*x0_5*x0_5-4.0*j*j*r*x1_8*g*g*x0_8-m*m*r*x1_5*g*g*l*l*x0_5-8.0*j*j~*r*x1_8*x1_8*g*g-4.0*j*j*r*x1_9*g*g*x0_9-8.0*j*j*r*x1_9*x1_9*g*g-m*m*r*x1_5*x1_5~*g*g*l*l-8.0*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z*_Z*_Z+(-120.0*j*j*r*x1_8*g*g*x0_6+120.0*j*j*r*g*g*x1_7*x0_9+240.0*j*j*r*g*g*x1_7*x1_9-6.0*m*m*r*x1_5*g*g*l*l~*x0_2-6.0*m*m*r*g*g*l*l*x0_2*x0_5+240.0*j*j*r*g*g*x1_6*x1_8-120.0*j*j*r*x1_9*g~*g*x0_7+6.0*m*m*r*g*g*l*l*x1_2*x0_5+6.0*m*m*r*x1_5*g*g*l*l*x1_2-240.0*j*j*r*g*g*x0_6*x0_8+120.0*j*j*r*g*g*x1_6*x0_8-240.0*j*j*r*g*g*x0_7*x0_9)*_Z*_Z*_Z*_Z*_Z;
-      MapleGenVar4 = MapleGenVar3+(2520.0*j*j*r*g*g*x1_7*x0_7+18.0*m*m*r*g*g*l*l~*x1_2*x0_2-1800.0*j*j*r*g*g*x1_7*x1_7-1440.0*j*j*r*x0_3*g*x0_9-1080.0*j*j*r*x1_3~*g*x0_9+1080.0*j*j*r*x1_8*g*x0_4+1440.0*j*j*r*x0_4*g*x0_8-9.0*m*m*r*g*g*l*l~*x0_2*x0_2-9.0*m*m*r*g*g*l*l*x1_2*x1_2-1440.0*j*j*r*x1_3*g*x1_9-1800.0*j*j*r*g~*g*x0_7*x0_7+1440.0*j*j*r*x1_4*g*x1_8+1080.0*j*j*r*x1_4*g*x0_8-1800.0*j*j*r*g*g*x0_6*x0_6-1080.0*j*j*r*x1_9*g*x0_3+2520.0*j*j*r*g*g*x1_6*x0_6-1800.0*j*j*r*g*g*x1_6*x1_6)*_Z*_Z*_Z*_Z;
-      MapleGenVar5 = MapleGenVar4;
-      MapleGenVar7 = (-18720.0*j*j*r*x1_3*g*x0_7-3360.0*j*j*r*x0_0*g*x0_9+18720.0*j*j*r*g*x1_7*x0_3+18720.0*j*j*r*x1_4*g*x0_6-3360.0*j*j*r*x1_8*g*x1_1+3360.0*j*j*r*x0_1*g*x0_8+3360.0*j*j*r*x1_8*g*x0_1+21600.0*j*j*r*x1_3*g*x1_7-21600.0*j*j*r*x1_4*g*x1_6+3360.0*j*j*r*x1_9*g*x1_0+21600.0*j*j*r*x0_4*g*x0_6-18720.0*j*j*r*g*x1_6*x0_4-3360.0*j*j*r*x1_1*g*x0_8+3360.0*j*j*r*x1_0*g*x0_9-3360.0*j*j*r*x1_9*g*x0_0-21600.0*j*j*r*x0_3*g*x0_7)*_Z*_Z*_Z;
-      MapleGenVar8 = (-50400.0*j*j*r*g*x1_6*x0_1-122400.0*j*j*r*x1_3*x0_3-50400.0*j*j*r*x1_1*g*x0_6-64800.0*j*j*r*x1_3*x1_3-64800.0*j*j*r*x0_4*x0_4-64800.0*j*j*r*x0_3*x0_3-50400.0*j*j*r*x0_0*g*x0_7+50400.0*j*j*r*g*x1_6*x1_1-122400.0*j*j*r*x1_4*x0_4+50400.0*j*j*r*x0_1*g*x0_6+50400.0*j*j*r*g*x1_7*x0_0-64800.0*j*j*r*x1_4*x1_4-50400.0*j*j*r*g*x1_7*x1_0+50400.0*j*j*r*x1_0*g*x0_7)*_Z*_Z;
-      MapleGenVar6 = MapleGenVar7+MapleGenVar8;
-      MapleGenVar2 = MapleGenVar5+MapleGenVar6;
-      MapleGenVar1 = MapleGenVar2+(-302400.0*j*j*r*x1_3*x0_0+302400.0*j*j*r*x1_4~*x1_1+302400.0*j*j*r*x1_0*x0_3-302400.0*j*j*r*x0_0*x0_3+302400.0*j*j*r*x1_1~*x0_4+302400.0*j*j*r*x1_3*x1_0-302400.0*j*j*r*x1_4*x0_1-302400.0*j*j*r*x0_1~*x0_4)*_Z-352800.0*j*j*r*x1_1*x1_1-352800.0*j*j*r*x0_1*x0_1+705600.0*j*j*r*x1_1*x0_1-352800.0*j*j*r*x1_0*x1_0-352800.0*j*j*r*x0_0*x0_0+705600.0*j*j*r*x1_0~*x0_0;
-      t1 = 0.0;
-	  */
+	
+    //  MapleGenVar3 = g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z*_Z+(-8.0*j*j*r*g*g*x0_8*x0_8-m~*m*r*g*g*l*l*x0_5*x0_5-4.0*j*j*r*x1_8*g*g*x0_8-m*m*r*x1_5*g*g*l*l*x0_5-8.0*j*j~*r*x1_8*x1_8*g*g-4.0*j*j*r*x1_9*g*g*x0_9-8.0*j*j*r*x1_9*x1_9*g*g-m*m*r*x1_5*x1_5~*g*g*l*l-8.0*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z*_Z*_Z+(-120.0*j*j*r*x1_8*g*g*x0_6+120.0*j*j*r*g*g*x1_7*x0_9+240.0*j*j*r*g*g*x1_7*x1_9-6.0*m*m*r*x1_5*g*g*l*l~*x0_2-6.0*m*m*r*g*g*l*l*x0_2*x0_5+240.0*j*j*r*g*g*x1_6*x1_8-120.0*j*j*r*x1_9*g~*g*x0_7+6.0*m*m*r*g*g*l*l*x1_2*x0_5+6.0*m*m*r*x1_5*g*g*l*l*x1_2-240.0*j*j*r*g*g*x0_6*x0_8+120.0*j*j*r*g*g*x1_6*x0_8-240.0*j*j*r*g*g*x0_7*x0_9)*_Z*_Z*_Z*_Z*_Z;
+    //  MapleGenVar4 = MapleGenVar3+(2520.0*j*j*r*g*g*x1_7*x0_7+18.0*m*m*r*g*g*l*l~*x1_2*x0_2-1800.0*j*j*r*g*g*x1_7*x1_7-1440.0*j*j*r*x0_3*g*x0_9-1080.0*j*j*r*x1_3~*g*x0_9+1080.0*j*j*r*x1_8*g*x0_4+1440.0*j*j*r*x0_4*g*x0_8-9.0*m*m*r*g*g*l*l~*x0_2*x0_2-9.0*m*m*r*g*g*l*l*x1_2*x1_2-1440.0*j*j*r*x1_3*g*x1_9-1800.0*j*j*r*g~*g*x0_7*x0_7+1440.0*j*j*r*x1_4*g*x1_8+1080.0*j*j*r*x1_4*g*x0_8-1800.0*j*j*r*g*g*x0_6*x0_6-1080.0*j*j*r*x1_9*g*x0_3+2520.0*j*j*r*g*g*x1_6*x0_6-1800.0*j*j*r*g*g*x1_6*x1_6)*_Z*_Z*_Z*_Z;
+    //  MapleGenVar5 = MapleGenVar4;
+    //  MapleGenVar7 = (-18720.0*j*j*r*x1_3*g*x0_7-3360.0*j*j*r*x0_0*g*x0_9+18720.0*j*j*r*g*x1_7*x0_3+18720.0*j*j*r*x1_4*g*x0_6-3360.0*j*j*r*x1_8*g*x1_1+3360.0*j*j*r*x0_1*g*x0_8+3360.0*j*j*r*x1_8*g*x0_1+21600.0*j*j*r*x1_3*g*x1_7-21600.0*j*j*r*x1_4*g*x1_6+3360.0*j*j*r*x1_9*g*x1_0+21600.0*j*j*r*x0_4*g*x0_6-18720.0*j*j*r*g*x1_6*x0_4-3360.0*j*j*r*x1_1*g*x0_8+3360.0*j*j*r*x1_0*g*x0_9-3360.0*j*j*r*x1_9*g*x0_0-21600.0*j*j*r*x0_3*g*x0_7)*_Z*_Z*_Z;
+    //  MapleGenVar8 = (-50400.0*j*j*r*g*x1_6*x0_1-122400.0*j*j*r*x1_3*x0_3-50400.0*j*j*r*x1_1*g*x0_6-64800.0*j*j*r*x1_3*x1_3-64800.0*j*j*r*x0_4*x0_4-64800.0*j*j*r*x0_3*x0_3-50400.0*j*j*r*x0_0*g*x0_7+50400.0*j*j*r*g*x1_6*x1_1-122400.0*j*j*r*x1_4*x0_4+50400.0*j*j*r*x0_1*g*x0_6+50400.0*j*j*r*g*x1_7*x0_0-64800.0*j*j*r*x1_4*x1_4-50400.0*j*j*r*g*x1_7*x1_0+50400.0*j*j*r*x1_0*g*x0_7)*_Z*_Z;
+    //  MapleGenVar6 = MapleGenVar7+MapleGenVar8;
+    //  MapleGenVar2 = MapleGenVar5+MapleGenVar6;
+    //  MapleGenVar1 = MapleGenVar2+(-302400.0*j*j*r*x1_3*x0_0+302400.0*j*j*r*x1_4~*x1_1+302400.0*j*j*r*x1_0*x0_3-302400.0*j*j*r*x0_0*x0_3+302400.0*j*j*r*x1_1~*x0_4+302400.0*j*j*r*x1_3*x1_0-302400.0*j*j*r*x1_4*x0_1-302400.0*j*j*r*x0_1~*x0_4)*_Z-352800.0*j*j*r*x1_1*x1_1-352800.0*j*j*r*x0_1*x0_1+705600.0*j*j*r*x1_1*x0_1-352800.0*j*j*r*x1_0*x1_0-352800.0*j*j*r*x0_0*x0_0+705600.0*j*j*r*x1_0~*x0_0;
+    //  t1 = 0.0;
 
 #elif (DYNAMICS == NONHOLONOMIC)
 	double px = x0[0];
@@ -1298,7 +1298,7 @@ bool computeCostClosedForm(const D& dynamics, const state& x0, const state& x1, 
 	p[2] = -4.0*control_penalty*x1[3]*x1[3]-4.0*control_penalty*x0[3]*x0[3]-4.0*control_penalty*x1[2]*x1[2]-4.0*control_penalty*x1[3]*x0[3]-4.0*control_penalty*x1[2]*x0[2]-4.0*control_penalty*x0[2]*x0[2];
 	p[3] = 24.0*control_penalty*x1[1]*x0[3]+24.0*control_penalty*x1[0]*x0[2]-24.0*control_penalty*x0[0]*x0[2]-24.0*control_penalty*x0[1]*x0[3]+24.0*control_penalty*x1[2]*x1[0]-24.0*control_penalty*x1[2]*x0[0]+24.0*control_penalty*x1[3]*x1[1]-24.0*control_penalty*x1[3]*x0[1];
 	p[4] = -36.0*control_penalty*x1[0]*x1[0]-36.0*control_penalty*x0[0]*x0[0]-36.0*control_penalty*x1[1]*x1[1]-36.0*control_penalty*x0[1]*x0[1]+72.0*control_penalty*x1[0]*x0[0]+72.0*control_penalty*x1[1]*x0[1];
-	
+
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
 	double t1 = x1[0]*x1[0];
 	double t6 = x0[0]*x0[0];
@@ -1476,7 +1476,7 @@ bool computeCostClosedForm(const D& dynamics, const state& x0, const state& x1, 
 		d[1] = 12.0*t10*x1diffbarx0[1]-6.0*t14*x1diffbarx0[3];
 		d[2] = -6.0*t14*x1diffbarx0[0]+4.0*t26*x1diffbarx0[2];
 		d[3] = -6.0*t14*x1diffbarx0[1]+4.0*t26*x1diffbarx0[3];
-		
+
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
 		double t4 = control_penalty/realRoots[i];
 		x1diffbarx0[0] = x1[0]-x0[0];
@@ -1522,7 +1522,7 @@ bool computeCostClosedForm(const D& dynamics, const state& x0, const state& x1, 
 }
 
 template <class D>
-bool computeCostRK4(const D& dynamics, const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
+bool compute_cost_RK4(D& dynamics, const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
 	if (dynamics.applyHeuristics(x0, x1) > radius) return false;
 
 	Matrix<X_DIM, X_DIM> G = zeros<X_DIM, X_DIM>();
@@ -1580,7 +1580,7 @@ bool computeCostRK4(const D& dynamics, const state& x0, const state& x1, double 
 	double cf_cost;
 	double cf_tau;
 	state cf_dtau;
-	bool cf_result = computeCostClosedForm(dynamics, x0, x1, radius, cf_cost, cf_tau, cf_dtau);
+	bool cf_result = dynamics.compute_cost_closed_form(dynamics, x0, x1, radius, cf_cost, cf_tau, cf_dtau);
 
 	bool resultMatch = (cf_result == result);
 	bool costMatch = (cf_cost == cost);
@@ -1596,9 +1596,11 @@ bool computeCostRK4(const D& dynamics, const state& x0, const state& x1, double 
 
 	return result;
 }
+*/
 
-bool checkState(const state& x, const control& u) {
-BOUNDS x_bounds_real = x_bounds;
+template <class D>
+bool checkState(D& dynamics, const state& x, const control& u) {
+	BOUNDS x_bounds_real = dynamics.get_x_bounds();
 #if (DYNAMICS == NONHOLONOMIC)
 	x_bounds_real[2].first = -DBL_MAX;
 	x_bounds_real[2].second = DBL_MAX;
@@ -1607,7 +1609,7 @@ BOUNDS x_bounds_real = x_bounds;
 }
 
 template <class D>
-void plotPath(const D& dynamics, const state& x0, const state& x1, const double radius) {
+void plotPath(D& dynamics, const state& x0, const state& x1, const double radius) {
 	state_time_list_t segment;
 	double max_tau = 0.0;
 	double current_time = 0.0;
@@ -1626,7 +1628,8 @@ void plotPath(const D& dynamics, const state& x0, const state& x1, const double 
 	}
 }
 
-bool checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
+template <class D>
+bool checkPathClosedForm(D& dynamics, const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
 	double t;
 	double bound = (plot ? deltaT * 8 : deltaT);
 	int numPoints = ceil(tau / bound);
@@ -1827,7 +1830,7 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 			state x = chi.subMatrix<X_DIM,1>(0,0);
 			control u = R%(~B*chi.subMatrix<X_DIM,1>(X_DIM,0));
 
-			if (!(plot || vis) && !checkState(x, u)) {
+			if (!(plot || vis) && !checkState(dynamics, x, u)) {
 				return false;
 			}
 
@@ -1860,7 +1863,8 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 	return true;
 }
 
-bool checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
+template <class D>
+bool checkPathRK4(D& dynamics, const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
 	Alpha = block(A, -BRiBt, zeros<X_DIM,X_DIM>(), -~A);
 
 	chi.insert(0,0,x1);
@@ -1897,9 +1901,10 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 		state x = chi.subMatrix<X_DIM>(0,0);
 		control u = -R%(~B*chi.subMatrix<X_DIM>(X_DIM,0)); // This should be negative as it is
 
-		//cout << "checkBounds(x, x_bounds): " << checkBounds(x, x_bounds) << "\tcheckBounds(u, u_bounds): " << checkBounds(u, u_bounds) << endl;
+		//cout << "checkBounds(x, dynamics.get_x_bounds()): " << checkBounds(x, dynamics.get_x_bounds())
+		//	<< "\tcheckBounds(u, u_bounds): " << checkBounds(u, u_bounds) << endl;
 
-		if (!(plot || vis) && !checkState(x, u)) {
+		if (!(plot || vis) && !checkState(dynamics, x, u)) {
 			return false;
 		}
 
@@ -1932,7 +1937,7 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 }
 
 template<class D>
-inline bool connect(const D& dynamics, const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis) {
+inline bool connect(D& dynamics, const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis) {
 	state d_tau;
 
 	state xend = x1;
@@ -1952,14 +1957,15 @@ inline bool connect(const D& dynamics, const state& x0, const state& x1, const d
 	xend[2] = x0[2] + theta_diff;
 #endif
 
-	if (computeCost(dynamics, x0, xend, radius, cost, tau, d_tau)) {
-		if (checkPath(x0, xend, tau, d_tau, false, vis)) {
+	//if (dynamics.compute_cost(dynamics, x0, xend, radius, cost, tau, d_tau)) {
+	if (dynamics.compute_cost(x0, xend, radius, cost, tau, d_tau)) {
+		if (checkPath(dynamics, x0, xend, tau, d_tau, false, vis)) {
 			return true;
 		} else {
 			//cout << "Failed checkPath" << endl;
 		}
 	} else {
-		//cout << "Failed computeCost" << endl;
+		//cout << "Failed compute_cost" << endl;
 	}
 
 	return false;
@@ -2263,7 +2269,7 @@ void drawTree(const tree_t& tree) {
 
 /*
 template <class D>
-void connect_forward(const D& dynamics, tree_t& tree, k_d_tree_t& k_d_tree, const node_cost_pair_t& start, const state& x_rand, const node_id_t x_rand_node_id, const Node& x_rand_node, double radius, double time_diff) {
+void connect_forward(D& dynamics, tree_t& tree, k_d_tree_t& k_d_tree, const node_cost_pair_t& start, const state& x_rand, const node_id_t x_rand_node_id, const Node& x_rand_node, double radius, double time_diff) {
 	ostringstream os;
 	double cost;
 	stack<node_cost_pair_t> s;
@@ -4070,13 +4076,13 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 }
 
 template <class D>
-void rrtstar(const D& dynamics, const typename D::state& x_init, const typename D::state& x_final, int n, double radius, tree_t& tree) {
+void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::state& x_final, int n, double radius, tree_t& tree) {
 	// local variables
 	ostringstream os;
 	node_ids_t k_d_results;
 	int xdims = X_DIM;
 	int expected_nodes = 2*TARGET_NODES;
-	KD_Tree k_d_tree(tree, xdims, x_bounds, expected_nodes);
+	KD_Tree k_d_tree(tree, xdims, dynamics.get_x_bounds(), expected_nodes);
 	BOUNDS k_d_query;
 
 	// Construct start and goal nodes
@@ -4128,7 +4134,7 @@ void rrtstar(const D& dynamics, const typename D::state& x_init, const typename 
 		}
 
 #else
-		rand_vec(x_rand, x_bounds);
+		rand_vec(x_rand, dynamics.get_x_bounds());
 #endif
 
 		// Only continue if the configuration is not in collision
@@ -4273,7 +4279,7 @@ void rrtstar(const D& dynamics, const typename D::state& x_init, const typename 
 	calc_forward_reachable_bounds(x_rand_node.x, radius, k_d_query);
 
 #else
-			k_d_query = x_bounds;
+			k_d_query = dynamics.get_x_bounds();
 #endif
 
 			// Query k-d tree for nodes that could be reached by new node
@@ -4387,20 +4393,12 @@ void rrtstar(const D& dynamics, const typename D::state& x_init, const typename 
 void init() {
 	srand(time(NULL));
 
-	TWO_TO_X_DIM = pow(2.0, X_DIM);
-	statespace_volume = 1;
-	for (BOUNDS::iterator p = x_bounds.begin(); p != x_bounds.end(); p++) {
-		statespace_volume *= (p->second - p->first);
-	}
-
-	sphere_volume = volume();
-
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_FORWARD)
 	cout << "Using forward closed form." << endl;
-	//computeCost = &computeCostClosedForm;
+	//compute_cost = &compute_cost_closed_form;
 #else
 	cout << "Using forward RK4." << endl;
-	//computeCost = &computeCostRK4;
+	//compute_cost = &compute_cost_RK4;
 #endif
 
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_BACKWARD)
@@ -4433,7 +4431,7 @@ char _getchar() {
 }
 
 template <class D>
-void graphPath(const D& dynmics) {
+void graphPath(D& dynmics) {
 	double radius = START_RADIUS; //DBL_MAX;
 
 #if (DYNAMICS == QUADROTOR)
@@ -4727,15 +4725,17 @@ int _tmain(int argc, _TCHAR* argv[])
 	setupParameters();
 	init();
 
+	BOUNDS world_bounds = setupVisualization(x0, x1);
+
+	DblInt2D dynamics(control_penalty, POLY_DEGREE, world_bounds);
+
+	statespace_volume = dynamics.get_state_space_volume();
+
+	sphere_volume = volume();
+
 	double radius = START_RADIUS;
 	double temp = DBL_MAX;
 	setRadius(2, radius);
-
-	BOUNDS world_bounds = setupVisualization(x0, x1);
-
-	DblInt2D dynamics(world_bounds);
-
-
 
 	//testReduceRadius();
 

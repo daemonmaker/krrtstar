@@ -10,7 +10,9 @@
 template <size_t _xDim, size_t _uDim>
 class DblInt : public Dynamics<_xDim, _uDim> {
 protected:
-	DblInt(std::string name) : Dynamics(name) {}
+	DblInt(std::string name, const floatX control_penalty, const floatX poly_degree)
+		: Dynamics(name, control_penalty, poly_degree)
+	{}
 
 };
 
