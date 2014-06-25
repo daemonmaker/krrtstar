@@ -337,7 +337,8 @@ void makeWall(float x, float y, float z, int length, int height, bool vertical, 
 	CAL_CreateBox(obstacle_group, xw, yw, zw, x_pos, y_pos, z_pos);
 }
 
-void buildEnvironment() {
+BOUNDS buildEnvironment() {
+	BOUNDS world_bounds;
 #if (DYNAMICS == QUADROTOR)
 	CAL_CreateGroup(&border_group, 0, false, "Borders");
 	CAL_SetGroupColor(border_group, 0.25, 0.25, 0.25);
@@ -529,8 +530,9 @@ void buildEnvironment() {
 	makeWall(100, -10, offset, 35, 20, true, false);
 	makeWall(100, 110, offset, 35, 20, true, true);
 #else
-	x_bounds[0] = std::make_pair(0, 100);
-	x_bounds[1] = std::make_pair(0, 200);
+	world_bounds.resize(2);
+	world_bounds[0] = std::make_pair(0, 100);
+	world_bounds[1] = std::make_pair(0, 200);
 
 	x0[1] = 15;
 	x0[0] = 50;
@@ -652,9 +654,11 @@ void buildEnvironment() {
 	x1[0] = x1[1] = 100;
 #endif
 #endif
+
+	return world_bounds;
 }
 
-void setupVisualization(const state& x0, const state& x1) {
+BOUNDS setupVisualization(const state& x0, const state& x1) {
 	// visualization
 	CAL_Initialisation(true, true, true);
 
@@ -723,7 +727,7 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_SetGroupColor(velocity_group, 0, 0, 1);
 	CAL_SetGroupColor(edge_group, 0.65, 0.16, 0.16);
 
-	buildEnvironment();
+	BOUNDS world_bounds = buildEnvironment();
 
 	setupRobot();
 
@@ -758,9 +762,9 @@ void setupVisualization(const state& x0, const state& x1) {
 	eye_y = 150;
 	camera_z = eye_z = x_bounds[0].second/2.0;
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-	camera_x = eye_x = x_bounds[0].second/2.0;
+	camera_x = eye_x = world_bounds[0].second/2.0;
 	eye_y = 150;
-	camera_z = eye_z = x_bounds[1].second/2.0;
+	camera_z = eye_z = world_bounds[1].second/2.0;
 #else
 	camera_x = eye_x = x_bounds[0].second/2.0;
 	eye_y = 125;
@@ -804,6 +808,8 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_CreateSphere(start_node_group, 5*NODE_SIZE, start_x, start_y, start_z);
 	CAL_CreateSphere(goal_node_group, 5*NODE_SIZE, goal_x, goal_y, goal_z);
 #endif
+
+	return world_bounds;
 }
 
 inline Matrix<4,1> quatFromRot(const Matrix<3,3>& R) {
@@ -913,7 +919,8 @@ bool state_order(const state_time_t& a, const state_time_t& b) {
 	return (a.first < b.first);
 }
 
-void visualize(const tree_t& tree) {
+template <class D>
+void visualize(const D& dynamics, const tree_t& tree) {
 	CAL_EmptyGroup(solution_group);
 	CAL_EmptyGroup(solution_marker_group);
 	CAL_SetGroupColor(solution_group, 0, 0, 1);
@@ -940,7 +947,7 @@ void visualize(const tree_t& tree) {
 		//computeCost(*p, *(p + 1), DBL_MAX, cost, tau, d_tau);
 		//checkPath(*p, *(p+1), tau, d_tau, false, &segment);
 
-		connect(*p, *(p+1), DBL_MAX, cost, tau, &segment);
+		connect(dynamics, *p, *(p+1), DBL_MAX, cost, tau, &segment);
 
 		sort(segment.begin(), segment.end(), state_order);
 		for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
@@ -1145,6 +1152,7 @@ Matrix<X_DIM, X_DIM> k_4;
 Matrix<X_DIM,X_DIM> AG;
 #endif
 
+/*
 inline double computeHeuristic(const double x0, const double x1, const pair<double, double>& bounds) {
 	double tmp = x1 - x0;
 	return max(tmp/bounds.first, tmp/bounds.second);
@@ -1181,9 +1189,11 @@ inline double applyHeuristics(const state& x0, const state& x1) {
 
 	return cost;
 }
+*/
 
-bool computeCostClosedForm(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
-	if (applyHeuristics(x0, x1) > radius) return false;
+template <class D>
+bool computeCostClosedForm(const D& dynamics, const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
+	if (dynamics.applyHeuristics(x0, x1) > radius) return false;
 
 #ifdef _DEBUG_COMPUTE_COST
 	cout << "~~~~~~~~~~~~~~~~~~~~~~~ computeCostClosedForm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -1511,8 +1521,9 @@ bool computeCostClosedForm(const state& x0, const state& x1, double radius, doub
 	return result;
 }
 
-bool computeCostRK4(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
-	if (applyHeuristics(x0, x1) > radius) return false;
+template <class D>
+bool computeCostRK4(const D& dynamics, const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
+	if (dynamics.applyHeuristics(x0, x1) > radius) return false;
 
 	Matrix<X_DIM, X_DIM> G = zeros<X_DIM, X_DIM>();
 	state xbar = x0;
@@ -1569,7 +1580,7 @@ bool computeCostRK4(const state& x0, const state& x1, double radius, double& cos
 	double cf_cost;
 	double cf_tau;
 	state cf_dtau;
-	bool cf_result = computeCostClosedForm(x0, x1, radius, cf_cost, cf_tau, cf_dtau);
+	bool cf_result = computeCostClosedForm(dynamics, x0, x1, radius, cf_cost, cf_tau, cf_dtau);
 
 	bool resultMatch = (cf_result == result);
 	bool costMatch = (cf_cost == cost);
@@ -1595,13 +1606,14 @@ BOUNDS x_bounds_real = x_bounds;
 	return checkBounds(x, x_bounds_real) && checkBounds(u, u_bounds) && collision_free(x);
 }
 
-void plotPath(const state& x0, const state& x1, const double radius) {
+template <class D>
+void plotPath(const D& dynamics, const state& x0, const state& x1, const double radius) {
 	state_time_list_t segment;
 	double max_tau = 0.0;
 	double current_time = 0.0;
 	double cost = 0.0;
 
-	connect(x0, x1, radius, cost, max_tau, &segment);
+	connect(dynamics, x0, x1, radius, cost, max_tau, &segment);
 
 	sort(segment.begin(), segment.end(), state_order);
 	for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
@@ -1919,7 +1931,8 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 	return true;
 }
 
-inline bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis) {
+template<class D>
+inline bool connect(const D& dynamics, const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis) {
 	state d_tau;
 
 	state xend = x1;
@@ -1939,7 +1952,7 @@ inline bool connect(const state& x0, const state& x1, const double radius, doubl
 	xend[2] = x0[2] + theta_diff;
 #endif
 
-	if (computeCost(x0, xend, radius, cost, tau, d_tau)) {
+	if (computeCost(dynamics, x0, xend, radius, cost, tau, d_tau)) {
 		if (checkPath(x0, xend, tau, d_tau, false, vis)) {
 			return true;
 		} else {
@@ -2249,7 +2262,8 @@ void drawTree(const tree_t& tree) {
 }
 
 /*
-void connect_forward(tree_t& tree, k_d_tree_t& k_d_tree, const node_cost_pair_t& start, const state& x_rand, const node_id_t x_rand_node_id, const Node& x_rand_node, double radius, double time_diff) {
+template <class D>
+void connect_forward(const D& dynamics, tree_t& tree, k_d_tree_t& k_d_tree, const node_cost_pair_t& start, const state& x_rand, const node_id_t x_rand_node_id, const Node& x_rand_node, double radius, double time_diff) {
 	ostringstream os;
 	double cost;
 	stack<node_cost_pair_t> s;
@@ -2261,7 +2275,7 @@ void connect_forward(tree_t& tree, k_d_tree_t& k_d_tree, const node_cost_pair_t&
 				for (node_list_t::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ) {
 					// If we can get to a node via the new node faster than via it's existing parent then change the parent
 					double junk;
-					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
+					if (connect(dynamics, x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
 						tree[*p].parent = x_rand_node_id;
 						tree[x_rand_node_id].children.push_back(*p);
 						s.push(make_pair(*p, tree[*p].cost_from_start - (x_rand_node.cost_from_start + cost)));
@@ -2297,7 +2311,7 @@ void connect_forward(tree_t& tree, k_d_tree_t& k_d_tree, const node_cost_pair_t&
 			// check orphans
 			for (size_t j = 0; j < orphans.size(); ) {
 				double junk;
-				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
+				if (connect(dynamics, x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
 					tree[orphans[j]].cost_from_start = x_rand_node.cost_from_start + cost;
 					tree[orphans[j]].parent = x_rand_node_id;
 					tree[x_rand_node_id].children.push_back(orphans[j]);
@@ -4055,7 +4069,8 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 #endif
 }
 
-void rrtstar(const state& x_init, const state& x_final, int n, double radius, tree_t& tree) {
+template <class D>
+void rrtstar(const D& dynamics, const typename D::state& x_init, const typename D::state& x_final, int n, double radius, tree_t& tree) {
 	// local variables
 	ostringstream os;
 	node_ids_t k_d_results;
@@ -4096,7 +4111,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 #endif
 
 		// Generate a random configuration
-		state x_rand;
+		D::state x_rand;
 #if (DYNAMICS == QUADROTOR) && (USE_OBSTACLES == 5)
 		double area = rand_value(0, 1);
 
@@ -4161,26 +4176,26 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		k_d_tree.range_query(k_d_query, k_d_results);
 
 		for (node_ids_t::iterator n = k_d_results.begin(); n != k_d_results.end(); n++) {
-			Q.push(make_pair(applyHeuristics(tree[*n].x, x_rand), *n));
+			Q.push(make_pair(dynamics.applyHeuristics(tree[*n].x, x_rand), *n));
 		}
 
 		while (!Q.empty() && Q.top().first < min_dist) {
 			node_id_t j = Q.top().second;
 			Q.pop();
 
-			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL)) {
+			if (connect(dynamics, tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL)) {
 				min_dist = tree[j].cost_from_start + cost;
 				x_near_id = j;
 			}
 
 		}
 #else
-		Q.push(make_pair(applyHeuristics(tree[1].x, x_rand), 1)); // push start onto queue
+		Q.push(make_pair(dynamics.applyHeuristics(tree[1].x, x_rand), 1)); // push start onto queue
 		while (!Q.empty() && Q.top().first < min_dist) {
 			node_id_t j = Q.top().second;
 			Q.pop();
 
-			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL)) {
+			if (connect(dynamics, tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL)) {
 				min_dist = tree[j].cost_from_start + cost;
 				x_near_id = j;
 			}
@@ -4188,7 +4203,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			// cost of node is lower bound of cost of its children, if connection succeeded, no child will do better
 			else {
 				for (list<node_id_t>::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ++p) {
-					Q.push(make_pair(tree[*p].cost_from_start + applyHeuristics(tree[*p].x, x_rand), *p));
+					Q.push(make_pair(tree[*p].cost_from_start + dynamics.applyHeuristics(tree[*p].x, x_rand), *p));
 				}
 			}
 		}
@@ -4268,7 +4283,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			// Sort them heuristically
 			Q = priority_queue<node_cost_pair_t, vector<node_cost_pair_t >, greater<node_cost_pair_t > >();
 			for (node_ids_t::iterator n = k_d_results.begin(); n != k_d_results.end(); n++) {
-				Q.push(make_pair(applyHeuristics(x_rand, tree[*n].x), *n));
+				Q.push(make_pair(dynamics.applyHeuristics(x_rand, tree[*n].x), *n));
 			}
 
 			// For each potentially reachable node attempt to connect.
@@ -4293,7 +4308,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 				for (node_list_t::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ) {
 					// If we can get to a node via the new node faster than via it's existing parent then change the parent
 					double junk;
-					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
+					if (connect(dynamics, x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
 						tree[*p].parent = x_rand_node_id;
 						tree[x_rand_node_id].children.push_back(*p);
 						s.push(make_pair(*p, tree[*p].cost_from_start - (x_rand_node.cost_from_start + cost)));
@@ -4334,7 +4349,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			// check orphans
 			for (size_t j = 0; j < orphans.size(); ) {
 				double junk;
-				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
+				if (connect(dynamics, x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
 					tree[orphans[j]].cost_from_start = x_rand_node.cost_from_start + cost;
 					tree[orphans[j]].parent = x_rand_node_id;
 					tree[x_rand_node_id].children.push_back(orphans[j]);
@@ -4361,7 +4376,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 #ifndef EXPERIMENT
 		if (draw_path) {
-			visualize(tree);
+			visualize(dynamics, tree);
 		}
 #endif
 
@@ -4382,18 +4397,18 @@ void init() {
 
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_FORWARD)
 	cout << "Using forward closed form." << endl;
-	computeCost = &computeCostClosedForm;
+	//computeCost = &computeCostClosedForm;
 #else
 	cout << "Using forward RK4." << endl;
-	computeCost = &computeCostRK4;
+	//computeCost = &computeCostRK4;
 #endif
 
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_BACKWARD)
 	cout << "Using backward closed form." << endl;
-	checkPath = &checkPathClosedForm;
+	//checkPath = &checkPathClosedForm;
 #else
 	cout << "Using backward RK4." << endl;
-	checkPath = &checkPathRK4;
+	//checkPath = &checkPathRK4;
 #endif
 
 	BRiBt = B*(R%~B);
@@ -4417,7 +4432,8 @@ char _getchar() {
 	return k;
 }
 
-void graphPath() {
+template <class D>
+void graphPath(const D& dynmics) {
 	double radius = START_RADIUS; //DBL_MAX;
 
 #if (DYNAMICS == QUADROTOR)
@@ -4458,7 +4474,7 @@ void graphPath() {
 	tree_t tree;
 	double cost;
 	double junk;
-	if (connect(x0, x1, radius, cost, junk, NULL)) {
+	if (connect(dynamics, x0, x1, radius, cost, junk, NULL)) {
 		std::cout << "connected\t";
 
 		Node start, end;
@@ -4474,7 +4490,7 @@ void graphPath() {
 		start.children.push_back(0);
 		tree.push_back(start);
 
-		visualize(tree);
+		visualize(dynamics, tree);
 	}
 
 	else {
@@ -4715,7 +4731,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	double temp = DBL_MAX;
 	setRadius(2, radius);
 
-	setupVisualization(x0, x1);
+	BOUNDS world_bounds = setupVisualization(x0, x1);
+
+	DblInt2D dynamics(world_bounds);
+
+
 
 	//testReduceRadius();
 
@@ -4744,7 +4764,7 @@ x1[5] = 0;
 #endif
 
 	cout << "x0: " << x0 << "\tx1: " << x1 << endl;
-	plotPath(x0, x1, temp);
+	plotPath(dynamics, x0, x1, temp);
 	_getchar();
 #endif
 
@@ -4771,7 +4791,7 @@ x1[5] = 0;
 	fflush(time_log);
 
 #ifdef GRAPH_PATH
-	graphPath();
+	graphPath(dynamics);
 #endif
 
 	start_time = clock();
@@ -4779,7 +4799,7 @@ x1[5] = 0;
 
 	//KD_Tree::testKDTree(tree);
 	
-	rrtstar(x0, x1, TARGET_NODES, radius, tree);
+	rrtstar(dynamics, x0, x1, TARGET_NODES, radius, tree);
 	end_time = clock();
 
 	cout << "Runtime: " << (double)(end_time - start_time)/(double)CLOCKS_PER_SEC << endl;
@@ -4794,7 +4814,7 @@ x1[5] = 0;
 	}
 
 	// Build a visualization of the final path
-	visualize(tree);
+	visualize(dynamics, tree);
 
 	// Draw the tree
 	drawTree(tree);

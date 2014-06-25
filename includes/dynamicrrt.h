@@ -24,6 +24,11 @@
 #include "polynomial.h"
 #include "rpoly.h"
 
+#include <bounds.h>
+#include <Worlds/World.hpp>
+#include <Dynamics/Dynamics.hpp>
+#include <Dynamics/DblInt2D.hpp>
+
 //#define _DEBUG_COMPUTE_COST
 
 // Optimization flags
@@ -44,6 +49,18 @@
 #undef CLOSED_FORM_BACKWARD
 #endif
 
+#if defined(CLOSED_FORM) || defined(CLOSED_FORM_FORWARD)
+#define computeCost computeCostClosedForm
+#else
+#define computeCost computeCostRK4
+#endif
+
+#if defined(CLOSED_FORM) || defined(CLOSED_FORM_BACKWARD)
+#define checkPath checkPathClosedForm
+#else
+#define checkPath checkPathRK4
+#endif
+
 // Manages which dynamics are used
 #define SINGLE_INTEGRATOR_2D 1
 #define DOUBLE_INTEGRATOR_1D 2
@@ -51,6 +68,7 @@
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
 #define DYNAMICS DOUBLE_INTEGRATOR_2D
+#define USE_DYNAMMICS_OBJ
 
 // Flags to control various features of the program
 //#define EXPERIMENT
@@ -156,8 +174,8 @@ FILE* time_log;
 FILE* stats_log;
 FILE* path_log;
 
-typedef std::pair<double, double> BOUND;
-typedef std::vector< BOUND > BOUNDS;
+//typedef std::pair<double, double> BOUND;
+//typedef std::vector< BOUND > BOUNDS;
 const int NO_PARENT = -1;
 typedef int node_id_t;
 typedef std::list<node_id_t> node_list_t;
@@ -223,13 +241,13 @@ int paths; // Counts the number of paths
 double start_time, current_time, end_time;
 #define TimeToInt(t) ((t.wHour*3600 + t.wMinute*60 + t.wSecond)*1000 + t.wMilliseconds)
 
-bool (*computeCost)(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) = NULL;
-bool __cdecl computeCostClosedForm(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);
-bool __cdecl computeCostRK4(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);
+//bool (*computeCost)(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) = NULL;
+//bool __cdecl computeCostClosedForm(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);
+//bool __cdecl computeCostRK4(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);
 
-bool (*checkPath)(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) = NULL;
-bool __cdecl checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis = NULL);
-bool __cdecl checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis = NULL);
+//bool (*checkPath)(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) = NULL;
+//bool __cdecl checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis = NULL);
+//bool __cdecl checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis = NULL);
 
 char _getchar();
 
@@ -240,7 +258,6 @@ void convertTreeToPoints(const tree_t& tree, double *points);
 
 template<typename vec, typename bounds>
 inline void rand_vec(vec& v, const bounds& b);
-
 
 /**
  * The idea for the structure of this k-d tree is to use a structure for each node. The structure indicates whether the node

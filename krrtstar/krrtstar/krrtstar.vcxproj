@@ -80,13 +80,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\includes\bounds.h" />
     <ClInclude Include="..\..\includes\dynamicrrt.h" />
+    <ClInclude Include="..\..\includes\Dynamics\Dynamics.hpp" />
+    <ClInclude Include="..\..\includes\Dynamics\DblInt.hpp" />
+    <ClInclude Include="..\..\includes\Dynamics\DblInt2D.hpp" />
     <ClInclude Include="..\..\includes\matrix.h" />
     <ClInclude Include="..\..\includes\polynomial.h" />
     <ClInclude Include="..\..\includes\rpoly.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\dynamicrrt.cpp" />
+    <ClCompile Include="..\..\src\Dynamics\DblInt2D.cpp" />
     <ClCompile Include="..\..\src\rpoly.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Dynamics">
+      <UniqueIdentifier>{56e450cd-c2a6-4637-9321-7c9e75e33158}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dynamics">
+      <UniqueIdentifier>{e4ab1545-e55e-4886-82d1-e81bb429b54d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\includes\dynamicrrt.h">
@@ -27,6 +33,18 @@
     <ClInclude Include="..\..\includes\rpoly.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\includes\Dynamics\DblInt2D.hpp">
+      <Filter>Header Files\Dynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\includes\Dynamics\DblInt.hpp">
+      <Filter>Header Files\Dynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\includes\Dynamics\Dynamics.hpp">
+      <Filter>Header Files\Dynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\includes\bounds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\dynamicrrt.cpp">
@@ -34,6 +52,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\rpoly.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Dynamics\DblInt2D.cpp">
+      <Filter>Source Files\Dynamics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
