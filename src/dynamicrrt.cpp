@@ -915,11 +915,12 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 	CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_pos, y_pos, z_pos);
 #endif
 }
-
-bool state_order(const state_time_t& a, const state_time_t& b) {
+/*
+template <class D>
+bool state_order(const typename D::state_time_t& a, const typename D::state_time_t& b) {
 	return (a.first < b.first);
 }
-
+*/
 template <class D>
 void visualize(D& dynamics, const tree_t& tree) {
 	CAL_EmptyGroup(solution_group);
@@ -940,18 +941,18 @@ void visualize(D& dynamics, const tree_t& tree) {
 	state_list.push_back(current.x);
 	reverse(state_list.begin(), state_list.end());
 
-	state_time_list_t segment;
+	D::state_time_list_t segment;
 	double max_tau = 0.0;
 	double current_time = 0.0;
 	for(vector<state>::iterator p = state_list.begin(); (p + 1) != state_list.end(); p++) {
 		segment.clear();
 		//dynamics.compute_cost(dynamics, *p, *(p + 1), DBL_MAX, cost, tau, d_tau);
-		//dynamics.checkPath(dynamics, *p, *(p+1), tau, d_tau, false, &segment);
+		//dynamics.check_path(dynamics, *p, *(p+1), tau, d_tau, false, &segment);
 
 		connect(dynamics, *p, *(p+1), DBL_MAX, cost, tau, &segment);
 
-		sort(segment.begin(), segment.end(), state_order);
-		for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
+		sort(segment.begin(), segment.end(), state_order<D>);
+		for(D::state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
 			current_time = (q->first) + max_tau;
 			buildKeyframe(current_time, q->second);
 			fwrite((const void *)&current_time, sizeof(double), 1, path_log);
@@ -1049,6 +1050,17 @@ Matrix<_numRows, _numColumns> k_3;
 Matrix<_numRows, _numColumns> k_4;
 };
 */
+/*
+template<typename vec>
+bool checkBounds(const vec& v, const BOUNDS& v_bounds) {
+	for (size_t i = 0; i < v.numRows(); i++) {
+		if ((v[i] < v_bounds[i].first) || (v[i] > v_bounds[i].second)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 template <size_t _numRows>
 inline double cost(double tau, const Matrix<_numRows, _numRows>& G, const Matrix<_numRows>& xbar) {
 	return tau + tr(~(x1 - xbar)*(G%(x1-xbar)));
@@ -1059,17 +1071,7 @@ inline double dcost(double tau, const Matrix<_numRows, _numRows>& G, const Matri
 	Matrix<_numRows> d = -(G%(x1-xbar));
 	return 1 + 2*tr(~(A*x1)*d) - tr(~d*BRiBt*d);
 }
-
-template<typename vec>
-bool checkBounds(const vec& v, const BOUNDS& v_bounds) {
-//return true; // TODO REMOVE
-	for (size_t i = 0; i < v.numRows(); i++) {
-		if ((v[i] < v_bounds[i].first) || (v[i] > v_bounds[i].second)) {
-			return false;
-		}
-	}
-	return true;
-}
+*/
 
 inline bool collision_free(const state& x) {
 #if (USE_OBSTACLES > 0)
@@ -1596,10 +1598,9 @@ bool compute_cost_RK4(D& dynamics, const state& x0, const state& x1, double radi
 
 	return result;
 }
-*/
 
 template <class D>
-bool checkState(D& dynamics, const state& x, const control& u) {
+bool check_state(D& dynamics, const state& x, const control& u) {
 	BOUNDS x_bounds_real = dynamics.get_x_bounds();
 #if (DYNAMICS == NONHOLONOMIC)
 	x_bounds_real[2].first = -DBL_MAX;
@@ -1607,18 +1608,18 @@ bool checkState(D& dynamics, const state& x, const control& u) {
 #endif
 	return checkBounds(x, x_bounds_real) && checkBounds(u, u_bounds) && collision_free(x);
 }
-
+*/
 template <class D>
 void plotPath(D& dynamics, const state& x0, const state& x1, const double radius) {
-	state_time_list_t segment;
+	D::state_time_list_t segment;
 	double max_tau = 0.0;
 	double current_time = 0.0;
 	double cost = 0.0;
 
 	connect(dynamics, x0, x1, radius, cost, max_tau, &segment);
 
-	sort(segment.begin(), segment.end(), state_order);
-	for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
+	sort(segment.begin(), segment.end(), state_order<D>);
+	for(D::state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
 		current_time = (q->first) + max_tau;
 		buildKeyframe(current_time, q->second);
 		double *current_elements = (q->second._elems);
@@ -1627,9 +1628,9 @@ void plotPath(D& dynamics, const state& x0, const state& x1, const double radius
 		}
 	}
 }
-
+/*
 template <class D>
-bool checkPathClosedForm(D& dynamics, const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
+bool check_path_closed_form(D& dynamics, const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, D::state_time_list_t* vis) {
 	double t;
 	double bound = (plot ? deltaT * 8 : deltaT);
 	int numPoints = ceil(tau / bound);
@@ -1830,7 +1831,7 @@ bool checkPathClosedForm(D& dynamics, const state& x0, const state& x1, const do
 			state x = chi.subMatrix<X_DIM,1>(0,0);
 			control u = R%(~B*chi.subMatrix<X_DIM,1>(X_DIM,0));
 
-			if (!(plot || vis) && !checkState(dynamics, x, u)) {
+			if (!(plot || vis) && !check_state(dynamics, x, u)) {
 				return false;
 			}
 
@@ -1864,7 +1865,7 @@ bool checkPathClosedForm(D& dynamics, const state& x0, const state& x1, const do
 }
 
 template <class D>
-bool checkPathRK4(D& dynamics, const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
+bool check_path_RK4(D& dynamics, const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, D::state_time_list_t* vis) {
 	Alpha = block(A, -BRiBt, zeros<X_DIM,X_DIM>(), -~A);
 
 	chi.insert(0,0,x1);
@@ -1887,12 +1888,12 @@ bool checkPathRK4(D& dynamics, const state& x0, const state& x1, const double ta
 	for (int j = 0; j < num_steps; j++) {
 		linearrk.rk4(chi, 0, -new_deltaT, back);
 #if (DYNAMICS == SINGLE_INTEGRATOR_2D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D) || (DYNAMICS == NONHOLONOMIC)
-		/*
-		ostringstream os;
-		os << num_steps << " " << j << "     " << chi[0] << " " << chi[1] << " " << chi[2] << endl;
-		fputs(os.str().c_str(), path_log);
-		fflush(path_log);
-		*/
+
+		//ostringstream os;
+		//os << num_steps << " " << j << "     " << chi[0] << " " << chi[1] << " " << chi[2] << endl;
+		//fputs(os.str().c_str(), path_log);
+		//fflush(path_log);
+
 		//cout << num_steps << " " << j << "     " << chi[0] << " " << chi[1] << " " << chi[2] << endl;
 #else
 		//cout << chi[0] << " " << chi[1] << " " << chi[2] << " " << chi[6] << " " << chi[7] << endl;
@@ -1904,7 +1905,7 @@ bool checkPathRK4(D& dynamics, const state& x0, const state& x1, const double ta
 		//cout << "checkBounds(x, dynamics.get_x_bounds()): " << checkBounds(x, dynamics.get_x_bounds())
 		//	<< "\tcheckBounds(u, u_bounds): " << checkBounds(u, u_bounds) << endl;
 
-		if (!(plot || vis) && !checkState(dynamics, x, u)) {
+		if (!(plot || vis) && !check_state(dynamics, x, u)) {
 			return false;
 		}
 
@@ -1935,9 +1936,9 @@ bool checkPathRK4(D& dynamics, const state& x0, const state& x1, const double ta
 	}
 	return true;
 }
-
+*/
 template<class D>
-inline bool connect(D& dynamics, const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis) {
+inline bool connect(D& dynamics, const state& x0, const state& x1, const double radius, double& cost, double& tau, typename D::state_time_list_t* vis) {
 	state d_tau;
 
 	state xend = x1;
@@ -1958,11 +1959,11 @@ inline bool connect(D& dynamics, const state& x0, const state& x1, const double 
 #endif
 
 	//if (dynamics.compute_cost(dynamics, x0, xend, radius, cost, tau, d_tau)) {
-	if (dynamics.compute_cost(x0, xend, radius, cost, tau, d_tau)) {
-		if (checkPath(dynamics, x0, xend, tau, d_tau, false, vis)) {
+	if (dynamics.compute_cost(x0, xend, cost, tau, d_tau)) {
+		if (dynamics.check_path(x0, xend, tau, d_tau, false, vis)) {
 			return true;
 		} else {
-			//cout << "Failed checkPath" << endl;
+			//cout << "Failed check_path" << endl;
 		}
 	} else {
 		//cout << "Failed compute_cost" << endl;
@@ -1971,10 +1972,7 @@ inline bool connect(D& dynamics, const state& x0, const state& x1, const double 
 	return false;
 }
 
-inline double rand_value(double a, double b) {
-	return ((double) (rand()*(RAND_MAX+1) + rand()) / (RAND_MAX*(RAND_MAX + 2))) * (b - a) + a;
-}
-
+/*
 template<typename vec, typename bounds>
 inline void rand_vec(vec& v, const bounds& b) {
 	int count = v.numRows();
@@ -1989,6 +1987,7 @@ inline void rand_vec(vec& v, const bounds& b) {
 	v[4] = 0;
 #endif
 }
+*/
 
 /**
  * Calculates the volume of a unit sphere.
@@ -2008,6 +2007,7 @@ inline void rand_vec(vec& v, const bounds& b) {
  * 9 	(2^5/9!!) \pi^4 = (32/945)\pi^4 	3.299
  * 10 	(1/5!)\pi^5 = (1/120)\pi^5 	2.550
  */
+/*
 inline double volume() {
 #if X_DIM % 2 == 0
 	int i = 4;
@@ -2033,9 +2033,9 @@ inline double volume() {
 	return (num/den);
 }
 
-inline void setRadius(const double& num_states, double& radius) {
-	//double c = TWO_TO_X_DIM * (1 + X_DIM_INVERSE) * FREE_SS_VOLUME * REACHABILITY_CONSTANT; /* Of the order of (2^X_DIM) * (1 + 1/X_DIM) * (Volume of free state space) * (reachability constant (start out arbitrarily, we need to research it further)) */
-	//double v = volume(); /* Volume of a ball of dimension X_DIM */
+inline void set_radius(const double& num_states, double& radius) {
+	//double c = TWO_TO_X_DIM * (1 + X_DIM_INVERSE) * FREE_SS_VOLUME * REACHABILITY_CONSTANT; // Of the order of (2^X_DIM) * (1 + 1/X_DIM) * (Volume of free state space) * (reachability constant (start out arbitrarily, we need to research it further))
+	//double v = volume(); // Volume of a ball of dimension X_DIM
 //#ifdef REDUCE_RADIUS
 	//radius = min(radius, pow(c/v*log((double)n)/(double)n, X_DIM_INVERSE));
 //#endif
@@ -2119,27 +2119,26 @@ inline void setRadius(const double& num_states, double& radius) {
 	double t18 = 3.0*t1/sphere_volume/num_states*t15;
 	radius = t18*RADIUS_MULTIPLIER;
 
-	/*
-    double t1 = sqrt(3.0);
-    double t5 = statespace_volume*statespace_volume;
-    double t6 = log(num_states);
-    double t7 = t6*t6;
-    double t9 = sphere_volume*sphere_volume;
-    double t10 = t9*t9;
-    double t11 = num_states*num_states;
-    double t12 = t11*t11;
-    double t15 = pow(t5*t7*t10*t12,0.1666666666666667);
-    double t18 = 3.0*t1/sphere_volume/num_states*t15;
-	radius = t18;
-	*/
+    //double t1 = sqrt(3.0);
+    //double t5 = statespace_volume*statespace_volume;
+    //double t6 = log(num_states);
+    //double t7 = t6*t6;
+    //double t9 = sphere_volume*sphere_volume;
+    //double t10 = t9*t9;
+    //double t11 = num_states*num_states;
+    //double t12 = t11*t11;
+    //double t15 = pow(t5*t7*t10*t12,0.1666666666666667);
+    //double t18 = 3.0*t1/sphere_volume/num_states*t15;
+	//radius = t18;
 #else
-	assert("setRadius undefined");
+	assert("set_radius undefined");
 	return;
 #endif
 #else
 	return;
 #endif
 }
+*/
 
 void drawTree(const tree_t& tree) {
 	int np[1] = {2};
@@ -2340,7 +2339,6 @@ void connect_forward(D& dynamics, tree_t& tree, k_d_tree_t& k_d_tree, const node
 			// update parent of new node
 			tree[x_near_id].children.push_back(x_rand_node_id);
 }
-*/
 
 complex<double> im(0,1);
 void calc_backward_reachable_bounds(const state& state, const double& radius, BOUNDS& bounds) {
@@ -3100,22 +3098,21 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 
 	// Calculate x1 bounds
 	{
-		/* Before polynomial solver
-		double t1 = RootOf(64.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z-112.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*radius+(126.0*j*j*r*g*g*x0_9*x0_9+49.0*g*g*radius*radius*l*l)*_Z*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_7*x0_9-126.0*radius*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_7*x0_7-504.0*radius*j*j*r*g*g*x0_7*x0_9+504.0*j*j*r*x0_3*g*x0_9~)*_Z*_Z*_Z+(-504.0*radius*j*j*r*g*g*x0_7*x0_7-504.0*radius*j*j*r*x0_3*g*x0_9~+1008.0*j*j*r*x0_3*g*x0_7)*_Z*_Z+(-1008.0*radius*j*j*r*x0_3*g*x0_7+504.0*j*j*r*x0_3*x0_3)*_Z-504.0*radius*j*j*r*x0_3*x0_3);
-		double t3 = t1*t1;
-		double t7 = t3*t1;
-		double t11 = sqrt(14.0);
-		double t12 = g*g;
-		double t13 = l*l;
-		double t15 = j*j;
-		double t19 = t3*t3;
-		double t25 = sqrt(t12*t13/t15/r*t19*t7*(radius-t1));
-		double t28_min = x0_0+t1*x0_3+g*t3*x0_7/2.0+g*t7*x0_9/6.0-t11*t25/42.0;
-		double t28_max = x0_0+t1*x0_3+g*t3*x0_7/2.0+g*t7*x0_9/6.0+t11*t25/42.0;
+		// Before polynomial solver
+		//double t1 = RootOf(64.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z-112.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*radius+(126.0*j*j*r*g*g*x0_9*x0_9+49.0*g*g*radius*radius*l*l)*_Z*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_7*x0_9-126.0*radius*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_7*x0_7-504.0*radius*j*j*r*g*g*x0_7*x0_9+504.0*j*j*r*x0_3*g*x0_9~)*_Z*_Z*_Z+(-504.0*radius*j*j*r*g*g*x0_7*x0_7-504.0*radius*j*j*r*x0_3*g*x0_9~+1008.0*j*j*r*x0_3*g*x0_7)*_Z*_Z+(-1008.0*radius*j*j*r*x0_3*g*x0_7+504.0*j*j*r*x0_3*x0_3)*_Z-504.0*radius*j*j*r*x0_3*x0_3);
+		//double t3 = t1*t1;
+		//double t7 = t3*t1;
+		//double t11 = sqrt(14.0);
+		//double t12 = g*g;
+		//double t13 = l*l;
+		//double t15 = j*j;
+		//double t19 = t3*t3;
+		//double t25 = sqrt(t12*t13/t15/r*t19*t7*(radius-t1));
+		//double t28_min = x0_0+t1*x0_3+g*t3*x0_7/2.0+g*t7*x0_9/6.0-t11*t25/42.0;
+		//double t28_max = x0_0+t1*x0_3+g*t3*x0_7/2.0+g*t7*x0_9/6.0+t11*t25/42.0;
 
-		bounds[0].first = t28_min;
-		bounds[0].second = t28_max;
-		*/
+		//bounds[0].first = t28_min;
+		//bounds[0].second = t28_max;
 
 		const int degree = 7;
 		double p[degree + 1];
@@ -3154,22 +3151,21 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 
 	// Calculate x2 bounds
 	{
-		/* Before polynomial solver
-		double t1 = RootOf(64.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z-112.0*g*g*l*l*_Z*_Z*_Z*_Z*Z*_Z*radius+(126.0*j*j*r*g*g*x0_8*x0_8+49.0*g*g*radius*radius*l*l)*_Z*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_6*x0_8-126.0*radius*j*j*r*g*g*x0_8*x0_8)*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_6*x0_6-504.0*radius*j*j*r*g*g*x0_6*x0_8-504.0*j*j*r*x0_4*g*x0_8~)*_Z*_Z*_Z+(-504.0*radius*j*j*r*g*g*x0_6*x0_6+504.0*radius*j*j*r*x0_4*g*x0_8~-1008.0*j*j*r*x0_4*g*x0_6)*_Z*_Z+(1008.0*radius*j*j*r*x0_4*g*x0_6+504.0*j*1*r*x0_4*x0_4)*_Z-504.0*radius*j*j*r*x0_4*x0_4);
-		double t3 = t1*t1;
-		double t7 = t3*t1;
-		double t11 = sqrt(14.0);
-		double t12 = g*g;
-		double t13 = l*l;
-		double t15 = j*j;
-		double t19 = t3*t3;
-		double t25 = sqrt(t12*t13/t15/r*t19*t7*(radius-t1));
-		double t28_min = x0_1+t1*x0_4-g*t3*x0_6/2.0-g*t7*x0_8/6.0-t11*t25/42.0;
-		double t28_max = x0_1+t1*x0_4-g*t3*x0_6/2.0+g*t7*x0_8/6.0-t11*t25/42.0;
+		// Before polynomial solver
+		//double t1 = RootOf(64.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z-112.0*g*g*l*l*_Z*_Z*_Z*_Z*Z*_Z*radius+(126.0*j*j*r*g*g*x0_8*x0_8+49.0*g*g*radius*radius*l*l)*_Z*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_6*x0_8-126.0*radius*j*j*r*g*g*x0_8*x0_8)*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_6*x0_6-504.0*radius*j*j*r*g*g*x0_6*x0_8-504.0*j*j*r*x0_4*g*x0_8~)*_Z*_Z*_Z+(-504.0*radius*j*j*r*g*g*x0_6*x0_6+504.0*radius*j*j*r*x0_4*g*x0_8~-1008.0*j*j*r*x0_4*g*x0_6)*_Z*_Z+(1008.0*radius*j*j*r*x0_4*g*x0_6+504.0*j*1*r*x0_4*x0_4)*_Z-504.0*radius*j*j*r*x0_4*x0_4);
+		//double t3 = t1*t1;
+		//double t7 = t3*t1;
+		//double t11 = sqrt(14.0);
+		//double t12 = g*g;
+		//double t13 = l*l;
+		//double t15 = j*j;
+		//double t19 = t3*t3;
+		//double t25 = sqrt(t12*t13/t15/r*t19*t7*(radius-t1));
+		//double t28_min = x0_1+t1*x0_4-g*t3*x0_6/2.0-g*t7*x0_8/6.0-t11*t25/42.0;
+		//double t28_max = x0_1+t1*x0_4-g*t3*x0_6/2.0+g*t7*x0_8/6.0-t11*t25/42.0;
 
-		bounds[1].first = t28_min;
-		bounds[1].second = t28_max;
-		*/
+		//bounds[1].first = t28_min;
+		//bounds[1].second = t28_max;
 
 		const int degree = 7;
 		double p[degree + 1];
@@ -3319,21 +3315,20 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 			bounds[3].second = max(bounds[3].second, t25_max.real());
 		}
 
-		/* Before polynomial solver
-		double t1 = RootOf(36.0*_Z*_Z*_Z*_Z*_Z*l*l-60.0*_Z*_Z*_Z*_Z*l*l*radius+(25.0*l*l*radius*radius+40.0*j*j*r*x0_9*x0_9)*_Z*_Z*_Z+(-40.0*radius*j*j*r*x0_9*x0_9+80.0*x0_9*x0_7*r*j*j)*_Z*_Z+(-80.0*radius*j*j*r*x0_7*x0_9+40.0*x0_7*x0_7*r*j*j)*_Z-40.0*radius*j*j*r*x0_7*x0_7);
-		double t4 = t1*t1;
-		double t8 = sqrt(10.0);
-		double t9 = g*g;
-		double t10 = t4*t4;
-		double t13 = l*l;
-		double t15 = j*j;
-		double t22 = sqrt(t9*t10*t1*t13/t15/r*(radius-t1));
-		double t25_min = x0_3+g*t1*x0_7+g*t4*x0_9/2.0-t8*t22/10.0;
-		double t25_max = x0_3+g*t1*x0_7+g*t4*x0_9/2.0+t8*t22/10.0;
+		// Before polynomial solver
+		//double t1 = RootOf(36.0*_Z*_Z*_Z*_Z*_Z*l*l-60.0*_Z*_Z*_Z*_Z*l*l*radius+(25.0*l*l*radius*radius+40.0*j*j*r*x0_9*x0_9)*_Z*_Z*_Z+(-40.0*radius*j*j*r*x0_9*x0_9+80.0*x0_9*x0_7*r*j*j)*_Z*_Z+(-80.0*radius*j*j*r*x0_7*x0_9+40.0*x0_7*x0_7*r*j*j)*_Z-40.0*radius*j*j*r*x0_7*x0_7);
+		//double t4 = t1*t1;
+		//double t8 = sqrt(10.0);
+		//double t9 = g*g;
+		//double t10 = t4*t4;
+		//double t13 = l*l;
+		//double t15 = j*j;
+		//double t22 = sqrt(t9*t10*t1*t13/t15/r*(radius-t1));
+		//double t25_min = x0_3+g*t1*x0_7+g*t4*x0_9/2.0-t8*t22/10.0;
+		//double t25_max = x0_3+g*t1*x0_7+g*t4*x0_9/2.0+t8*t22/10.0;
 
-		bounds[3].first = t25_min;
-		bounds[3].second = t25_max;
-		*/
+		//bounds[3].first = t25_min;
+		//bounds[3].second = t25_max;
 	}
 
 	// Calculate x5 bounds
@@ -3369,21 +3364,20 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 			bounds[4].second = max(bounds[4].second, t25_max.real());
 		}
 
-		/* Before polynomial solver
-		double t1 = RootOf(36.0*_Z*_Z*_Z*_Z*_Z*l*l-60.0*_Z*_Z*_Z*_Z*l*l*radius+(25.0*l*l*radius*radius+40.0*j*j*r*x0_8*x0_8)*_Z*_Z*_Z+(-40.0*radius*j*j*r*x0_8*x0_8+80.0*x0_8*x0_6*r*j*j)*_Z*_Z+(-80.0*radius*j*j*r*x0_6*x0_8+40.0*x0_6*x0_6*r*j*j)*_Z-40.0*radius*j*j*r*x0_6*x0_6);
-		double t4 = t1*t1;
-		double t8 = sqrt(10.0);
-		double t9 = g*g;
-		double t10 = t4*t4;
-		double t13 = l*l;
-		double t15 = j*j;
-		double t22 = sqrt(t9*t10*t1*t13/t15/r*(radius-t1));
-		double t25_min = x0_4-g*t1*x0_6-g*t4*x0_8/2.0-t8*t22/10.0;
-		double t25_max = x0_4-g*t1*x0_6-g*t4*x0_8/2.0+t8*t22/10.0;
+		// Before polynomial solver
+		//double t1 = RootOf(36.0*_Z*_Z*_Z*_Z*_Z*l*l-60.0*_Z*_Z*_Z*_Z*l*l*radius+(25.0*l*l*radius*radius+40.0*j*j*r*x0_8*x0_8)*_Z*_Z*_Z+(-40.0*radius*j*j*r*x0_8*x0_8+80.0*x0_8*x0_6*r*j*j)*_Z*_Z+(-80.0*radius*j*j*r*x0_6*x0_8+40.0*x0_6*x0_6*r*j*j)*_Z-40.0*radius*j*j*r*x0_6*x0_6);
+		//double t4 = t1*t1;
+		//double t8 = sqrt(10.0);
+		//double t9 = g*g;
+		//double t10 = t4*t4;
+		//double t13 = l*l;
+		//double t15 = j*j;
+		//double t22 = sqrt(t9*t10*t1*t13/t15/r*(radius-t1));
+		//double t25_min = x0_4-g*t1*x0_6-g*t4*x0_8/2.0-t8*t22/10.0;
+		//double t25_max = x0_4-g*t1*x0_6-g*t4*x0_8/2.0+t8*t22/10.0;
 
-		bounds[4].first = t25_min;
-		bounds[4].second = t25_max;
-		*/
+		//bounds[4].first = t25_min;
+		//bounds[4].second = t25_max;
 	}
 
 	// Calculate x6 bounds
@@ -4074,9 +4068,9 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 	bounds[1].second = max_value;
 #endif
 }
-
+*/
 template <class D>
-void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::state& x_final, int n, double radius, tree_t& tree) {
+void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::state& x_final, int n, tree_t& tree) {
 	// local variables
 	ostringstream os;
 	node_ids_t k_d_results;
@@ -4111,13 +4105,14 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 #endif
 
 	// Create n nodes -- counter variable only incremented when a valid new node is found
+	D::state x_rand;
 	for (int i = 1; i <= n;) {
 #ifndef EXPERIMENT
 		draw_path = false;
 #endif
 
 		// Generate a random configuration
-		D::state x_rand;
+/*
 #if (DYNAMICS == QUADROTOR) && (USE_OBSTACLES == 5)
 		double area = rand_value(0, 1);
 
@@ -4136,6 +4131,8 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 #else
 		rand_vec(x_rand, dynamics.get_x_bounds());
 #endif
+*/
+		dynamics.rand_state(x_rand);
 
 		// Only continue if the configuration is not in collision
 		if (!collision_free(x_rand)) {
@@ -4175,7 +4172,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 #ifdef K_D_TREE_BACKWARD
 		k_d_query.clear();
 		BOUNDS q_bounds;
-		calc_backward_reachable_bounds(x_rand, radius, k_d_query);
+		dynamics.calc_backward_reachable_bounds(x_rand, k_d_query);
 
 		// Perform query
 		k_d_results.clear();
@@ -4189,7 +4186,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 			node_id_t j = Q.top().second;
 			Q.pop();
 
-			if (connect(dynamics, tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL)) {
+			if (connect(dynamics, tree[j].x, x_rand, min(dynamics.get_radius(), min_dist - tree[j].cost_from_start), cost, tau, NULL)) {
 				min_dist = tree[j].cost_from_start + cost;
 				x_near_id = j;
 			}
@@ -4224,7 +4221,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 
 		double time_diff = (double)(clock() - start_time)/(double)CLOCKS_PER_SEC;
 		cout << "                                                                              \r";
-		cout << setw(9) << time_diff << " " << setw(11) << i << "/" << n << " tree: " << setw(9) << tree.size() << " radius: " << setw(9) << radius << " orphans: " << orphans.size() << "\r";
+		cout << setw(9) << time_diff << " " << setw(11) << i << "/" << n << " tree: " << setw(9) << tree.size() << " radius: " << setw(9) << dynamics.get_radius() << " orphans: " << orphans.size() << "\r";
 
 		// Update the tree
 		node_id_t x_rand_node_id = tree.size();
@@ -4276,7 +4273,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 	double max_value = DBL_MIN;
 
 #if (DYNAMICS == DOUBLE_INTEGRATOR_1D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D) || (DYNAMICS == QUADROTOR) || (DYNAMICS == NONHOLONOMIC)
-	calc_forward_reachable_bounds(x_rand_node.x, radius, k_d_query);
+	dynamics.calc_forward_reachable_bounds(x_rand_node.x, k_d_query);
 
 #else
 			k_d_query = dynamics.get_x_bounds();
@@ -4314,7 +4311,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 				for (node_list_t::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ) {
 					// If we can get to a node via the new node faster than via it's existing parent then change the parent
 					double junk;
-					if (connect(dynamics, x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
+					if (connect(dynamics, x_rand, tree[*p].x, min(dynamics.get_radius(), tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
 						tree[*p].parent = x_rand_node_id;
 						tree[x_rand_node_id].children.push_back(*p);
 						s.push(make_pair(*p, tree[*p].cost_from_start - (x_rand_node.cost_from_start + cost)));
@@ -4322,7 +4319,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 
 						if (*p == 0) { // i.e. if we're updating the cost to the goal
 							//std::cout << "\n\rConnect x_rand: " << x_rand << "\n\rto " << tree[*p].x << "\n\r";
-							summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
+							summarize_path(os, time_diff, i, n, tree[0].cost_from_start, dynamics.get_radius(), orphans.size())
 
 #ifndef EXPERIMENT
 							draw_path = true;
@@ -4335,7 +4332,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 							tree[*p].cost_from_start -= decrease_cost;
 							if (*p == 0) {
 								//std::cout << "\n\rConnect child x_rand: " << x_rand << "\n\rto " << tree[*p].x << "\n\r";
-								summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
+								summarize_path(os, time_diff, i, n, tree[0].cost_from_start, dynamics.get_radius(), orphans.size())
 
 #ifndef EXPERIMENT
 								draw_path = true;
@@ -4355,7 +4352,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 			// check orphans
 			for (size_t j = 0; j < orphans.size(); ) {
 				double junk;
-				if (connect(dynamics, x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
+				if (connect(dynamics, x_rand, tree[orphans[j]].x, dynamics.get_radius(), cost, junk, NULL)) {
 					tree[orphans[j]].cost_from_start = x_rand_node.cost_from_start + cost;
 					tree[orphans[j]].parent = x_rand_node_id;
 					tree[x_rand_node_id].children.push_back(orphans[j]);
@@ -4366,7 +4363,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 #endif
 
 						//std::cout << "\n\rConnect orhpan x_rand: " << x_rand << "\n\rto " << tree[orphans[j]].x << "\n\r";
-						summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
+						summarize_path(os, time_diff, i, n, tree[0].cost_from_start, dynamics.get_radius(), orphans.size())
 					}
 
 					orphans[j] = orphans.back(); // remove orphan
@@ -4386,7 +4383,7 @@ void rrtstar(D& dynamics, const typename D::state& x_init, const typename D::sta
 		}
 #endif
 
-		setRadius(tree.size(), radius);
+		dynamics.set_radius(tree.size());
 	}
 }
 
@@ -4395,18 +4392,14 @@ void init() {
 
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_FORWARD)
 	cout << "Using forward closed form." << endl;
-	//compute_cost = &compute_cost_closed_form;
 #else
 	cout << "Using forward RK4." << endl;
-	//compute_cost = &compute_cost_RK4;
 #endif
 
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_BACKWARD)
 	cout << "Using backward closed form." << endl;
-	//checkPath = &checkPathClosedForm;
 #else
 	cout << "Using backward RK4." << endl;
-	//checkPath = &checkPathRK4;
 #endif
 
 	BRiBt = B*(R%~B);
@@ -4422,12 +4415,6 @@ void init() {
 	back.A = &Alpha;
 	back.c = &c0;
 #endif
-}
-
-char _getchar() {
-	char k;
-	cin >> k;
-	return k;
 }
 
 template <class D>
@@ -4550,6 +4537,7 @@ void visualizeLog() {
 	exit(0);
 }
 
+template <class D>
 void makeStills(int path) {
 	path_log = fopen("path_log.txt", "rb");
 
@@ -4559,7 +4547,7 @@ void makeStills(int path) {
 	state x;
 	int path_count = 0;
 	int frame_count = 0;
-	state_time_list_t states;
+	D::state_time_list_t states;
 
 	// Get starting time
 	fread((void *)&t, sizeof(double), 1, path_log);
@@ -4576,7 +4564,7 @@ void makeStills(int path) {
 				double change = 0.5/states.size();
 				float current_z = 0;
 				reverse(states.begin(), states.end());
-				for (state_time_list_t::iterator p = states.begin(); p != states.end(); p++) {
+				for (D::state_time_list_t::iterator p = states.begin(); p != states.end(); p++) {
 /*
 				CAL_SetGroupColor(p->first, current_r, current_g, current_b);
 				current_r += alpha_change;
@@ -4660,7 +4648,8 @@ void convertTreeToPoints(const tree_t& tree, double *points) {
 	}
 }
 
-void testReduceRadius() {
+template <class D>
+void testReduceRadius(const D& dynamics) {
 	double radius;
 
 	BOUNDS bounds;
@@ -4668,52 +4657,52 @@ void testReduceRadius() {
 
 	x[0] = 0.12684194382917316;
 	x[1] = -6.1335395985595316;
-	setRadius(3, radius);
+	dynamics.set_radius(3, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 0.89226644569287672;
 	x[1] = 0.63328319288164536;
-	setRadius(4, radius);
+	dynamics.set_radius(4, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 60.176413469180844;
 	x[1] = -6.6750103576807405;
-	setRadius(5, radius);
+	dynamics.set_radius(5, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 45.078589250406800;
 	x[1] = -8.8588820387226370;
-	setRadius(6, radius);
+	dynamics.set_radius(6, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 78.331917131628757;
 	x[1] = 0.39752316698201184;
-	setRadius(7, radius);
+	dynamics.set_radius(7, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 87.596822145950810;
 	x[1] = 9.1179966545831377;
-	setRadius(8, radius);
+	dynamics.set_radius(8, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 53.934150239391386;
 	x[1] = -0.75852335501324752;
-	setRadius(9, radius);
+	dynamics.set_radius(9, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 86.221953189207198;
 	x[1] = 5.5931662913348212;
-	setRadius(10, radius);
+	dynamics.set_radius(10, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 99.679564498066497;
 	x[1] = 2.2298537867421775;
-	setRadius(11, radius);
+	dynamics.set_radius(11, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	x[0] = 26.621390624550536;
 	x[1] = 6.8023826710902000;
-	setRadius(12, radius);
+	dynamics.set_radius(12, radius);
 	calc_forward_reachable_bounds(x, radius, bounds);
 
 	_getchar();
@@ -4727,17 +4716,18 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	BOUNDS world_bounds = setupVisualization(x0, x1);
 
-	DblInt2D dynamics(control_penalty, POLY_DEGREE, world_bounds);
+#define DYNAMICS_MODEL_CLASS DblInt2D
+	DYNAMICS_MODEL_CLASS dynamics(control_penalty, POLY_DEGREE, RADIUS_MULTIPLIER, START_RADIUS, world_bounds);
 
-	statespace_volume = dynamics.get_state_space_volume();
+	//statespace_volume = dynamics.get_state_space_volume();
 
-	sphere_volume = volume();
+	//sphere_volume = dynamics.volume();
 
-	double radius = START_RADIUS;
+	//double radius = START_RADIUS;
 	double temp = DBL_MAX;
-	setRadius(2, radius);
+	dynamics.set_radius(2);
 
-	//testReduceRadius();
+	//testReduceRadius(dynamics);
 
 #ifdef PLOT_PATH
 #if (DYNAMICS == QUADROTOR) // Quadrotor
@@ -4773,7 +4763,7 @@ x1[5] = 0;
 #endif
 
 #if MAKE_STILLS > -1
-	makeStills(MAKE_STILLS);
+	makeStills<DYNAMICS_MODEL_CLASS>(MAKE_STILLS);
 #endif
 
 	time_log = fopen("time_log.txt", "w");
@@ -4799,7 +4789,7 @@ x1[5] = 0;
 
 	//KD_Tree::testKDTree(tree);
 	
-	rrtstar(dynamics, x0, x1, TARGET_NODES, radius, tree);
+	rrtstar(dynamics, x0, x1, TARGET_NODES, tree);
 	end_time = clock();
 
 	cout << "Runtime: " << (double)(end_time - start_time)/(double)CLOCKS_PER_SEC << endl;

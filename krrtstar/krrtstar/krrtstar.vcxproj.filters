@@ -42,7 +42,13 @@
     <ClInclude Include="..\..\includes\Dynamics\Dynamics.hpp">
       <Filter>Header Files\Dynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\includes\bounds.h">
+    <ClInclude Include="..\..\includes\configuration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\includes\utilities.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\includes\bounds.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
