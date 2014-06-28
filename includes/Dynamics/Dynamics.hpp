@@ -22,6 +22,7 @@
 
 //#define _DEBUG_COMPUTE_COST
 
+
 typedef double floatX;
 
 template <size_t _xDim, size_t _uDim>
