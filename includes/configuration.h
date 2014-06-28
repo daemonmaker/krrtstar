@@ -37,7 +37,7 @@
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS DOUBLE_INTEGRATOR_2D
+#define DYNAMICS 3
 #define USE_DYNAMMICS_OBJ
 
 // Flags to control various features of the program

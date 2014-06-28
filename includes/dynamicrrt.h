@@ -1,5 +1,9 @@
 #define _USE_MATH_DEFINES
 
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include <SDKDDKVer.h>
 #include <stdio.h>
 #include <tchar.h>
@@ -17,7 +21,6 @@
 #include <sys/utime.h>
 #endif
 //#include <omp.h>
-
 #include "matrix.h"
 #include "callisto.h"
 //#define _POLY_DEBUG
@@ -30,6 +33,8 @@
 #include <Dynamics/DblInt2D.hpp>
 
 #include <configuration.h>
+#include <Eigen/StdVector>
+
 
 const double deltaT = 0.03125;
 const double gravity = 9.81;
@@ -99,8 +104,10 @@ double control_penalty1 = 0;
 //double statespace_volume;
 const double X_DIM_INVERSE = 1.0/X_DIM;
 
-typedef Matrix<X_DIM> state;
-typedef Matrix<U_DIM> control;
+//typedef Matrix<X_DIM> state;
+typedef Eigen::Matrix<double,X_DIM,1> state;
+//typedef Matrix<U_DIM> control;
+typedef Eigen::Matrix<double,U_DIM,1> control;
 
 FILE* time_log;
 FILE* stats_log;
@@ -122,7 +129,7 @@ BOUNDS x_bounds_window_2;
 #endif
 #endif
 
-Matrix<X_DIM,X_DIM> A;
+/*Matrix<X_DIM,X_DIM> A;
 Matrix<X_DIM,U_DIM> B;
 Matrix<X_DIM> c;
 Matrix<U_DIM,U_DIM> R;
@@ -130,7 +137,15 @@ Matrix<X_DIM,X_DIM> BRiBt;
 Matrix<X_DIM> x0, x1;
 Matrix<2*X_DIM, 2*X_DIM> Alpha;
 //Matrix<2*X_DIM> chi;
-Matrix<2*X_DIM> c0;
+Matrix<2*X_DIM> c0;*/
+Eigen::Matrix<double,X_DIM,X_DIM> A;
+Eigen::Matrix<double,X_DIM,U_DIM> B;
+Eigen::Matrix<double,X_DIM,1> c;
+Eigen::Matrix<double,U_DIM,U_DIM> R;
+Eigen::Matrix<double,X_DIM,X_DIM> BRiBt;
+Eigen::Matrix<double,X_DIM,1> x0,x1;
+//Eigen::Matrix<double,2*X_DIM,1> chi;
+Eigen::Matrix<double,2*X_DIM,1> c0;
 
 struct Node {
 	node_id_t   parent;
@@ -158,7 +173,8 @@ int collision_hit_group, collision_free_group, obstacle_group, robot_group, robo
 	, solution_marker_group, robot_model, border_group;
 
 int stills_group;
-std::vector< std::pair<int, Matrix<3,1> > > stills_groups;
+//std::vector< std::pair<int, Matrix<3,1> > > stills_groups;
+std::vector< std::pair<int, Eigen::Vector3d> > stills_groups;
 double current_alpha = 0.5;
 double alpha_change = 0.0;
 
@@ -188,6 +204,7 @@ inline void rand_vec(vec& v, const bounds& b);
  */
 class KD_Tree {
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	const int NO_LIST; // Indicates whether a node has a list of children
 	const int NO_CHILD; // Indicates whether there is a node as child k-d tree node to the left/right of a given nod
 	const int NO_SPLIT; // Indicates whether a node is split

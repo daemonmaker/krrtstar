@@ -2,7 +2,7 @@
 #define __DYNAMICS_HPP__
 
 #define _USE_MATH_DEFINES
-
+#include <Eigen/Dense>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -19,6 +19,7 @@
 #include <rpoly.h>
 #include <configuration.h>
 #include "matrix.h"
+#include "eigenMatrix.h"
 
 //#define _DEBUG_COMPUTE_COST
 
@@ -28,8 +29,11 @@ typedef double floatX;
 template <size_t _xDim, size_t _uDim>
 class Dynamics {
 public:
-	typedef Matrix<_xDim> state;
-	typedef Matrix<_uDim> control;
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	//typedef Matrix<_xDim> state;
+	typedef Eigen::Matrix<double,_xDim,1> state;
+	//typedef Matrix<_uDim> control;
+	typedef Eigen::Matrix<double,_uDim,1> control;
 
 	typedef std::pair<double, state> state_time_t;
 	typedef std::vector< state_time_t > state_time_list_t;
@@ -41,7 +45,8 @@ public:
 		_zeror = new floatX[_poly_degree];
 		_zeroi = new floatX[_poly_degree];
 
-		_chi = new Matrix<2*_xDim>();
+		//_chi = new Matrix<2*_xDim>();
+		_chi = new Eigen::Matrix<double,2*_xDim,1>;
 
 		calc_unit_sphere_volume();
 	}
@@ -64,7 +69,8 @@ public:
 		return 0.0;
 	}
 
-	virtual inline Matrix<_xDim> dynamics(floatX step, const Matrix<_xDim>& x, const Matrix<_uDim>& u) const = 0;
+	//virtual inline Matrix<_xDim> dynamics(floatX step, const Matrix<_xDim>& x, const Matrix<_uDim>& u) const = 0;
+	virtual inline Eigen::Matrix<double,_xDim,1> dynamics(floatX step, const Eigen::Matrix<double,_xDim,1>& x, const Eigen::Matrix<double,_uDim,1>& u) const = 0;
 
 	virtual inline bool compute_cost_closed_form(const state& x0, const state& x1, floatX& cost, floatX& tau, state& d_tau) {
 		if (applyHeuristics(x0, x1) > _radius) return false;
@@ -103,7 +109,8 @@ public:
 		double minTau = _radius;
 		double minCost = _radius;
 		Dynamics::state mind;
-		mind.reset();
+		//mind.reset();
+		mind = Dynamics::state::Zero();
 
 		for (size_t i = 0; i < realRoots.size();++i) {
 
@@ -126,7 +133,8 @@ public:
 			cout << "\td: " << ~d;
 #endif
 
-			double current = realRoots[i] + tr(~x1diffbarx0*d);
+			//double current = realRoots[i] + tr(~x1diffbarx0*d);
+			double current = realRoots[i] + (x1diffbarx0.transpose()*d).trace();
 #ifdef _DEBUG_COMPUTE_COST
 			std::cout << "\tcurrent: " << current << "\tminCost: " << minCost << std::endl;
 #endif
@@ -282,11 +290,15 @@ public:
 	bool check_path_RK4(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
 		Alpha = block(A, -BRiBt, zeros<X_DIM,X_DIM>(), -~A);
 
-		chi.insert(0,0,x1);
-		chi.insert(X_DIM,0,-d_tau);
+		//chi.insert(0,0,x1);
+		chi.block<X_DIM,1>(0,0) = x1;
+		//chi.insert(X_DIM,0,-d_tau);
+		chi.block<X_DIM,1>(X_DIM,0) = -d_tau;
 
-		c0.insert(0,0,c);
-		c0.insert(X_DIM,0, zeros<X_DIM>());
+		//c0.insert(0,0,c);
+		c0.block<c.rows(),c.cols()>(0,0) = c;
+		//c0.insert(X_DIM,0, zeros<X_DIM>());
+		c0.block<Dynamics::state::rows(), Dynamics::state::Zero().cols()>(X_DIM,0) = Dynamics::state::Zero();
 
 		int num_steps = (int) ceil(tau / deltaT);
 		double new_deltaT = tau / num_steps;
@@ -313,8 +325,10 @@ public:
 			//cout << chi[0] << " " << chi[1] << " " << chi[2] << " " << chi[6] << " " << chi[7] << endl;
 	#endif
 
-			state x = chi.subMatrix<X_DIM>(0,0);
-			control u = -R%(~B*chi.subMatrix<X_DIM>(X_DIM,0)); // This should be negative as it is
+			//state x = chi.subMatrix<X_DIM>(0,0);
+			state x = chi.block<X_DIM,1>(0,0);
+			//control u = -R%(~B*chi.subMatrix<X_DIM>(X_DIM,0)); // This should be negative as it is
+			control u = (-R).fullPivLu().solve(B.transpose()*chi.block<X_DIM,1>(X_DIM,0));
 
 			//cout << "checkBounds(x, _x_bounds): " << checkBounds(x, _x_bounds)
 			//	<< "\tcheckBounds(u, u_bounds): " << checkBounds(u, u_bounds) << endl;
@@ -395,7 +409,8 @@ protected:
 	BOUNDS _x_bounds;
 	BOUNDS _u_bounds;
 
-	Matrix<2*_xDim>* _chi;
+	//Matrix<2*_xDim>* _chi;
+	Eigen::Matrix<double,2*_xDim,1>* _chi;
 
 	/**
 	 * Calculates the volume of a unit sphere.

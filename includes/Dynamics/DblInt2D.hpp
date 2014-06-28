@@ -17,6 +17,7 @@
 
 class DblInt2D : public DblInt<DBLINT2D_X_DIM, DBLINT2D_U_DIM> {
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	static const size_t X_DIM;
 	static const size_t U_DIM;
 
@@ -37,8 +38,8 @@ public:
 	}
 
 	virtual inline void rand_state(Dynamics::state& v) {
-		int count = v.numRows();
-
+		//int count = v.numRows();
+		int count = v.rows();
 		for (size_t i = 0; i < count; i++) {
 			v[i] = rand_value(_x_bounds[i].first, _x_bounds[i].second);
 		}
@@ -55,8 +56,10 @@ public:
 		return cost;
 	}
 
-	virtual inline Matrix<DBLINT2D_X_DIM> dynamics(floatX step, const Matrix<DBLINT2D_X_DIM>& x, const Matrix<DBLINT2D_U_DIM>& u) const {
-		Matrix<DBLINT2D_X_DIM> xNew;
+	//virtual inline Matrix<DBLINT2D_X_DIM> dynamics(floatX step, const Matrix<DBLINT2D_X_DIM>& x, const Matrix<DBLINT2D_U_DIM>& u) const {
+	virtual inline Eigen::Matrix<double,DBLINT2D_X_DIM,1> dynamics(floatX step, const Eigen::Matrix<double,DBLINT2D_X_DIM,1>& x, const Eigen::Matrix<double,DBLINT2D_X_DIM,1>& u) const {
+		//Matrix<DBLINT2D_X_DIM> xNew;
+		Eigen::Matrix<double,DBLINT2D_X_DIM,1> xNew;
 
 		xNew[0] = x[0] + x[2]*step + u[0]*step*step;
 		xNew[1] = x[1] + x[3]*step + u[1]*step*step;
