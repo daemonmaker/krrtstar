@@ -35,7 +35,6 @@
 #include <configuration.h>
 #include <Eigen/StdVector>
 
-
 const double deltaT = 0.03125;
 const double gravity = 9.81;
 const double mass = 0.5;
@@ -44,6 +43,7 @@ const double length = (0.3429/2);
 double control_penalty = 1;
 double control_penalty1 = 0;
 //double sphere_volume;
+
 
 #if (DYNAMICS == QUADROTOR) // Quadrotor
 #define STILL_RATE 5
@@ -148,13 +148,14 @@ Eigen::Matrix<double,X_DIM,1> x0,x1;
 Eigen::Matrix<double,2*X_DIM,1> c0;
 
 struct Node {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	node_id_t   parent;
 	state       x;
 	double      cost_from_start;
 	node_list_t children;
 };
 
-typedef std::vector<Node> tree_t;
+typedef std::vector<Node, Eigen::aligned_allocator<Node> > tree_t;
 
 struct KD_Node {
 	node_id_t parent_id;
@@ -202,9 +203,11 @@ inline void rand_vec(vec& v, const bounds& b);
  * left or right. The list of children from the RRT are kept in a separate list to limit memory usage since only the leaf
  * nodes will have lists of children from the RRT.
  */
+
 class KD_Tree {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	const int NO_LIST; // Indicates whether a node has a list of children
 	const int NO_CHILD; // Indicates whether there is a node as child k-d tree node to the left/right of a given nod
 	const int NO_SPLIT; // Indicates whether a node is split
@@ -215,6 +218,7 @@ public:
 
 	// This is the core structure of the tree. It describes each node in the tree.
     // e.g. what region it represents, whether the node is a leaf or a list of children, etc..
+	
 	struct node_t {
 		int depth; // The depth of this node in the tree, this will be used to determine whether we must calculate the bounds of new nodes
                    // based on the world bounds or the bounds of one of this nodes ancestors. We need to use the world bounds if there are
@@ -229,9 +233,9 @@ public:
                                  // of memory each node requires (NOTE: the number of lists required
                                  // is less than the number of nodes that will end up in the k-d tree).
 	};
-
+	
 	typedef std::vector<node_t> nodes_t;
-
+	
 private:
 	const tree_t& rrt_tree;
 	int dimensions;
@@ -245,7 +249,7 @@ private:
 	                                                   // (it will just need to be split between the children)
 	node_id_t next_new_tree_id; // This is the index of the next position in the tree where a node will be inserted
 	list_id_t next_new_list; // This indicates the id of the next empty list that can be used for new nodes when a split occurs
-
+	
 public:
 
 	/**
@@ -285,7 +289,7 @@ public:
 		//tree.push_back(node); // Set the first node
 		tree[next_new_tree_id++] = node;
 	}
-
+	
 	/**
 	* \brief Add a new node to the tree
 	*
@@ -297,20 +301,23 @@ public:
 	* node_id - the RRT node_id of the node to be added
 	*/
 	void add(const node_id_t& rrt_node_id) {
+		
 		// Locate the k-d tree node to which the RRT node_id belongs
 		//node_id_t kd_node_id = find_parent(rrt_node_id);
 
 		node_id_t kd_node_id = 0;
-
+		
 		// Search for the leaf to which this new point belongs
 		std::stack< node_id_t > node_id_stack;
 		node_id_stack.push(0); // Seed the stack with the root of the tree
+		
 		while(!node_id_stack.empty()) {
+			
 			// Retrieve the top of the stack
 			kd_node_id = node_id_stack.top();
 			node_id_stack.pop();
 			node_t& kd_node = this->tree[kd_node_id];
-
+			
 			// Determine whether to go left or right
 			// Split or end
 			if (kd_node.children.first == NO_CHILD) { // If the current node is a leaf
@@ -318,20 +325,21 @@ public:
 				// Split if necessary
 				child_list_t& child_list = child_lists[kd_node.child_list_id];
 				if ((child_list.size() + 1) > split_threshhold) {
+					
 					// Create the left and right nodes
 					node_t right_node, left_node;
 					right_node.parent_id = left_node.parent_id = kd_node_id; // Set the parent id of the new nodes
 					right_node.depth = left_node.depth = kd_node.depth + 1; // Calculate the depth of the new nodes
 					right_node.split_dimension = left_node.split_dimension = (kd_node.split_dimension + 1) % dimensions; // Calculate the splitting dimension of the new nodes
 					right_node.children.first = right_node.children.second = left_node.children.first = left_node.children.second = NO_CHILD; // Note that the new nodes have no children -- they start with a list until there split_threshhold number of elements in the list
-
+					
 					// Create the child lists of the new nodes. This is done by allocating a new list for the right node 
 					// and associating the current node's child list with the lft noede. We do the latter because the current
 					// node no longer needs a child list and to reduce processing time due to memory management.
 					right_node.child_list_id = next_new_list++;
 					left_node.child_list_id = kd_node.child_list_id;
 					kd_node.child_list_id = NO_LIST;
-
+					
 					// Separate the child list into left and right
 					child_list_t::iterator m;
 					child_list_t& right_list = child_lists[right_node.child_list_id];
@@ -346,7 +354,6 @@ public:
 						}
 						n++;
 					}
-
 					// Set the children of the current node
 
 					// Add the nodes to the tree and update parent node with child id
@@ -367,26 +374,24 @@ public:
 					}
 
 				}
-
 				// Otherwise add the node to the list
 				else {
 					child_list.push_back(rrt_node_id);
 					return;
 				}
+					
 			} // End If the current node is a leaf
-
 			// Go left
 			if (this->rrt_tree[rrt_node_id].x[this->tree[kd_node_id].split_dimension] < this->tree[kd_node_id].split_value) {
 				node_id_stack.push(this->tree[kd_node_id].children.first);
 			}
-
+			// Daman #endif
 			// Go right
 			else {
 				node_id_stack.push(this->tree[kd_node_id].children.second);
 			}
-		} // End while stack not empty
+		} // End while stack not empty	
 	}
-
 	/**
 	 * \brief Locates all points withing the specified axis-aligned hyper-rectangle
 	 *
@@ -672,3 +677,4 @@ public:
 		}
     }
 };
+

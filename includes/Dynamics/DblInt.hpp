@@ -9,6 +9,8 @@
 */
 template <size_t _xDim, size_t _uDim>
 class DblInt : public Dynamics<_xDim, _uDim> {
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 protected:
 	DblInt(std::string name, const floatX control_penalty, const floatX poly_degree, const floatX radius_multiplier, const floatX radius)
 		: Dynamics(name, control_penalty, poly_degree, radius_multiplier, radius)

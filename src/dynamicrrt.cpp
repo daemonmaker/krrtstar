@@ -4,6 +4,8 @@
 
 using namespace std;
 
+#ifndef EIGEN_DEBUG
+
 void dynamicsError() {
 	cout << "Invalid dynamics (" << DYNAMICS << ")" << endl;
 	_getchar();
@@ -4771,10 +4773,10 @@ void testReduceRadius(const D& dynamics) {
 	_getchar();
 	exit(0);
 }
-
+#endif
 int _tmain(int argc, _TCHAR* argv[])
 {
-
+#ifndef EIGEN_DEBUG
 	setupParameters();
 	
 	init();
@@ -4878,5 +4880,6 @@ x1[5] = 0;
 
 	_getchar();
 
+#endif
 	return 0;
 }
