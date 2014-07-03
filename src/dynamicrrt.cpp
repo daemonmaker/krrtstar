@@ -136,7 +136,7 @@ void setupParameters(void) {
 	c = Eigen::Matrix<double,X_DIM,1>::Zero();
 
 	//R = eye<U_DIM>();
-	R = Eigen::Matrix<double,U_DIM,U_DIM>::Zero();
+	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
 	/* 2.99034 */
 	//x0.reset();
@@ -997,10 +997,11 @@ void visualize(D& dynamics, const tree_t& tree) {
 			current_time = (q->first) + max_tau;
 			buildKeyframe(current_time, q->second);
 			fwrite((const void *)&current_time, sizeof(double), 1, path_log);
-			double *current_elements = (q->second._elems);
+			//double *current_elements = (q->second._elems);
 			//fwrite((const void *)current_elements, sizeof(double), X_DIM, path_log);
 			for (int i = 0; i < X_DIM; i++) {
-				current_time = current_elements[i];
+				//current_time = current_elements[i];
+				current_time = (q->second)(i, 0);
 				fwrite((const void *)&current_time, sizeof(double), 1, path_log);
 			}
 		}
@@ -4465,7 +4466,12 @@ void init() {
 	//BRiBt = B*(R%~B);
 	BRiBt = B*(R.fullPivLu().solve(B.transpose()));
 	//BRiBt = 0.5*BRiBt + 0.5*~BRiBt;
-	BRiBt = 0.5*BRiBt + 0.5*BRiBt.transpose();
+	//BRiBt = 0.5*BRiBt + 0.5*BRiBt.transpose();
+	Eigen::Matrix<double,X_DIM,X_DIM> BRiBtT;
+	BRiBtT = BRiBt.transpose();
+	BRiBtT *= 0.5;
+	BRiBt *= 0.5;
+	BRiBt += BRiBtT;
 
 #ifdef FRONT_LOAD_RK4
 	diff.A = &A;

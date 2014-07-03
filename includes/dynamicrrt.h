@@ -28,7 +28,6 @@
 
 #include <bounds.hpp>
 #include <utilities.hpp>
-//#include <Worlds/World.hpp>
 #include <Dynamics/Dynamics.hpp>
 #include <Dynamics/DblInt2D.hpp>
 

@@ -31,11 +31,11 @@ class Dynamics {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	//typedef Matrix<_xDim> state;
-	typedef Eigen::Matrix<double,_xDim,1> state;
+	typedef Eigen::Matrix<floatX,_xDim,1> state;
 	//typedef Matrix<_uDim> control;
-	typedef Eigen::Matrix<double,_uDim,1> control;
+	typedef Eigen::Matrix<floatX,_uDim,1> control;
 
-	typedef std::pair<double, state> state_time_t;
+	typedef std::pair<floatX, state> state_time_t;
 	typedef std::vector< state_time_t > state_time_list_t;
 
 	Dynamics(std::string name, const floatX control_penalty, const floatX poly_degree, const floatX radius_multiplier, const floatX radius)
@@ -70,7 +70,8 @@ public:
 	}
 
 	//virtual inline Matrix<_xDim> dynamics(floatX step, const Matrix<_xDim>& x, const Matrix<_uDim>& u) const = 0;
-	virtual inline Eigen::Matrix<double,_xDim,1> dynamics(floatX step, const Eigen::Matrix<double,_xDim,1>& x, const Eigen::Matrix<double,_uDim,1>& u) const = 0;
+	//virtual inline Eigen::Matrix<floatX,_xDim,1> dynamics(floatX step, const Eigen::Matrix<floatX,_xDim,1>& x, const Eigen::Matrix<floatX,_uDim,1>& u) const = 0;
+	virtual inline state dynamics(floatX step, const state& x, const control& u) const = 0;
 
 	virtual inline bool compute_cost_closed_form(const state& x0, const state& x1, floatX& cost, floatX& tau, state& d_tau) {
 		if (applyHeuristics(x0, x1) > _radius) return false;
@@ -89,11 +90,11 @@ public:
 #endif
 
 		// TODO DWEBB clean this up!
-		std::vector<std::complex<double> > complexRoots;
-		std::vector<double> realRoots;
+		std::vector<std::complex<floatX> > complexRoots;
+		std::vector<floatX> realRoots;
 
-		memset(_zeror, 0, sizeof(double)*_poly_degree);
-		memset(_zeroi, 0, sizeof(double)*_poly_degree);
+		memset(_zeror, 0.0f, sizeof(floatX)*(int)_poly_degree);
+		memset(_zeroi, 0.0f, sizeof(floatX)*(int)_poly_degree);
 		int info[1000];
 		int returned_roots = rpoly(_p, _poly_degree, _zeror, _zeroi, info);
 
@@ -256,8 +257,10 @@ public:
 				//chi[6] = -t1*d_tau[0]+d_tau[2];
 				//chi[7] = -t1*d_tau[1]+d_tau[3];
 
-				state x = _chi->subMatrix<_xDim,1>(0,0);
-				control u = R%(~B*_chi->subMatrix<_xDim,1>(_xDim,0));
+				//state x = _chi->subMatrix<_xDim,1>(0,0);
+				state x = _chi->block<_xDim,1>(0,0);
+				//control u = R%(~B*_chi->subMatrix<_xDim,1>(_xDim,0));
+				control u = (R).fullPivLu().solve(B.transpose()*_chi->block<_xDim,1>(_xDim,0));
 
 				if (!(plot || vis) && !check_state(x, u)) {
 					return false;
@@ -273,7 +276,10 @@ public:
 
 					if (plot) {
 						fwrite((const void *)&t, sizeof(double), 1, path_log);
-						fwrite(x._elems, sizeof(double), (x.numRows())*(x.numColumns()), path_log);
+						//fwrite(x._elems, sizeof(double), (x.numRows())*(x.numColumns()), path_log);
+						for (size_t i = 0; i < _xDim; i++) {
+							fwrite((const void *)&x(i, 0), sizeof(double), _xDim, path_log);
+						}
 						CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
 					}
 
@@ -291,9 +297,9 @@ public:
 		Alpha = block(A, -BRiBt, zeros<X_DIM,X_DIM>(), -~A);
 
 		//chi.insert(0,0,x1);
-		chi.block<X_DIM,1>(0,0) = x1;
+		_chi.block<X_DIM,1>(0,0) = x1;
 		//chi.insert(X_DIM,0,-d_tau);
-		chi.block<X_DIM,1>(X_DIM,0) = -d_tau;
+		_chi.block<X_DIM,1>(X_DIM,0) = -d_tau;
 
 		//c0.insert(0,0,c);
 		c0.block<c.rows(),c.cols()>(0,0) = c;
@@ -328,7 +334,7 @@ public:
 			//state x = chi.subMatrix<X_DIM>(0,0);
 			state x = chi.block<X_DIM,1>(0,0);
 			//control u = -R%(~B*chi.subMatrix<X_DIM>(X_DIM,0)); // This should be negative as it is
-			control u = (-R).fullPivLu().solve(B.transpose()*chi.block<X_DIM,1>(X_DIM,0));
+			control u = (-R).fullPivLu().solve(B.transpose()*_chi.block<X_DIM,1>(X_DIM,0));
 
 			//cout << "checkBounds(x, _x_bounds): " << checkBounds(x, _x_bounds)
 			//	<< "\tcheckBounds(u, u_bounds): " << checkBounds(u, u_bounds) << endl;

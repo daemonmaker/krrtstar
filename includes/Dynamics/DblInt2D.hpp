@@ -39,7 +39,7 @@ public:
 
 	virtual inline void rand_state(Dynamics::state& v) {
 		//int count = v.numRows();
-		int count = v.rows();
+		size_t count = v.rows();
 		for (size_t i = 0; i < count; i++) {
 			v[i] = rand_value(_x_bounds[i].first, _x_bounds[i].second);
 		}
@@ -57,9 +57,10 @@ public:
 	}
 
 	//virtual inline Matrix<DBLINT2D_X_DIM> dynamics(floatX step, const Matrix<DBLINT2D_X_DIM>& x, const Matrix<DBLINT2D_U_DIM>& u) const {
-	virtual inline Eigen::Matrix<double,DBLINT2D_X_DIM,1> dynamics(floatX step, const Eigen::Matrix<double,DBLINT2D_X_DIM,1>& x, const Eigen::Matrix<double,DBLINT2D_X_DIM,1>& u) const {
+	//virtual inline Eigen::Matrix<floatX,DBLINT2D_X_DIM,1> dynamics(floatX step, const Eigen::Matrix<floatX,DBLINT2D_X_DIM,1>& x, const Eigen::Matrix<floatX,DBLINT2D_X_DIM,1>& u) const {
+	virtual inline Dynamics::state dynamics(floatX step, const Dynamics::state& x, const Dynamics::control& u) const {
 		//Matrix<DBLINT2D_X_DIM> xNew;
-		Eigen::Matrix<double,DBLINT2D_X_DIM,1> xNew;
+		Eigen::Matrix<floatX,DBLINT2D_X_DIM,1> xNew;
 
 		xNew[0] = x[0] + x[2]*step + u[0]*step*step;
 		xNew[1] = x[1] + x[3]*step + u[1]*step*step;
