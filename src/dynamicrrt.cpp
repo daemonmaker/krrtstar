@@ -43,9 +43,12 @@ void setupParameters(void) {
 	u_bounds[1] = std::make_pair(-3.62, 3.62);
 	u_bounds[2] = std::make_pair(-3.62, 3.62);
 
-	A.reset();
-	A.insert(0, 3, eye<3>());
-	A.insert(6, 8, eye<2>());
+	//A.reset();
+	A = Eigen::Matrix<float,X_DIM,X_DIM>::Zero();
+	//A.insert(0, 3, eye<3>());
+	A.block<3,3>(0,3) = Eigen::Matrix<float,3,3>::Identity();
+	//A.insert(6, 8, eye<2>());
+	A.block<2,2>(6,8) = Eigen::Matrix<float,2,2>::Identity();
 	A(3,7) = gravity;
 	A(4,6) = -gravity;
 
@@ -53,17 +56,21 @@ void setupParameters(void) {
 	B(8,1) = length/inertia;
 	B(9,2) = length/inertia;
 
-	c = zeros<X_DIM>();
+	//c = zeros<X_DIM>();
+	c = state::Zero();
 
-	R = eye<U_DIM>();
+	//R = eye<U_DIM>();
+	R = Eigen:Matrix<float,U_DIM,U_DIM>::Identity();
 	R(0,0) = 0.25*control_penalty;
 	R(1,1) = R(2,2) = 0.5*control_penalty;
 
-	x0.reset();
+	//x0.reset();
+	x0 = state::Zero();
 	x0[0] = 1;
 	x0[2] = 4;
 
-	x1.reset();
+	//x1.reset();
+	x1 = state::Zero();
 	x1[0] = 4;
 	x1[2] = 1;
 
@@ -80,19 +87,23 @@ void setupParameters(void) {
 	u_bounds[0] = std::make_pair(-DBL_MAX,DBL_MAX);
 	u_bounds[1] = std::make_pair(-DBL_MAX,DBL_MAX);
 
-	B.reset();
+	//B.reset();
+	B = Eigen::Matrix<float,X_DIM,U_DIM>::Zero();
 	B(3,0) = 1;
 	B(4,1) = 1;
 
-	R.reset();
+	//R.reset();
+	R = Eigen::Matrix<float,U_DIM,U_DIM>::Zero();
 	R(0,0) = control_penalty;
 	R(1,1) = control_penalty1;
 
-	x0.reset();
+	//x0.reset();
+	x0 = state::Zero();
 	x0[2] = -M_PI/2;		
 	x0[3] = 1;
 	
-	x1.reset();
+	//x1.reset();
+	x1 = state::Zero();
 	x1[2] = -M_PI/2;
 	x1[3] = 1;
 
@@ -108,31 +119,39 @@ void setupParameters(void) {
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
-	A.reset();
+	//A.reset();
+	A = Eigen::Matrix<float,X_DIM,X_DIM>::Zero();
 	A(0,2) = 1;
 	A(1,3) = 1;
 
-	B.reset();
+	//B.reset();
+	B = Eigen::Matrix<float,X_DIM,U_DIM>::Zero();
 	B(2,0) = 1;
 	B(3,1) = 1;
 
-	c = zeros<X_DIM>();
+	//c = zeros<X_DIM>();
+	c = state::Zero();
 
-	R = eye<U_DIM>();
+	//R = eye<U_DIM>();
+	R = Eigen::Matrix<float,U_DIM,U_DIM>::Identity();
 
 	/* 2.99034 */
-	x0.reset();
+	//x0.reset();
+	x0 = state::Zero();
 
-	x1.reset();
+	//x1.reset();
+	x1 = state::Zero();
 	x1[0] = 0;
 	x1[1] = 100;
 
 	/* 2.95112
-	x0.reset();
+	//x0.reset();
+	x0 = state::Zero();
 	x0[0] = x0[1] = 1;
 	x0[3] = 1;
 
-	x1.reset();
+	//x1.reset();
+	x1 = state::Zero();
 	x1[0] = x1[1] = 2;
 	x1[2] = 1;
 	*/
@@ -146,20 +165,26 @@ void setupParameters(void) {
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
-	A.reset();
+	//A.reset();
+	A = Eigen::Matrix<float,X_DIM,X_DIM>::Zero();
 
-	B.reset();
+	//B.reset();
+	B = Eigen::Matrix<float,X_DIM,U_DIM>::Zero();
 	B(0,1) = 1;
 	B(1,1) = 1;
 
-	c = zeros<X_DIM>();
+	//c = zeros<X_DIM>();
+	c = state::Zero();
 
-	R = eye<U_DIM>();
+	//R = eye<U_DIM>();
+	R = Eigen::Matrix<float,U_DIM,U_DIM>::Identity();
 
-	x0.reset();
+	//x0.reset();
+	x0 = state::Zero();
 	//x0[2] = 1;
 
-	x1.reset();
+	//x1.reset();
+	x1 = state::Zero();
 	x1[0] = 100;
 	x1[1] = 100;
 	//x1[3] = 0.5;
@@ -170,17 +195,23 @@ void setupParameters(void) {
 
 	u_bounds[0] = std::make_pair(-10, 10);
 
-	A.reset();
+	//A.reset();
+	A = Eigen::Matrix<float,X_DIM,X_DIM>::Zero();
 	A(0,1) = 1;
 
-	B.reset();
+	//B.reset();
+	B = Eigen::Matrix<float,X_DIM,U_DIM>::Zero();
 	B(1,0) = 1;
 
-	c = zeros<X_DIM>();
-	R = eye<U_DIM>();
+	//c = zeros<X_DIM>();
+	c = state::Zero();
+	//R = eye<U_DIM>();
+	R = Eigen::Matrix<float,U_DIM,U_DIM>::Zero();
 
-	x0.reset();
-	x1.reset();
+	//x0.reset();
+	x0 = state::Zero();
+	//x1.reset();
+	x1 = state::Zero();
 	x1[0] = 100;
 
 #else
@@ -805,7 +836,7 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_CreateSphere(goal_node_group, 5*NODE_SIZE, goal_x, goal_y, goal_z);
 #endif
 }
-
+/*
 inline Matrix<4,1> quatFromRot(const Matrix<3,3>& R) {
 	Matrix<4,1> q;
 
@@ -816,7 +847,7 @@ inline Matrix<4,1> quatFromRot(const Matrix<3,3>& R) {
 
 	return q;
 }
-
+*/
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
 	bool isQuat = true;
 	double x_rot, y_rot;
@@ -835,15 +866,18 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 #endif
 
 #if (DYNAMICS == QUADROTOR)
-	Matrix<3, 3> rot;
-	rot.reset();
+	//Matrix<3, 3> rot;
+	//rot.reset();
+	Eigen::Matrix<float,3,3> rot = Eigen::Matrix<float,3,3>::Zero();
 	rot(0,2) = x[7];
 	rot(1,2) = -x[6];
 	rot(2,0) = -x[7];
 	rot(2,1) = x[6];
 
-	Matrix<4,1> q = quatFromRot(exp(rot));
-	float o[4] = {(float) q[0], (float) q[1], (float) q[2], (float) q[3]};
+	//Matrix<4,1> q = quatFromRot(exp(rot));
+	Eigen::Quaternion<float> q(rot.exp());
+	//float o[4] = {(float) q[0], (float) q[1], (float) q[2], (float) q[3]};
+	float o[4] = {q.x(), q.y(), q.z(), q.w()};
 	//float o[4] = {(float) q[1], (float) q[2], (float) q[3], (float) q[0]};
 #elif (DYNAMICS == NONHOLONOMIC)
 	isQuat = false;
@@ -858,7 +892,8 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 	float p[3] = {(float) x_pos, (float) y_pos, (float) z_pos};
 
 	if (still) {
-		Matrix<3, 1> current_pos;
+		//Matrix<3, 1> current_pos;
+		Eigen::Matrix<float,3,1> current_pos;
 		current_pos[0] = x_pos;
 		current_pos[1] = y_pos;
 		current_pos[2] = z_pos;
@@ -964,11 +999,17 @@ void visualize(const tree_t& tree) {
 
 template <size_t _numRows>
 struct lyapunov {
-	Matrix<_numRows, _numRows> *A;
-	Matrix<_numRows, _numRows> *BRiBt;
-	inline Matrix<_numRows, _numRows> operator()(double t, const Matrix<_numRows, _numRows>& G) const {
-		Matrix<_numRows,_numRows> AG = (*A)*G;  // ~AG = G*~A
-		return AG + ~AG + (*BRiBt); // A*G + G*~A + B*~B
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+	//Matrix<_numRows, _numRows> *A;
+	Eigen::Matrix<float,_numRows,_numRows> *A;
+	//Matrix<_numRows, _numRows> *BRiBt;
+	Eigen::Matrix<float,_numRows,_numRows> *BRiBt;
+	//inline Matrix<_numRows, _numRows> operator()(double t, const Matrix<_numRows, _numRows>& G) const {
+	inline Eigen::Matrix<float,_numRows,_numRows> operator()(double t, const Eigen::Matrix<float,_numRows,_numRows>& G) const {
+		//Matrix<_numRows,_numRows> AG = (*A)*G;  // ~AG = G*~A
+		Eigen::Matrix<float,_NumRows,_numRows> AG = (*A)*G;
+		//return AG + ~AG + (*BRiBt); // A*G + G*~A + B*~B
+		return AG + AG.transpose() +(*BRiBt);
 	}
 };
 #ifdef FRONT_LOAD_RK4
@@ -977,9 +1018,13 @@ lyapunov<X_DIM> lyap;
 
 template <size_t _numRows>
 struct linear {
-	Matrix<_numRows, _numRows> *A;
-	Matrix<_numRows> *c;
-	inline Matrix<_numRows> operator()(double t, const Matrix<_numRows>& xbar) const {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+	//Matrix<_numRows, _numRows> *A;
+	Eigen::Matrix<float,_numRows,_numRows> *A;
+	//Matrix<_numRows> *c;
+	Eigen::Matrix<float,_numRows,1> *c;
+	//inline Matrix<_numRows> operator()(double t, const Matrix<_numRows>& xbar) const {
+	inline Eigen::Matrix<float,_numRows,1> operator()(double t, const Eigen::Matrix<float,_numRows,1>& xbar) const {
 		return (*A)*xbar + (*c);
 	}
 };
@@ -991,7 +1036,9 @@ linear<2*X_DIM,1> back;
 template <size_t _numRows, size_t _numColumns, class Function>
 class rk {
 public:
-	inline void rk4(Matrix<_numRows, _numColumns>& x_0, double t_0, double dt, const Function& f) {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	//inline void rk4(Matrix<_numRows, _numColumns>& x_0, double t_0, double dt, const Function& f) {
+	inline void rk4(Eigen::Matrix<float,_numRows,_numColumns>& x_0, double t_0, double dt, const Function& f) {
 		double t_1 = t_0 + dt;
 
 		k_1 = dt*f(t_0, x_0);
@@ -1003,13 +1050,14 @@ public:
 	}
 
 private:
-	Matrix<_numRows, _numColumns> k_1;
+	/*Matrix<_numRows, _numColumns> k_1;
 	Matrix<_numRows, _numColumns> k_2;
 	Matrix<_numRows, _numColumns> k_3;
 	Matrix<_numRows, _numColumns> k_4;
 
 	Matrix<_numRows, _numColumns> k_5;
-	Matrix<_numRows, _numColumns> k_6;
+	Matrix<_numRows, _numColumns> k_6;*/
+	Eigen::Matrix<float,_numRows,_numColumns> k_1,k_2,k_3,k_4,k_5,k_6;
 };
 #ifdef FRONT_LOAD_RK4
 rk<X_DIM, 1, linear<X_DIM, X_DIM> > linearrk4;
@@ -1042,14 +1090,19 @@ Matrix<_numRows, _numColumns> k_4;
 };
 */
 template <size_t _numRows>
-inline double cost(double tau, const Matrix<_numRows, _numRows>& G, const Matrix<_numRows>& xbar) {
-	return tau + tr(~(x1 - xbar)*(G%(x1-xbar)));
+//inline double cost(double tau, const Matrix<_numRows, _numRows>& G, const Matrix<_numRows>& xbar) {
+inline double cost(double tau, const Eigen::Matrix<float<_numRows,_numRows>& G, const Eigen::Matrix<float,_numRows,1>& xbar) {
+	//return tau + tr(~(x1 - xbar)*(G%(x1-xbar)));
+	return tau + ((x1-xbar).transpose()*G.ldlt().solve(x1-xbar)).trace();
 }
 
 template <size_t _numRows>
-inline double dcost(double tau, const Matrix<_numRows, _numRows>& G, const Matrix<_numRows>& xbar) {
-	Matrix<_numRows> d = -(G%(x1-xbar));
-	return 1 + 2*tr(~(A*x1)*d) - tr(~d*BRiBt*d);
+//inline double dcost(double tau, const Matrix<_numRows, _numRows>& G, const Matrix<_numRows>& xbar) {
+inline double dcost(double tau, const Eigen::Matrix<float,_numRows,_numRows>& G, const Eigen::Matrix<float,_numRows,1>& xbar) {
+	//Matrix<_numRows> d = -(G%(x1-xbar));
+	//return 1 + 2*tr(~(A*x1)*d) - tr(~d*BRiBt*d);
+	Eigen::Matrix<float,_numRows,1> d = -G.ldlt().solve(x1-xbar);
+	return 1 + 2*(A*x1).transpose()*d).trace() - (d.transpose()*BRiBt*d).trace();
 }
 
 template<typename vec>
@@ -1071,15 +1124,18 @@ inline bool collision_free(const state& x) {
 
 	// Rotate the robot
 #if (DYNAMICS == QUADROTOR)
-	Matrix<3, 3> rot;
-	rot.reset();
+	//Matrix<3, 3> rot;
+	//rot.reset();
+	Eigen::Matrix<float,3,3> rot = Eigen::Matrix<float,3,3>::Zero();
 	rot(0,2) = x[4];
 	rot(1,2) = -x[3];
 	rot(2,0) = -x[4];
 	rot(2,1) = x[3];
 
-	Matrix<4,1> q = quatFromRot(exp(rot));
-	result = CAL_SetGroupQuaternion(robot_group, q[0], q[1], q[2], q[3]);
+	//Matrix<4,1> q = quatFromRot(exp(rot));
+	Eigen::Quaternion<float> q(rot.exp());
+	//result = CAL_SetGroupQuaternion(robot_group, q[0], q[1], q[2], q[3]);
+	result = CAL_SetGroupQuaternion(robot_group,q.x(),q.y(),q.z(),q.w());
 	//result = CAL_SetGroupQuaternion(robot_group, q[1], q[2], q[3], q[0]);
 	if (CAL_SUCCESS != result) {
 		cout << "CAL_SetGroupQuaternion failed (" << result << ")" << endl;
@@ -1138,11 +1194,12 @@ inline bool collision_free(const state& x) {
 }
 
 #ifdef INLINE_LYAP
-Matrix<X_DIM, X_DIM> k_1;
+/*Matrix<X_DIM, X_DIM> k_1;
 Matrix<X_DIM, X_DIM> k_2;
 Matrix<X_DIM, X_DIM> k_3;
 Matrix<X_DIM, X_DIM> k_4;
-Matrix<X_DIM,X_DIM> AG;
+Matrix<X_DIM,X_DIM> AG;*/
+Eigen::Matrix<float,X_DIM,X_DIM> k_1,k_2,k_3,k_4,AG;
 #endif
 
 inline double computeHeuristic(const double x0, const double x1, const pair<double, double>& bounds) {
@@ -1189,8 +1246,9 @@ bool computeCostClosedForm(const state& x0, const state& x1, double radius, doub
 	cout << "~~~~~~~~~~~~~~~~~~~~~~~ computeCostClosedForm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
 #endif
 
-	Matrix<X_DIM> x1diffbarx0;
-	Matrix<X_DIM> d;
+	//Matrix<X_DIM> x1diffbarx0;
+	//Matrix<X_DIM> d;
+	Eigen::Matrix<float,X_DIM,1> x1diffbarx0,d;
 
 	int degree = POLY_DEGREE;
 	double p[POLY_DEGREE + 1];
@@ -1334,7 +1392,8 @@ bool computeCostClosedForm(const state& x0, const state& x1, double radius, doub
 	double minTau = radius;
 	double minCost = radius;
 	state mind;
-	mind.reset();
+	//mind.reset();
+	mind = state::Zero();
 
 	for (size_t i = 0; i < realRoots.size();++i) {
 
@@ -1514,7 +1573,8 @@ bool computeCostClosedForm(const state& x0, const state& x1, double radius, doub
 bool computeCostRK4(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) {
 	if (applyHeuristics(x0, x1) > radius) return false;
 
-	Matrix<X_DIM, X_DIM> G = zeros<X_DIM, X_DIM>();
+	//Matrix<X_DIM, X_DIM> G = zeros<X_DIM, X_DIM>();
+	Eigen::Matrix<float,X_DIM,X_DIM> G = Eigen::Matrix<float,X_DIM,X_DIM>::Zero();
 	state xbar = x0;
 	cost = radius;
 	double t = 0;
@@ -1536,13 +1596,17 @@ bool computeCostRK4(const state& x0, const state& x1, double radius, double& cos
 	while (t < cost) {
 #ifdef INLINE_LYAP
 		AG = A*G;
-		k_1 = deltaT*(AG + ~AG + BRiBt);
+		//k_1 = deltaT*(AG + ~AG + BRiBt);
+		k1 = deltaT*(AG + AG.transpose() + BRiBt);
 		AG = A*(G + 0.5*k_1);
-		k_2 = deltaT*(AG + ~AG + BRiBt);
+		//k_2 = deltaT*(AG + ~AG + BRiBt);
+		k_2 = deltaT*(AG + AG.transpose() + BRiBt);
 		AG = A*(G + 0.5*k_2);
-		k_3 = deltaT*(AG + ~AG + BRiBt);
+		//k_3 = deltaT*(AG + ~AG + BRiBt);
+		k_3 = deltaT*(AG + AG.transpose() + BRiBt);
 		AG = A*(G + k_3);
-		k_4 = deltaT*(AG + ~AG + BRiBt);
+		//k_4 = deltaT*(AG + ~AG + BRiBt);
+		k_4 = deltaT*(AG + AG.transpose() + BRiBt);
 
 		G += ((k_1 + k_4) + 2.0*(k_2 + k_3))/6.0;
 #else
@@ -1553,8 +1617,10 @@ bool computeCostRK4(const state& x0, const state& x1, double radius, double& cos
 
 		t += deltaT;
 
-		state d = (G%(x1 - xbar));
-		double cost_t = t + tr(~(x1 - xbar)*d);
+		//state d = (G%(x1 - xbar));
+		state d = G.ldlt().solve(x1-xbar);
+		//double cost_t = t + tr(~(x1 - xbar)*d);
+		double cost_t = t + ((x1-xbar).transpose()*d).trace();
 		if (cost_t > t && cost_t < cost) {
 			cost = cost_t;
 			tau = t;
@@ -1812,8 +1878,10 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 			dynamicsError();
 #endif
 
-			state x = chi.subMatrix<X_DIM,1>(0,0);
-			control u = R%(~B*chi.subMatrix<X_DIM,1>(X_DIM,0));
+			//state x = chi.subMatrix<X_DIM,1>(0,0);
+			state x = chi.block<X_DIM,1>(0,0);
+			//control u = R%(~B*chi.subMatrix<X_DIM,1>(X_DIM,0));
+			control u = R.ldlt().solve(B.transpose()*chi.block<X_DIM,1>(X_DIM,0));
 
 			if (!(plot || vis) && !checkState(x, u)) {
 				return false;
@@ -1834,6 +1902,7 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 
 				if (plot) {
 					fwrite((const void *)&t, sizeof(double), 1, path_log);
+					// FIX HERE STILL
 					fwrite(x._elems, sizeof(double), (x.numRows())*(x.numColumns()), path_log);
 					CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
 				}
@@ -1849,13 +1918,17 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 }
 
 bool checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
-	Alpha = block(A, -BRiBt, zeros<X_DIM,X_DIM>(), -~A);
+	Alpha = block<X_DIM,X_DIM,X_DIM,X_DIM>(A, -BRiBt, Eigen::Matrix<float,X_DIM,X_DIM>::Zero(), -A.transpose());
 
-	chi.insert(0,0,x1);
-	chi.insert(X_DIM,0,-d_tau);
+	//chi.insert(0,0,x1);
+	//chi.insert(X_DIM,0,-d_tau);
+	chi.block<X_DIM,1>(0,0) = x1;
+	chi.block<X_DIM,1>(X_DIM,0) = -d_tau;
 
-	c0.insert(0,0,c);
-	c0.insert(X_DIM,0, zeros<X_DIM>());
+	//c0.insert(0,0,c);
+	//c0.insert(X_DIM,0, zeros<X_DIM>());
+	c0.block<X_DIM,1>(0,0) = c;
+	c0.block<X_DIM,1>(X_DIM,0) = Eigen::Matrix<float,X_DIM,1>::Zero();
 
 	int num_steps = (int) ceil(tau / deltaT);
 	double new_deltaT = tau / num_steps;
@@ -1882,8 +1955,10 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 		//cout << chi[0] << " " << chi[1] << " " << chi[2] << " " << chi[6] << " " << chi[7] << endl;
 #endif
 
-		state x = chi.subMatrix<X_DIM>(0,0);
-		control u = -R%(~B*chi.subMatrix<X_DIM>(X_DIM,0)); // This should be negative as it is
+		//state x = chi.subMatrix<X_DIM>(0,0);
+		//control u = -R%(~B*chi.subMatrix<X_DIM>(X_DIM,0)); // This should be negative as it is
+		state x = chi.block<X_DIM,1>(0,0);
+		control u = -R.ldlt().solve(B.transpose()*chi.block<X_DIM,1>(X_DIM,0));
 
 		//cout << "checkBounds(x, x_bounds): " << checkBounds(x, x_bounds) << "\tcheckBounds(u, u_bounds): " << checkBounds(u, u_bounds) << endl;
 
@@ -1907,6 +1982,7 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 			if (plot) {
 				double temp = deltaT*j;
 				fwrite((const void *)&(temp), sizeof(double), 1, path_log);
+				//FIX HERE
 				fwrite(x._elems, sizeof(double), (x.numRows())*(x.numColumns()), path_log);
 				CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
 			}
