@@ -17,12 +17,12 @@
 #include <sys/utime.h>
 #endif
 //#include <omp.h>
-
+#include <iomanip>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 #include <unsupported/Eigen/MatrixFunctions>
 
-#include "matrix.h"
+//#include "matrix.h"
 #include "callisto.h"
 //#define _POLY_DEBUG
 #include "polynomial.h"
@@ -155,10 +155,8 @@ unsigned int TWO_TO_X_DIM;
 double statespace_volume;
 const double X_DIM_INVERSE = 1.0/X_DIM;
 
-//typedef Matrix<X_DIM> state;
-//typedef Matrix<U_DIM> control;
-typedef Eigen::Matrix<float,X_DIM,1> state;
-typedef Eigen::Matrix<float,U_DIM,1> control;
+typedef Eigen::Matrix<double,X_DIM,1> state;
+typedef Eigen::Matrix<double,U_DIM,1> control;
 
 FILE* time_log;
 FILE* stats_log;
@@ -182,24 +180,15 @@ BOUNDS x_bounds_window_2;
 #endif
 #endif
 
-/*Matrix<X_DIM,X_DIM> A;
-Matrix<X_DIM,U_DIM> B;
-Matrix<X_DIM> c;
-Matrix<U_DIM,U_DIM> R;
-Matrix<X_DIM,X_DIM> BRiBt;
-Matrix<X_DIM> x0, x1;
-Matrix<2*X_DIM, 2*X_DIM> Alpha;
-Matrix<2*X_DIM> chi;
-Matrix<2*X_DIM> c0;*/
-Eigen::Matrix<float,X_DIM,X_DIM> A;
-Eigen::Matrix<float,X_DIM,U_DIM> B;
-Eigen::Matrix<float,X_DIM,1> c;
-Eigen::Matrix<float,U_DIM,U_DIM> R;
-Eigen::Matrix<float,X_DIM,X_DIM> BRiBt;
-Eigen::Matrix<float,X_DIM,1> x0, x1;
-Eigen::Matrix<float,2*X_DIM,2*X_DIM> Alpha;
-Eigen::Matrix<float,2*X_DIM,1> chi;
-Eigen::Matrix<float,2*X_DIM,1> c0;
+Eigen::Matrix<double,X_DIM,X_DIM> A;
+Eigen::Matrix<double,X_DIM,U_DIM> B;
+Eigen::Matrix<double,X_DIM,1> c;
+Eigen::Matrix<double,U_DIM,U_DIM> R;
+Eigen::Matrix<double,X_DIM,X_DIM> BRiBt;
+Eigen::Matrix<double,X_DIM,1> x0, x1;
+Eigen::Matrix<double,2*X_DIM,2*X_DIM> Alpha;
+Eigen::Matrix<double,2*X_DIM,1> chi;
+Eigen::Matrix<double,2*X_DIM,1> c0;
 
 struct Node {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -209,7 +198,7 @@ struct Node {
 	node_list_t children;
 };
 
-typedef std::vector<Node> tree_t;
+typedef std::vector<Node, Eigen::aligned_allocator<Node> > tree_t;
 
 struct KD_Node {
 	node_id_t parent_id;
@@ -228,8 +217,7 @@ int collision_hit_group, collision_free_group, obstacle_group, robot_group, robo
 	, solution_marker_group, robot_model, border_group;
 
 int stills_group;
-//std::vector< std::pair<int, Matrix<3,1> > > stills_groups;
-std::vector< std::pair<int, Eigen::Matrix<float,3,1> > > stills_groups;
+std::vector< std::pair<int, Eigen::Matrix<double,3,1> > > stills_groups;
 double current_alpha = 0.5;
 double alpha_change = 0.0;
 
@@ -261,9 +249,9 @@ template<typename vec, typename bounds>
 inline void rand_vec(vec& v, const bounds& b);
 
 template <size_t _numRows1, size_t _numRows2, size_t _numCols1, size_t _numCols2>
-inline Eigen::Matrix<float,_numRows1+_numRows2, _numCols1+_numCols2> block(const Eigen::Matrix<float,_numRows1,_numCols1> A, const Eigen::Matrix<float,_numRows1,_numCols2> B,
-																			const Eigen::Matrix<float,_numRows2, _numCols1> C, const Eigen::Matrix<float,_numRows2,_numCols2> D) {
-	Eigen::Matrix<float,_numRows1+_numRows2,_numCols1+_numCols2> m;
+inline Eigen::Matrix<double,_numRows1+_numRows2, _numCols1+_numCols2> block(const Eigen::Matrix<double,_numRows1,_numCols1> A, const Eigen::Matrix<double,_numRows1,_numCols2> B,
+																			const Eigen::Matrix<double,_numRows2, _numCols1> C, const Eigen::Matrix<double,_numRows2,_numCols2> D) {
+	Eigen::Matrix<double,_numRows1+_numRows2,_numCols1+_numCols2> m;
 	m.block<_numRows1,_numCols1>(0,0) = A;			m.block<_numRows1,_numCols2>(0,_numCols1) = B;
 	m.block<_numRows2,_numCols1>(_numRows1,0) = C;	m.block<_numRows2,_numCols2>(_numRows1,_numCols1) = D;
 	return m;
@@ -276,6 +264,7 @@ inline Eigen::Matrix<float,_numRows1+_numRows2, _numCols1+_numCols2> block(const
  */
 class KD_Tree {
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 	const int NO_LIST; // Indicates whether a node has a list of children
 	const int NO_CHILD; // Indicates whether there is a node as child k-d tree node to the left/right of a given nod
 	const int NO_SPLIT; // Indicates whether a node is split
