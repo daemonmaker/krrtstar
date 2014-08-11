@@ -121,22 +121,22 @@ void setupParameters(void) {
 
 	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
-	/* 2.99034 */
+	// 2.99034 
 	x0 = state::Zero();
 
 	x1 = state::Zero();
 	x1[0] = 0;
 	x1[1] = 100;
 
-	/* 2.95112
-	x0 = state::Zero();
-	x0[0] = x0[1] = 1;
-	x0[3] = 1;
-
-	x1 = state::Zero();
-	x1[0] = x1[1] = 2;
-	x1[2] = 1;
-	*/
+	// 2.95112
+	//x0 = state::Zero();
+	//x0[0] = x0[1] = 1;
+	//x0[3] = 1;
+	//
+	//x1 = state::Zero();
+	//x1[0] = x1[1] = 2;
+	//x1[2] = 1;
+	//
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
 	x_bounds[0] = std::make_pair(0, 100);
@@ -430,8 +430,8 @@ void buildEnvironment() {
 	bounds[2] = make_pair(window[2] - window[5]/2.0, window[2] + window[5]/2.0); \
 	for (int CALCULATE_WINDOW_AREA_i = 3; CALCULATE_WINDOW_AREA_i < X_DIM; CALCULATE_WINDOW_AREA_i++) { \
 	  bounds[CALCULATE_WINDOW_AREA_i] = x_bounds[CALCULATE_WINDOW_AREA_i]; \
-	} /*\
-	CAL_CreateBox(obstacle_group, window[3], window[4], window[5], window[0], window[1], window[2]);*/
+	} //
+	//CAL_CreateBox(obstacle_group, window[3], window[4], window[5], window[0], window[1], window[2]);
 
 #if USE_OBSTACLES == 5
 
@@ -545,15 +545,15 @@ void buildEnvironment() {
 	makeWall(-10, -10, offset, 220, 20, false, false);
 	makeWall(210, -10, offset, 120, 20, true, false);
 	makeWall(-10, 110, offset, 220, 20, false, false);
-	/*
-	CAL_CreateBox(obstacle_group, 50, 20, 50, 50, 10, 50);
-
-	int temp;
-	CAL_CreateGroup(&temp, 0, false, "Faux hole");
-	CAL_SetGroupColor(temp, 1, 1, 1);
-	CAL_SetGroupVisibility(temp, 0, true, true);
-	CAL_CreateBox(temp, 49.25, 22, 49.25, 50, 10, 50);
-	*/
+	//
+	//CAL_CreateBox(obstacle_group, 50, 20, 50, 50, 10, 50);
+	//
+	//int temp;
+	//CAL_CreateGroup(&temp, 0, false, "Faux hole");
+	//CAL_SetGroupColor(temp, 1, 1, 1);
+	//CAL_SetGroupVisibility(temp, 0, true, true);
+	//CAL_CreateBox(temp, 49.25, 22, 49.25, 50, 10, 50);
+	//
 
     // Build long center dividing wall	
 	makeWall(25, 50, offset, 100, 20, false, false);
@@ -664,19 +664,19 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_SetViewOptions(0, CAL_ORTHOPROJ);
 #endif
 
-	/*
-	int temp;
-	CAL_CreateGroup(&temp, 0, false);
-	CAL_SetGroupColor(temp, 1, 0, 0);
-	CAL_CreateSphere(temp, 0.25, 0, 0, 0);
-	int nl = 1;
-	int np[1] = {2};
-	CAL_scalar p[6] = {0, 0, 0, 0, 0, 10};
-	CAL_CreatePolyline(temp, nl, np, p);
-	p[3] = 10.0;
-	p[5] = 0.0;
-	CAL_CreatePolyline(temp, nl, np, p);
-	*/
+	//
+	//int temp;
+	//CAL_CreateGroup(&temp, 0, false);
+	//CAL_SetGroupColor(temp, 1, 0, 0);
+	//CAL_CreateSphere(temp, 0.25, 0, 0, 0);
+	//int nl = 1;
+	//int np[1] = {2};
+	//CAL_scalar p[6] = {0, 0, 0, 0, 0, 10};
+	//CAL_CreatePolyline(temp, nl, np, p);
+	//p[3] = 10.0;
+	//p[5] = 0.0;
+	//CAL_CreatePolyline(temp, nl, np, p);
+	//
 
 #if defined(EXPERIMENT)
 	CAL_SuspendVisualisation();
@@ -737,21 +737,21 @@ void setupVisualization(const state& x0, const state& x1) {
 #if (DYNAMICS == QUADROTOR)
 	up_x = 0.0;
 	up_z = 1.0;
-/* isometric
-	eye_x = -x_bounds[0].second;
-	eye_y = 2*x_bounds[1].second;
-	eye_z = 2*x_bounds[2].second;
-	camera_x = x_bounds[0].second/2.0;
-	camera_y = x_bounds[1].first/2.0;
-*/
+///* isometric
+//	eye_x = -x_bounds[0].second;
+//	eye_y = 2*x_bounds[1].second;
+//	eye_z = 2*x_bounds[2].second;
+//	camera_x = x_bounds[0].second/2.0;
+//	camera_y = x_bounds[1].first/2.0;
+//
 
-/* side
-	eye_y = 3*x_bounds[1].second;
-	eye_z = x_bounds[2].second/2.0;
-	camera_z = x_bounds[2].second/2.0;
-*/
+///* side
+//	eye_y = 3*x_bounds[1].second;
+//	eye_z = x_bounds[2].second/2.0;
+//	camera_z = x_bounds[2].second/2.0;
+//
 
-/* above */
+///* above 
 	eye_z = 3*x_bounds[2].second;
 	up_y = 1;
 	up_x = 0;
@@ -807,18 +807,21 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_CreateSphere(goal_node_group, 5*NODE_SIZE, goal_x, goal_y, goal_z);
 #endif
 }
-/*
-inline Matrix<4,1> quatFromRot(const Matrix<3,3>& R) {
-	Matrix<4,1> q;
 
-	q[0] = 0.5*sqrt(max(1+R(0,0)-R(1,1)-R(2,2),0.0))*(R(2,1) - R(1,2) >= 0 ? 1 : -1);
-	q[1] = 0.5*sqrt(max(1-R(0,0)+R(1,1)-R(2,2),0.0))*(R(0,2) - R(2,0) >= 0 ? 1 : -1);
-	q[2] = 0.5*sqrt(max(1-R(0,0)-R(1,1)+R(2,2),0.0))*(R(1,0) - R(0,1) >= 0 ? 1 : -1);
-	q[3] = 0.5*sqrt(max(1+R(0,0)+R(1,1)+R(2,2),0.0));
+///*
+//inline Matrix<4,1> quatFromRot(const Matrix<3,3>& R) {
+//	Matrix<4,1> q;
+//
+//	q[0] = 0.5*sqrt(max(1+R(0,0)-R(1,1)-R(2,2),0.0))*(R(2,1) - R(1,2) >= 0 ? 1 : -1);
+//	q[1] = 0.5*sqrt(max(1-R(0,0)+R(1,1)-R(2,2),0.0))*(R(0,2) - R(2,0) >= 0 ? 1 : -1);
+//	q[2] = 0.5*sqrt(max(1-R(0,0)-R(1,1)+R(2,2),0.0))*(R(1,0) - R(0,1) >= 0 ? 1 : -1);
+//	q[3] = 0.5*sqrt(max(1+R(0,0)+R(1,1)+R(2,2),0.0));
+//
+//	return q;
+//}
+//
 
-	return q;
-}
-*/
+
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
 	bool isQuat = true;
 	double x_rot, y_rot;
@@ -921,7 +924,7 @@ void visualize(const tree_t& tree) {
 	CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
 
 	CAL_ClearGroupKeyStates(robot_model, true);
-
+	
 	Node current = tree[0];
 	double cost, tau;
 	state d_tau;
@@ -930,12 +933,14 @@ void visualize(const tree_t& tree) {
 		state_list.push_back(current.x);
 		current = tree[current.parent];
 	}
+	
 	state_list.push_back(current.x);
 	reverse(state_list.begin(), state_list.end());
-
+	
 	state_time_list_t segment;
 	double max_tau = 0.0;
 	double current_time = 0.0;
+	
 	for(vector<state, Eigen::aligned_allocator<state> >::iterator p = state_list.begin(); (p + 1) != state_list.end(); p++) {
 		segment.clear();
 		//computeCost(*p, *(p + 1), DBL_MAX, cost, tau, d_tau);
@@ -969,7 +974,7 @@ struct lyapunov {
 	Eigen::Matrix<double,_numRows,_numRows> *A;
 	Eigen::Matrix<double,_numRows,_numRows> *BRiBt;
 	inline Eigen::Matrix<double,_numRows,_numRows> operator()(double t, const Eigen::Matrix<double,_numRows,_numRows>& G) const {
-		Eigen::Matrix<double,_NumRows,_numRows> AG = (*A)*G;
+		Eigen::Matrix<double,_numRows,_numRows> AG = (*A)*G;
 		return AG + AG.transpose() +(*BRiBt);
 	}
 };
@@ -1014,31 +1019,31 @@ rk<X_DIM, 1, linear<X_DIM, X_DIM> > linearrk4;
 rk<X_DIM, X_DIM, lyapunov<X_DIM> > lyaprk4;
 rk<2*X_DIM, 1, linear<2*X_DIM,1> > linearrk;
 #endif
-/*w
-template <size_t _numRows, size_t _numColumns>
-class lyaprk {
-public:
-inline void rk4(Matrix<_numRows, _numColumns>& G, double dt) {
-AG = A*G;
-k_1 = dt*(AG + ~AG + BRiBt);
-AG = A*(G + 0.5*k_1);
-k_2 = dt*(AG + ~AG + BRiBt);
-AG = A*(G + 0.5*k_2);
-k_3 = dt*(AG + ~AG + BRiBt);
-AG = A*(G + k_3);
-k_4 = dt*(AG + ~AG + BRiBt);
-
-G += ((k_1 + k_4) + 2.0*(k_2 + k_3))/6.0;
-}
-
-private:
-Matrix<_numRows, _numColumns> AG;
-Matrix<_numRows, _numColumns> k_1;
-Matrix<_numRows, _numColumns> k_2;
-Matrix<_numRows, _numColumns> k_3;
-Matrix<_numRows, _numColumns> k_4;
-};
-*/
+///*w
+//template <size_t _numRows, size_t _numColumns>
+//class lyaprk {
+//public:
+//inline void rk4(Matrix<_numRows, _numColumns>& G, double dt) {
+//AG = A*G;
+//k_1 = dt*(AG + ~AG + BRiBt);
+//AG = A*(G + 0.5*k_1);
+//k_2 = dt*(AG + ~AG + BRiBt);
+//AG = A*(G + 0.5*k_2);
+//k_3 = dt*(AG + ~AG + BRiBt);
+//AG = A*(G + k_3);
+//k_4 = dt*(AG + ~AG + BRiBt);
+//
+//G += ((k_1 + k_4) + 2.0*(k_2 + k_3))/6.0;
+//}
+//
+//private:
+//Matrix<_numRows, _numColumns> AG;
+//Matrix<_numRows, _numColumns> k_1;
+//Matrix<_numRows, _numColumns> k_2;
+//Matrix<_numRows, _numColumns> k_3;
+//Matrix<_numRows, _numColumns> k_4;
+//};
+//
 template <size_t _numRows>
 inline double cost(double tau, const Eigen::Matrix<double,_numRows,_numRows>& G, const Eigen::Matrix<double,_numRows,1>& xbar) {
 	return tau + ((x1-xbar).transpose()*G.ldlt().solve(x1-xbar)).trace();
@@ -1199,17 +1204,17 @@ bool computeCostClosedForm(const state& x0, const state& x1, double radius, doub
 	p[7] = (-0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x0[0] * x0[3] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[4] * x1[1] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[3] * x0[0] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[1] * x0[4] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[4] * x0[1] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[0] * x0[3] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[3] * x1[0] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x0[1] * x0[4]);
 	p[8] = - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x1[0], 0.2e1) - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x1[1], 0.2e1) - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x0[1], 0.2e1) + 0.705600e6 * pow(inertia, 0.2e1) * control_penalty * x1[0] * x0[0] + 0.705600e6 * pow(inertia, 0.2e1) * control_penalty * x1[1] * x0[1] - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x0[0], 0.2e1);
 
-	/*
-      MapleGenVar3 = g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z*_Z+(-8.0*j*j*r*g*g*x0_8*x0_8-m~*m*r*g*g*l*l*x0_5*x0_5-4.0*j*j*r*x1_8*g*g*x0_8-m*m*r*x1_5*g*g*l*l*x0_5-8.0*j*j~*r*x1_8*x1_8*g*g-4.0*j*j*r*x1_9*g*g*x0_9-8.0*j*j*r*x1_9*x1_9*g*g-m*m*r*x1_5*x1_5~*g*g*l*l-8.0*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z*_Z*_Z+(-120.0*j*j*r*x1_8*g*g*x0_6+120.0*j*j*r*g*g*x1_7*x0_9+240.0*j*j*r*g*g*x1_7*x1_9-6.0*m*m*r*x1_5*g*g*l*l~*x0_2-6.0*m*m*r*g*g*l*l*x0_2*x0_5+240.0*j*j*r*g*g*x1_6*x1_8-120.0*j*j*r*x1_9*g~*g*x0_7+6.0*m*m*r*g*g*l*l*x1_2*x0_5+6.0*m*m*r*x1_5*g*g*l*l*x1_2-240.0*j*j*r*g*g*x0_6*x0_8+120.0*j*j*r*g*g*x1_6*x0_8-240.0*j*j*r*g*g*x0_7*x0_9)*_Z*_Z*_Z*_Z*_Z;
-      MapleGenVar4 = MapleGenVar3+(2520.0*j*j*r*g*g*x1_7*x0_7+18.0*m*m*r*g*g*l*l~*x1_2*x0_2-1800.0*j*j*r*g*g*x1_7*x1_7-1440.0*j*j*r*x0_3*g*x0_9-1080.0*j*j*r*x1_3~*g*x0_9+1080.0*j*j*r*x1_8*g*x0_4+1440.0*j*j*r*x0_4*g*x0_8-9.0*m*m*r*g*g*l*l~*x0_2*x0_2-9.0*m*m*r*g*g*l*l*x1_2*x1_2-1440.0*j*j*r*x1_3*g*x1_9-1800.0*j*j*r*g~*g*x0_7*x0_7+1440.0*j*j*r*x1_4*g*x1_8+1080.0*j*j*r*x1_4*g*x0_8-1800.0*j*j*r*g*g*x0_6*x0_6-1080.0*j*j*r*x1_9*g*x0_3+2520.0*j*j*r*g*g*x1_6*x0_6-1800.0*j*j*r*g*g*x1_6*x1_6)*_Z*_Z*_Z*_Z;
-      MapleGenVar5 = MapleGenVar4;
-      MapleGenVar7 = (-18720.0*j*j*r*x1_3*g*x0_7-3360.0*j*j*r*x0_0*g*x0_9+18720.0*j*j*r*g*x1_7*x0_3+18720.0*j*j*r*x1_4*g*x0_6-3360.0*j*j*r*x1_8*g*x1_1+3360.0*j*j*r*x0_1*g*x0_8+3360.0*j*j*r*x1_8*g*x0_1+21600.0*j*j*r*x1_3*g*x1_7-21600.0*j*j*r*x1_4*g*x1_6+3360.0*j*j*r*x1_9*g*x1_0+21600.0*j*j*r*x0_4*g*x0_6-18720.0*j*j*r*g*x1_6*x0_4-3360.0*j*j*r*x1_1*g*x0_8+3360.0*j*j*r*x1_0*g*x0_9-3360.0*j*j*r*x1_9*g*x0_0-21600.0*j*j*r*x0_3*g*x0_7)*_Z*_Z*_Z;
-      MapleGenVar8 = (-50400.0*j*j*r*g*x1_6*x0_1-122400.0*j*j*r*x1_3*x0_3-50400.0*j*j*r*x1_1*g*x0_6-64800.0*j*j*r*x1_3*x1_3-64800.0*j*j*r*x0_4*x0_4-64800.0*j*j*r*x0_3*x0_3-50400.0*j*j*r*x0_0*g*x0_7+50400.0*j*j*r*g*x1_6*x1_1-122400.0*j*j*r*x1_4*x0_4+50400.0*j*j*r*x0_1*g*x0_6+50400.0*j*j*r*g*x1_7*x0_0-64800.0*j*j*r*x1_4*x1_4-50400.0*j*j*r*g*x1_7*x1_0+50400.0*j*j*r*x1_0*g*x0_7)*_Z*_Z;
-      MapleGenVar6 = MapleGenVar7+MapleGenVar8;
-      MapleGenVar2 = MapleGenVar5+MapleGenVar6;
-      MapleGenVar1 = MapleGenVar2+(-302400.0*j*j*r*x1_3*x0_0+302400.0*j*j*r*x1_4~*x1_1+302400.0*j*j*r*x1_0*x0_3-302400.0*j*j*r*x0_0*x0_3+302400.0*j*j*r*x1_1~*x0_4+302400.0*j*j*r*x1_3*x1_0-302400.0*j*j*r*x1_4*x0_1-302400.0*j*j*r*x0_1~*x0_4)*_Z-352800.0*j*j*r*x1_1*x1_1-352800.0*j*j*r*x0_1*x0_1+705600.0*j*j*r*x1_1*x0_1-352800.0*j*j*r*x1_0*x1_0-352800.0*j*j*r*x0_0*x0_0+705600.0*j*j*r*x1_0~*x0_0;
-      t1 = 0.0;
-	  */
+	///*
+      //MapleGenVar3 = g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z*_Z+(-8.0*j*j*r*g*g*x0_8*x0_8-m~*m*r*g*g*l*l*x0_5*x0_5-4.0*j*j*r*x1_8*g*g*x0_8-m*m*r*x1_5*g*g*l*l*x0_5-8.0*j*j~*r*x1_8*x1_8*g*g-4.0*j*j*r*x1_9*g*g*x0_9-8.0*j*j*r*x1_9*x1_9*g*g-m*m*r*x1_5*x1_5~*g*g*l*l-8.0*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z*_Z*_Z+(-120.0*j*j*r*x1_8*g*g*x0_6+120.0*j*j*r*g*g*x1_7*x0_9+240.0*j*j*r*g*g*x1_7*x1_9-6.0*m*m*r*x1_5*g*g*l*l~*x0_2-6.0*m*m*r*g*g*l*l*x0_2*x0_5+240.0*j*j*r*g*g*x1_6*x1_8-120.0*j*j*r*x1_9*g~*g*x0_7+6.0*m*m*r*g*g*l*l*x1_2*x0_5+6.0*m*m*r*x1_5*g*g*l*l*x1_2-240.0*j*j*r*g*g*x0_6*x0_8+120.0*j*j*r*g*g*x1_6*x0_8-240.0*j*j*r*g*g*x0_7*x0_9)*_Z*_Z*_Z*_Z*_Z;
+      //MapleGenVar4 = MapleGenVar3+(2520.0*j*j*r*g*g*x1_7*x0_7+18.0*m*m*r*g*g*l*l~*x1_2*x0_2-1800.0*j*j*r*g*g*x1_7*x1_7-1440.0*j*j*r*x0_3*g*x0_9-1080.0*j*j*r*x1_3~*g*x0_9+1080.0*j*j*r*x1_8*g*x0_4+1440.0*j*j*r*x0_4*g*x0_8-9.0*m*m*r*g*g*l*l~*x0_2*x0_2-9.0*m*m*r*g*g*l*l*x1_2*x1_2-1440.0*j*j*r*x1_3*g*x1_9-1800.0*j*j*r*g~*g*x0_7*x0_7+1440.0*j*j*r*x1_4*g*x1_8+1080.0*j*j*r*x1_4*g*x0_8-1800.0*j*j*r*g*g*x0_6*x0_6-1080.0*j*j*r*x1_9*g*x0_3+2520.0*j*j*r*g*g*x1_6*x0_6-1800.0*j*j*r*g*g*x1_6*x1_6)*_Z*_Z*_Z*_Z;
+      //MapleGenVar5 = MapleGenVar4;
+      //MapleGenVar7 = (-18720.0*j*j*r*x1_3*g*x0_7-3360.0*j*j*r*x0_0*g*x0_9+18720.0*j*j*r*g*x1_7*x0_3+18720.0*j*j*r*x1_4*g*x0_6-3360.0*j*j*r*x1_8*g*x1_1+3360.0*j*j*r*x0_1*g*x0_8+3360.0*j*j*r*x1_8*g*x0_1+21600.0*j*j*r*x1_3*g*x1_7-21600.0*j*j*r*x1_4*g*x1_6+3360.0*j*j*r*x1_9*g*x1_0+21600.0*j*j*r*x0_4*g*x0_6-18720.0*j*j*r*g*x1_6*x0_4-3360.0*j*j*r*x1_1*g*x0_8+3360.0*j*j*r*x1_0*g*x0_9-3360.0*j*j*r*x1_9*g*x0_0-21600.0*j*j*r*x0_3*g*x0_7)*_Z*_Z*_Z;
+      //MapleGenVar8 = (-50400.0*j*j*r*g*x1_6*x0_1-122400.0*j*j*r*x1_3*x0_3-50400.0*j*j*r*x1_1*g*x0_6-64800.0*j*j*r*x1_3*x1_3-64800.0*j*j*r*x0_4*x0_4-64800.0*j*j*r*x0_3*x0_3-50400.0*j*j*r*x0_0*g*x0_7+50400.0*j*j*r*g*x1_6*x1_1-122400.0*j*j*r*x1_4*x0_4+50400.0*j*j*r*x0_1*g*x0_6+50400.0*j*j*r*g*x1_7*x0_0-64800.0*j*j*r*x1_4*x1_4-50400.0*j*j*r*g*x1_7*x1_0+50400.0*j*j*r*x1_0*g*x0_7)*_Z*_Z;
+      //MapleGenVar6 = MapleGenVar7+MapleGenVar8;
+      //MapleGenVar2 = MapleGenVar5+MapleGenVar6;
+      //MapleGenVar1 = MapleGenVar2+(-302400.0*j*j*r*x1_3*x0_0+302400.0*j*j*r*x1_4~*x1_1+302400.0*j*j*r*x1_0*x0_3-302400.0*j*j*r*x0_0*x0_3+302400.0*j*j*r*x1_1~*x0_4+302400.0*j*j*r*x1_3*x1_0-302400.0*j*j*r*x1_4*x0_1-302400.0*j*j*r*x0_1~*x0_4)*_Z-352800.0*j*j*r*x1_1*x1_1-352800.0*j*j*r*x0_1*x0_1+705600.0*j*j*r*x1_1*x0_1-352800.0*j*j*r*x1_0*x1_0-352800.0*j*j*r*x0_0*x0_0+705600.0*j*j*r*x1_0~*x0_0;
+      //t1 = 0.0;
+	  //
 
 #elif (DYNAMICS == NONHOLONOMIC)
 	double px = x0[0];
@@ -1864,12 +1869,12 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 	for (int j = 0; j < num_steps; j++) {
 		linearrk.rk4(chi, 0, -new_deltaT, back);
 #if (DYNAMICS == SINGLE_INTEGRATOR_2D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D) || (DYNAMICS == NONHOLONOMIC)
-		/*
-		ostringstream os;
-		os << num_steps << " " << j << "     " << chi[0] << " " << chi[1] << " " << chi[2] << endl;
-		fputs(os.str().c_str(), path_log);
-		fflush(path_log);
-		*/
+		///*
+		//ostringstream os;
+		//os << num_steps << " " << j << "     " << chi[0] << " " << chi[1] << " " << chi[2] << endl;
+		//fputs(os.str().c_str(), path_log);
+		//fflush(path_log);
+		//
 		//cout << num_steps << " " << j << "     " << chi[0] << " " << chi[1] << " " << chi[2] << endl;
 #else
 		//cout << chi[0] << " " << chi[1] << " " << chi[2] << " " << chi[6] << " " << chi[7] << endl;
@@ -1965,24 +1970,24 @@ inline void rand_vec(vec& v, const bounds& b) {
 #endif
 }
 
-/**
- * Calculates the volume of a unit sphere.
- *
- * Verified with table on http://en.wikipedia.org/wiki/Unit_sphere#General_area_and_volume_formulas
- * Reproduced here
- * n 	V_n (volume)
- * 0 	(1/0!)\pi^0 	1.000
- * 1 	(2^1/1!!)\pi^0 	2.000
- * 2 	(1/1!)\pi^1 = \pi 	3.142
- * 3 	(2^2/3!!)\pi^1 = (4/3)\pi 	4.189
- * 4 	(1/2!)\pi^2 = (1/2)\pi^2 	4.935
- * 5 	(2^3/5!!)\pi^2 = (8/15)\pi^2 	5.264
- * 6 	(1/3!)\pi^3 = (1/6)\pi^3 	5.168
- * 7 	(2^4/7!!) \pi^3 = (16/105)\pi^3 	4.725
- * 8 	(1/4!)\pi^4 = (1/24)\pi^4 	4.059
- * 9 	(2^5/9!!) \pi^4 = (32/945)\pi^4 	3.299
- * 10 	(1/5!)\pi^5 = (1/120)\pi^5 	2.550
- */
+///**
+ //* Calculates the volume of a unit sphere.
+ //*
+ //* Verified with table on http://en.wikipedia.org/wiki/Unit_sphere#General_area_and_volume_formulas
+ //* Reproduced here
+ //* n 	V_n (volume)
+ //* 0 	(1/0!)\pi^0 	1.000
+ //* 1 	(2^1/1!!)\pi^0 	2.000
+ //* 2 	(1/1!)\pi^1 = \pi 	3.142
+ //* 3 	(2^2/3!!)\pi^1 = (4/3)\pi 	4.189
+ //* 4 	(1/2!)\pi^2 = (1/2)\pi^2 	4.935
+ //* 5 	(2^3/5!!)\pi^2 = (8/15)\pi^2 	5.264
+ //* 6 	(1/3!)\pi^3 = (1/6)\pi^3 	5.168
+ //* 7 	(2^4/7!!) \pi^3 = (16/105)\pi^3 	4.725
+ //* 8 	(1/4!)\pi^4 = (1/24)\pi^4 	4.059
+ //* 9 	(2^5/9!!) \pi^4 = (32/945)\pi^4 	3.299
+ //* 10 	(1/5!)\pi^5 = (1/120)\pi^5 	2.550
+ //
 inline double volume() {
 #if X_DIM % 2 == 0
 	int i = 4;
@@ -2009,8 +2014,8 @@ inline double volume() {
 }
 
 inline void setRadius(const double& num_states, double& radius) {
-	//double c = TWO_TO_X_DIM * (1 + X_DIM_INVERSE) * FREE_SS_VOLUME * REACHABILITY_CONSTANT; /* Of the order of (2^X_DIM) * (1 + 1/X_DIM) * (Volume of free state space) * (reachability constant (start out arbitrarily, we need to research it further)) */
-	//double v = volume(); /* Volume of a ball of dimension X_DIM */
+	//double c = TWO_TO_X_DIM * (1 + X_DIM_INVERSE) * FREE_SS_VOLUME * REACHABILITY_CONSTANT; // Of the order of (2^X_DIM) * (1 + 1/X_DIM) * (Volume of free state space) * (reachability constant (start out arbitrarily, we need to research it further)) 
+	//double v = volume(); /* Volume of a ball of dimension X_DIM 
 //#ifdef REDUCE_RADIUS
 	//radius = min(radius, pow(c/v*log((double)n)/(double)n, X_DIM_INVERSE));
 //#endif
@@ -2094,19 +2099,19 @@ inline void setRadius(const double& num_states, double& radius) {
 	double t18 = 3.0*t1/sphere_volume/num_states*t15;
 	radius = t18*RADIUS_MULTIPLIER;
 
-	/*
-    double t1 = sqrt(3.0);
-    double t5 = statespace_volume*statespace_volume;
-    double t6 = log(num_states);
-    double t7 = t6*t6;
-    double t9 = sphere_volume*sphere_volume;
-    double t10 = t9*t9;
-    double t11 = num_states*num_states;
-    double t12 = t11*t11;
-    double t15 = pow(t5*t7*t10*t12,0.1666666666666667);
-    double t18 = 3.0*t1/sphere_volume/num_states*t15;
-	radius = t18;
-	*/
+	///*
+    //double t1 = sqrt(3.0);
+    //double t5 = statespace_volume*statespace_volume;
+    //double t6 = log(num_states);
+    //double t7 = t6*t6;
+    //double t9 = sphere_volume*sphere_volume;
+    //double t10 = t9*t9;
+    //double t11 = num_states*num_states;
+    //double t12 = t11*t11;
+    //double t15 = pow(t5*t7*t10*t12,0.1666666666666667);
+    //double t18 = 3.0*t1/sphere_volume/num_states*t15;
+	//radius = t18;
+	//
 #else
 	assert("setRadius undefined");
 	return;
@@ -2242,79 +2247,79 @@ void drawTree(const tree_t& tree) {
 	fflush(stats_log);\
 }
 
-/*
-void connect_forward(tree_t& tree, k_d_tree_t& k_d_tree, const node_cost_pair_t& start, const state& x_rand, const node_id_t x_rand_node_id, const Node& x_rand_node, double radius, double time_diff) {
-	ostringstream os;
-	double cost;
-	stack<node_cost_pair_t> s;
-	s.push(start);
-			while (!s.empty()) {
-				node_id_t j = s.top().first;
-				double decrease_cost = s.top().second;
-				s.pop();
-				for (node_list_t::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ) {
-					// If we can get to a node via the new node faster than via it's existing parent then change the parent
-					double junk;
-					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
-						tree[*p].parent = x_rand_node_id;
-						tree[x_rand_node_id].children.push_back(*p);
-						s.push(make_pair(*p, tree[*p].cost_from_start - (x_rand_node.cost_from_start + cost)));
-						tree[*p].cost_from_start = x_rand_node.cost_from_start + cost;
-
-						if (*p == 0) { // i.e. if we're updating the cost to the goal							
-							// TODO DWEBB -- FIX THIS
-							//summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
-
-#ifndef EXPERIMENT
-							draw_path = true;
-#endif
-						}
-
-						p = tree[j].children.erase(p);
-					} else {
-						if (decrease_cost > 0) {
-							tree[*p].cost_from_start -= decrease_cost;
-							if (*p == 0) {
-								summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
-
-#ifndef EXPERIMENT
-								draw_path = true;
-#endif
-							}
-						}
-						s.push(make_pair(*p, decrease_cost));
-						++p;
-					}
-				}
-			}
-
-			// check orphans
-			for (size_t j = 0; j < orphans.size(); ) {
-				double junk;
-				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
-					tree[orphans[j]].cost_from_start = x_rand_node.cost_from_start + cost;
-					tree[orphans[j]].parent = x_rand_node_id;
-					tree[x_rand_node_id].children.push_back(orphans[j]);
-
-					if (orphans[j] == 0) {
-#ifndef EXPERIMENT
-						draw_path = true;
-#endif
-
-						summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
-					}
-
-					orphans[j] = orphans.back(); // remove orphan
-					orphans.pop_back();
-				} else {
-					++j;
-				}
-			}
-
-			// update parent of new node
-			tree[x_near_id].children.push_back(x_rand_node_id);
-}
-*/
+///*
+//void connect_forward(tree_t& tree, k_d_tree_t& k_d_tree, const node_cost_pair_t& start, const state& x_rand, const node_id_t x_rand_node_id, const Node& x_rand_node, double radius, double time_diff) {
+//	ostringstream os;
+//	double cost;
+//	stack<node_cost_pair_t> s;
+//	s.push(start);
+//			while (!s.empty()) {
+//				node_id_t j = s.top().first;
+//				double decrease_cost = s.top().second;
+//				s.pop();
+//				for (node_list_t::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ) {
+//					// If we can get to a node via the new node faster than via it's existing parent then change the parent
+//					double junk;
+//					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
+//						tree[*p].parent = x_rand_node_id;
+//						tree[x_rand_node_id].children.push_back(*p);
+//						s.push(make_pair(*p, tree[*p].cost_from_start - (x_rand_node.cost_from_start + cost)));
+//						tree[*p].cost_from_start = x_rand_node.cost_from_start + cost;
+//
+//						if (*p == 0) { // i.e. if we're updating the cost to the goal							
+//							// TODO DWEBB -- FIX THIS
+//							//summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
+//
+//#ifndef EXPERIMENT
+//							draw_path = true;
+//#endif
+//						}
+//
+//						p = tree[j].children.erase(p);
+//					} else {
+//						if (decrease_cost > 0) {
+//							tree[*p].cost_from_start -= decrease_cost;
+//							if (*p == 0) {
+//								summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
+//
+//#ifndef EXPERIMENT
+//								draw_path = true;
+//#endif
+//							}
+//						}
+//						s.push(make_pair(*p, decrease_cost));
+//						++p;
+//					}
+//				}
+//			}
+//
+//			// check orphans
+//			for (size_t j = 0; j < orphans.size(); ) {
+//				double junk;
+//				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
+//					tree[orphans[j]].cost_from_start = x_rand_node.cost_from_start + cost;
+//					tree[orphans[j]].parent = x_rand_node_id;
+//					tree[x_rand_node_id].children.push_back(orphans[j]);
+//
+//					if (orphans[j] == 0) {
+//#ifndef EXPERIMENT
+//						draw_path = true;
+//#endif
+//
+//						summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
+//					}
+//
+//					orphans[j] = orphans.back(); // remove orphan
+//					orphans.pop_back();
+//				} else {
+//					++j;
+//				}
+//			}
+//
+//			// update parent of new node
+//			tree[x_near_id].children.push_back(x_rand_node_id);
+//}
+//
 
 complex<double> im(0,1);
 void calc_backward_reachable_bounds(const state& state, const double& radius, BOUNDS& bounds) {
@@ -3074,22 +3079,22 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 
 	// Calculate x1 bounds
 	{
-		/* Before polynomial solver
-		double t1 = RootOf(64.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z-112.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*radius+(126.0*j*j*r*g*g*x0_9*x0_9+49.0*g*g*radius*radius*l*l)*_Z*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_7*x0_9-126.0*radius*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_7*x0_7-504.0*radius*j*j*r*g*g*x0_7*x0_9+504.0*j*j*r*x0_3*g*x0_9~)*_Z*_Z*_Z+(-504.0*radius*j*j*r*g*g*x0_7*x0_7-504.0*radius*j*j*r*x0_3*g*x0_9~+1008.0*j*j*r*x0_3*g*x0_7)*_Z*_Z+(-1008.0*radius*j*j*r*x0_3*g*x0_7+504.0*j*j*r*x0_3*x0_3)*_Z-504.0*radius*j*j*r*x0_3*x0_3);
-		double t3 = t1*t1;
-		double t7 = t3*t1;
-		double t11 = sqrt(14.0);
-		double t12 = g*g;
-		double t13 = l*l;
-		double t15 = j*j;
-		double t19 = t3*t3;
-		double t25 = sqrt(t12*t13/t15/r*t19*t7*(radius-t1));
-		double t28_min = x0_0+t1*x0_3+g*t3*x0_7/2.0+g*t7*x0_9/6.0-t11*t25/42.0;
-		double t28_max = x0_0+t1*x0_3+g*t3*x0_7/2.0+g*t7*x0_9/6.0+t11*t25/42.0;
+		///* Before polynomial solver
+		//double t1 = RootOf(64.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z-112.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*radius+(126.0*j*j*r*g*g*x0_9*x0_9+49.0*g*g*radius*radius*l*l)*_Z*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_7*x0_9-126.0*radius*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_7*x0_7-504.0*radius*j*j*r*g*g*x0_7*x0_9+504.0*j*j*r*x0_3*g*x0_9~)*_Z*_Z*_Z+(-504.0*radius*j*j*r*g*g*x0_7*x0_7-504.0*radius*j*j*r*x0_3*g*x0_9~+1008.0*j*j*r*x0_3*g*x0_7)*_Z*_Z+(-1008.0*radius*j*j*r*x0_3*g*x0_7+504.0*j*j*r*x0_3*x0_3)*_Z-504.0*radius*j*j*r*x0_3*x0_3);
+		//double t3 = t1*t1;
+		//double t7 = t3*t1;
+		//double t11 = sqrt(14.0);
+		//double t12 = g*g;
+		//double t13 = l*l;
+		//double t15 = j*j;
+		//double t19 = t3*t3;
+		//double t25 = sqrt(t12*t13/t15/r*t19*t7*(radius-t1));
+		//double t28_min = x0_0+t1*x0_3+g*t3*x0_7/2.0+g*t7*x0_9/6.0-t11*t25/42.0;
+		//double t28_max = x0_0+t1*x0_3+g*t3*x0_7/2.0+g*t7*x0_9/6.0+t11*t25/42.0;
 
-		bounds[0].first = t28_min;
-		bounds[0].second = t28_max;
-		*/
+		//bounds[0].first = t28_min;
+		//bounds[0].second = t28_max;
+		//
 
 		const int degree = 7;
 		double p[degree + 1];
@@ -3128,22 +3133,22 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 
 	// Calculate x2 bounds
 	{
-		/* Before polynomial solver
-		double t1 = RootOf(64.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z-112.0*g*g*l*l*_Z*_Z*_Z*_Z*Z*_Z*radius+(126.0*j*j*r*g*g*x0_8*x0_8+49.0*g*g*radius*radius*l*l)*_Z*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_6*x0_8-126.0*radius*j*j*r*g*g*x0_8*x0_8)*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_6*x0_6-504.0*radius*j*j*r*g*g*x0_6*x0_8-504.0*j*j*r*x0_4*g*x0_8~)*_Z*_Z*_Z+(-504.0*radius*j*j*r*g*g*x0_6*x0_6+504.0*radius*j*j*r*x0_4*g*x0_8~-1008.0*j*j*r*x0_4*g*x0_6)*_Z*_Z+(1008.0*radius*j*j*r*x0_4*g*x0_6+504.0*j*1*r*x0_4*x0_4)*_Z-504.0*radius*j*j*r*x0_4*x0_4);
-		double t3 = t1*t1;
-		double t7 = t3*t1;
-		double t11 = sqrt(14.0);
-		double t12 = g*g;
-		double t13 = l*l;
-		double t15 = j*j;
-		double t19 = t3*t3;
-		double t25 = sqrt(t12*t13/t15/r*t19*t7*(radius-t1));
-		double t28_min = x0_1+t1*x0_4-g*t3*x0_6/2.0-g*t7*x0_8/6.0-t11*t25/42.0;
-		double t28_max = x0_1+t1*x0_4-g*t3*x0_6/2.0+g*t7*x0_8/6.0-t11*t25/42.0;
+		///* Before polynomial solver
+		//double t1 = RootOf(64.0*g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z-112.0*g*g*l*l*_Z*_Z*_Z*_Z*Z*_Z*radius+(126.0*j*j*r*g*g*x0_8*x0_8+49.0*g*g*radius*radius*l*l)*_Z*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_6*x0_8-126.0*radius*j*j*r*g*g*x0_8*x0_8)*_Z*_Z*_Z*_Z+(504.0*j*j*r*g*g*x0_6*x0_6-504.0*radius*j*j*r*g*g*x0_6*x0_8-504.0*j*j*r*x0_4*g*x0_8~)*_Z*_Z*_Z+(-504.0*radius*j*j*r*g*g*x0_6*x0_6+504.0*radius*j*j*r*x0_4*g*x0_8~-1008.0*j*j*r*x0_4*g*x0_6)*_Z*_Z+(1008.0*radius*j*j*r*x0_4*g*x0_6+504.0*j*1*r*x0_4*x0_4)*_Z-504.0*radius*j*j*r*x0_4*x0_4);
+		//double t3 = t1*t1;
+		//double t7 = t3*t1;
+		//double t11 = sqrt(14.0);
+		//double t12 = g*g;
+		//double t13 = l*l;
+		//double t15 = j*j;
+		//double t19 = t3*t3;
+		//double t25 = sqrt(t12*t13/t15/r*t19*t7*(radius-t1));
+		//double t28_min = x0_1+t1*x0_4-g*t3*x0_6/2.0-g*t7*x0_8/6.0-t11*t25/42.0;
+		//double t28_max = x0_1+t1*x0_4-g*t3*x0_6/2.0+g*t7*x0_8/6.0-t11*t25/42.0;
 
-		bounds[1].first = t28_min;
-		bounds[1].second = t28_max;
-		*/
+		//bounds[1].first = t28_min;
+		//bounds[1].second = t28_max;
+		//
 
 		const int degree = 7;
 		double p[degree + 1];
@@ -3293,21 +3298,21 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 			bounds[3].second = max(bounds[3].second, t25_max.real());
 		}
 
-		/* Before polynomial solver
-		double t1 = RootOf(36.0*_Z*_Z*_Z*_Z*_Z*l*l-60.0*_Z*_Z*_Z*_Z*l*l*radius+(25.0*l*l*radius*radius+40.0*j*j*r*x0_9*x0_9)*_Z*_Z*_Z+(-40.0*radius*j*j*r*x0_9*x0_9+80.0*x0_9*x0_7*r*j*j)*_Z*_Z+(-80.0*radius*j*j*r*x0_7*x0_9+40.0*x0_7*x0_7*r*j*j)*_Z-40.0*radius*j*j*r*x0_7*x0_7);
-		double t4 = t1*t1;
-		double t8 = sqrt(10.0);
-		double t9 = g*g;
-		double t10 = t4*t4;
-		double t13 = l*l;
-		double t15 = j*j;
-		double t22 = sqrt(t9*t10*t1*t13/t15/r*(radius-t1));
-		double t25_min = x0_3+g*t1*x0_7+g*t4*x0_9/2.0-t8*t22/10.0;
-		double t25_max = x0_3+g*t1*x0_7+g*t4*x0_9/2.0+t8*t22/10.0;
+		///* Before polynomial solver
+		//double t1 = RootOf(36.0*_Z*_Z*_Z*_Z*_Z*l*l-60.0*_Z*_Z*_Z*_Z*l*l*radius+(25.0*l*l*radius*radius+40.0*j*j*r*x0_9*x0_9)*_Z*_Z*_Z+(-40.0*radius*j*j*r*x0_9*x0_9+80.0*x0_9*x0_7*r*j*j)*_Z*_Z+(-80.0*radius*j*j*r*x0_7*x0_9+40.0*x0_7*x0_7*r*j*j)*_Z-40.0*radius*j*j*r*x0_7*x0_7);
+		//double t4 = t1*t1;
+		//double t8 = sqrt(10.0);
+		//double t9 = g*g;
+		//double t10 = t4*t4;
+		//double t13 = l*l;
+		//double t15 = j*j;
+		//double t22 = sqrt(t9*t10*t1*t13/t15/r*(radius-t1));
+		//double t25_min = x0_3+g*t1*x0_7+g*t4*x0_9/2.0-t8*t22/10.0;
+		//double t25_max = x0_3+g*t1*x0_7+g*t4*x0_9/2.0+t8*t22/10.0;
 
-		bounds[3].first = t25_min;
-		bounds[3].second = t25_max;
-		*/
+		//bounds[3].first = t25_min;
+		//bounds[3].second = t25_max;
+		//
 	}
 
 	// Calculate x5 bounds
@@ -3343,21 +3348,21 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 			bounds[4].second = max(bounds[4].second, t25_max.real());
 		}
 
-		/* Before polynomial solver
-		double t1 = RootOf(36.0*_Z*_Z*_Z*_Z*_Z*l*l-60.0*_Z*_Z*_Z*_Z*l*l*radius+(25.0*l*l*radius*radius+40.0*j*j*r*x0_8*x0_8)*_Z*_Z*_Z+(-40.0*radius*j*j*r*x0_8*x0_8+80.0*x0_8*x0_6*r*j*j)*_Z*_Z+(-80.0*radius*j*j*r*x0_6*x0_8+40.0*x0_6*x0_6*r*j*j)*_Z-40.0*radius*j*j*r*x0_6*x0_6);
-		double t4 = t1*t1;
-		double t8 = sqrt(10.0);
-		double t9 = g*g;
-		double t10 = t4*t4;
-		double t13 = l*l;
-		double t15 = j*j;
-		double t22 = sqrt(t9*t10*t1*t13/t15/r*(radius-t1));
-		double t25_min = x0_4-g*t1*x0_6-g*t4*x0_8/2.0-t8*t22/10.0;
-		double t25_max = x0_4-g*t1*x0_6-g*t4*x0_8/2.0+t8*t22/10.0;
+		///* Before polynomial solver
+		//double t1 = RootOf(36.0*_Z*_Z*_Z*_Z*_Z*l*l-60.0*_Z*_Z*_Z*_Z*l*l*radius+(25.0*l*l*radius*radius+40.0*j*j*r*x0_8*x0_8)*_Z*_Z*_Z+(-40.0*radius*j*j*r*x0_8*x0_8+80.0*x0_8*x0_6*r*j*j)*_Z*_Z+(-80.0*radius*j*j*r*x0_6*x0_8+40.0*x0_6*x0_6*r*j*j)*_Z-40.0*radius*j*j*r*x0_6*x0_6);
+		//double t4 = t1*t1;
+		//double t8 = sqrt(10.0);
+		//double t9 = g*g;
+		//double t10 = t4*t4;
+		//double t13 = l*l;
+		//double t15 = j*j;
+		//double t22 = sqrt(t9*t10*t1*t13/t15/r*(radius-t1));
+		//double t25_min = x0_4-g*t1*x0_6-g*t4*x0_8/2.0-t8*t22/10.0;
+		//double t25_max = x0_4-g*t1*x0_6-g*t4*x0_8/2.0+t8*t22/10.0;
 
-		bounds[4].first = t25_min;
-		bounds[4].second = t25_max;
-		*/
+		//bounds[4].first = t25_min;
+		//bounds[4].second = t25_max;
+		//
 	}
 
 	// Calculate x6 bounds
@@ -4364,7 +4369,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 void init() {
 	srand(time(NULL));
-
+	
 	TWO_TO_X_DIM = pow(2.0, X_DIM);
 	statespace_volume = 1;
 	for (BOUNDS::iterator p = x_bounds.begin(); p != x_bounds.end(); p++) {
@@ -4372,7 +4377,7 @@ void init() {
 	}
 
 	sphere_volume = volume();
-
+	
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_FORWARD)
 	cout << "Using forward closed form." << endl;
 	computeCost = &computeCostClosedForm;
@@ -4380,7 +4385,7 @@ void init() {
 	cout << "Using forward RK4." << endl;
 	computeCost = &computeCostRK4;
 #endif
-
+	
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_BACKWARD)
 	cout << "Using backward closed form." << endl;
 	checkPath = &checkPathClosedForm;
@@ -4388,10 +4393,9 @@ void init() {
 	cout << "Using backward RK4." << endl;
 	checkPath = &checkPathRK4;
 #endif
-
+	
 	BRiBt = B*R.ldlt().solve(B.transpose());
-	BRiBt = 0.5*BRiBt + 0.5*BRiBt.transpose();
-
+	BRiBt = 0.5*BRiBt + 0.5*BRiBt.transpose().eval();
 #ifdef FRONT_LOAD_RK4
 	diff.A = &A;
 	diff.c = &c;
@@ -4414,14 +4418,14 @@ void graphPath() {
 	double radius = START_RADIUS; //DBL_MAX;
 
 #if (DYNAMICS == QUADROTOR)
-	/*
-	x0.reset();
-	x0[3] = x0[5] = -2;
+//	/*
+//	x0.reset();
+//	x0[3] = x0[5] = -2;
 
-	x1.reset();
-	x1[2] = 5;
-	x1[4] = x1[5] = 2;
-	*/
+//	x1.reset();
+//	x1[2] = 5;
+//	x1[4] = x1[5] = 2;
+//	
 #elif (DYNAMICS == NONHOLONOMIC)
 	x_bounds[0].first = -DBL_MAX;
 	x_bounds[0].second = DBL_MAX;
@@ -4556,17 +4560,17 @@ void makeStills(int path) {
 				float current_z = 0;
 				reverse(states.begin(), states.end());
 				for (state_time_list_t::iterator p = states.begin(); p != states.end(); p++) {
-/*
-				CAL_SetGroupColor(p->first, current_r, current_g, current_b);
-				current_r += alpha_change;
-				current_g -= alpha_change;
-				current_b -= alpha_change;
-				current_alpha += alpha_change;
-#if DYNAMICS != QUADROTOR
-				CAL_SetGroupPosition(p->first, (p->second)[0], current_z, (p->second)[2]);
-#endif
-				current_z += 0.05;
-*/
+///*
+//				CAL_SetGroupColor(p->first, current_r, current_g, current_b);
+//				current_r += alpha_change;
+//				current_g -= alpha_change;
+//				current_b -= alpha_change;
+//				current_alpha += alpha_change;
+//#if DYNAMICS != QUADROTOR
+//				CAL_SetGroupPosition(p->first, (p->second)[0], current_z, (p->second)[2]);
+//#endif
+//				current_z += 0.05;
+//
 #if (DYNAMICS == QUADROTOR)
 					buildKeyframe(p->first, p->second, true, current_r);
 #else
@@ -4592,14 +4596,14 @@ void makeStills(int path) {
 
 
 			CAL_EmptyGroup(stills_group, true);
-/*
-			CAL_EmptyGroup(solution_group);
-			CAL_EmptyGroup(solution_marker_group);
-			CAL_SetGroupColor(solution_group, 0, 0, 1);
-			CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
-
-			CAL_ClearGroupKeyStates(robot_model, true);
-*/
+///*
+//			CAL_EmptyGroup(solution_group);
+//			CAL_EmptyGroup(solution_marker_group);
+//			CAL_SetGroupColor(solution_group, 0, 0, 1);
+//			CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
+//
+//			CAL_ClearGroupKeyStates(robot_model, true);
+//
 			// Get next starting time
 			fread((void *)&t, sizeof(double), 1, path_log);
 		}
@@ -4703,7 +4707,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	setupParameters();
 	init();
-
+	
 	double radius = START_RADIUS;
 	double temp = DBL_MAX;
 	setRadius(2, radius);
@@ -4711,7 +4715,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	setupVisualization(x0, x1);
 
 	//testReduceRadius();
-
+	
 #ifdef PLOT_PATH
 #if (DYNAMICS == QUADROTOR) // Quadrotor
 x0[0] = 0;
@@ -4795,6 +4799,6 @@ x1[5] = 0;
 	CAL_ResumeVisualisation();
 
 	_getchar();
-
+//*/
 	return 0;
 }

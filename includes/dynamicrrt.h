@@ -169,7 +169,7 @@ typedef int node_id_t;
 typedef std::list<node_id_t> node_list_t;
 typedef std::pair<double, node_id_t> node_cost_pair_t; // The first element is the cost to the node specified by the second element
 typedef std::pair<double, state> state_time_t;
-typedef std::vector< state_time_t > state_time_list_t;
+typedef std::vector< state_time_t, Eigen::aligned_allocator<state_time_t> > state_time_list_t;
 
 BOUNDS x_bounds;
 BOUNDS u_bounds;
@@ -243,19 +243,20 @@ char _getchar();
 bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis);
 
 void convertTreeToPoints(const tree_t& tree, double *points);
-
-
+	
 template<typename vec, typename bounds>
 inline void rand_vec(vec& v, const bounds& b);
 
-template <size_t _numRows1, size_t _numRows2, size_t _numCols1, size_t _numCols2>
-inline Eigen::Matrix<double,_numRows1+_numRows2, _numCols1+_numCols2> block(const Eigen::Matrix<double,_numRows1,_numCols1> A, const Eigen::Matrix<double,_numRows1,_numCols2> B,
-																			const Eigen::Matrix<double,_numRows2, _numCols1> C, const Eigen::Matrix<double,_numRows2,_numCols2> D) {
-	Eigen::Matrix<double,_numRows1+_numRows2,_numCols1+_numCols2> m;
-	m.block<_numRows1,_numCols1>(0,0) = A;			m.block<_numRows1,_numCols2>(0,_numCols1) = B;
-	m.block<_numRows2,_numCols1>(_numRows1,0) = C;	m.block<_numRows2,_numCols2>(_numRows1,_numCols1) = D;
+template <size_t numRows1, size_t numRows2, size_t numCols1, size_t numCols2>
+inline Eigen::Matrix<double,numRows1+numRows2, numCols1+numCols2> block(const Eigen::Matrix<double,numRows1,numCols1> A, const Eigen::Matrix<double,numRows1,numCols2> B,
+																			const Eigen::Matrix<double,numRows2, numCols1> C, const Eigen::Matrix<double,numRows2,numCols2> D) 
+{
+	Eigen::Matrix<double,numRows1+numRows2,numCols1+numCols2> m;
+	m.block<numRows1,numCols1>(0,0) = A;		m.block<numRows1,numCols2>(0,numCols1) = B;
+	m.block<numRows2,numCols1>(numRows1,0) = C;	m.block<numRows2,numCols2>(numRows1,numCols1) = D;
 	return m;
 }
+
 /**
  * The idea for the structure of this k-d tree is to use a structure for each node. The structure indicates whether the node
  * is a leaf, in which case it has a list of children from the RRT, or not, in which case it has at least one child to the
