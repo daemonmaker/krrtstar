@@ -56,7 +56,7 @@ void setupParameters(void) {
 
 	c = state::Zero();
 
-	R = Eigen:Matrix<double,U_DIM,U_DIM>::Identity();
+	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 	R(0,0) = 0.25*control_penalty;
 	R(1,1) = R(2,2) = 0.5*control_penalty;
 
@@ -872,7 +872,7 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 #if (DYNAMICS == QUADROTOR)
 		CAL_CloneGroup(&new_group, robot_model, stills_group, false, "Stills subgroup");
 		CAL_SetGroupVisibility(new_group, 0, true, true);
-		CAL_SetGroupQuaternion(new_group, q[0], q[1], q[2], q[3]);
+		CAL_SetGroupQuaternion(new_group,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
 #elif (DYNAMICS == NONHOLONOMIC)
 		CAL_CreateGroup(&new_group, stills_group, false, "Stills subgroup");
 
@@ -1959,7 +1959,7 @@ template<typename vec, typename bounds>
 inline void rand_vec(vec& v, const bounds& b) {
 	int count = v.rows();
 #if (DYNAMICS == QUADROTOR)
-	v = Eigen::Matrix<double,v.rows(),v.cols()>::Zero();
+	v = Eigen::MatrixXd::Zero(v.rows(),v.cols());
 	count = 6;
 #endif
 	for (size_t i = 0; i < count; i++) {
@@ -4132,7 +4132,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		A(2,3) = x_rand[4];
 		A(2,4) = x_rand[3];
 
-		Eigen::Marix<double,X_DIM,1> f = Eigen::Matrix<double,X_DIM,1>::Zero();
+		Eigen::Matrix<double,X_DIM,1> f = Eigen::Matrix<double,X_DIM,1>::Zero();
 		f[0] = A(1,2);
 		f[1] = -A(0,2);
 		f[2] = x_rand[3]*x_rand[4];
@@ -4433,12 +4433,14 @@ void graphPath() {
 	x_bounds[1].first = -DBL_MAX;
 	x_bounds[1].second = DBL_MAX;
 
-	x0.reset();
+	//x0.reset();
+	x0 = Eigen::Matrix<double,X_DIM,1>::Zero();
 	x0[0] = x0[1] = 0;
 	x0[2] = -1;
 	x0[3] = 1;
 
-	x1.reset();
+	//x1.reset();
+	x1 = Eigen::Matrix<double,X_DIM,1>::Zero();
 	x1[0] = 10;
 	x1[1] = -5;
 	x1[2] = 0;

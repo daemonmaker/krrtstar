@@ -56,7 +56,7 @@
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS DOUBLE_INTEGRATOR_2D
+#define DYNAMICS NONHOLONOMIC
 
 // Flags to control various features of the program
 //#define EXPERIMENT
