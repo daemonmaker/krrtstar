@@ -67,7 +67,6 @@ void setupParameters(void) {
 	x1 = state::Zero();
 	x1[0] = 4;
 	x1[2] = 1;
-
 #elif (DYNAMICS == NONHOLONOMIC)
 	control_penalty = 1;
 	control_penalty1 = 50;
@@ -845,10 +844,9 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 	rot(1,2) = -x[6];
 	rot(2,0) = -x[7];
 	rot(2,1) = x[6];
-
-	Eigen::Quaternion<double> q(rot.exp());
+	Eigen::Matrix<double,3,3> R = rot.exp();
+	Eigen::Quaternion<double> q(R);
 	float o[4] = {(float)q.x(), (float)q.y(), (float)q.z(), (float)q.w()};
-	//float o[4] = {(float) q[1], (float) q[2], (float) q[3], (float) q[0]};
 #elif (DYNAMICS == NONHOLONOMIC)
 	isQuat = false;
 	double rot = x[2] - 0.5*M_PI;
@@ -870,9 +868,11 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 		int new_group;
 
 #if (DYNAMICS == QUADROTOR)
+		/*
 		CAL_CloneGroup(&new_group, robot_model, stills_group, false, "Stills subgroup");
 		CAL_SetGroupVisibility(new_group, 0, true, true);
-		CAL_SetGroupQuaternion(new_group,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
+		CAL_SetGroupQuaternion(new_group,o[0],o[1],o[2],o[3]);
+		*/
 #elif (DYNAMICS == NONHOLONOMIC)
 		CAL_CreateGroup(&new_group, stills_group, false, "Stills subgroup");
 
@@ -902,6 +902,8 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 #endif
 
 	} else {
+		// Daman
+		float o[4];
 		int result = CAL_AddGroupKeyState(robot_model, (float) t, p, o, CAL_NULL, isQuat);
 		if (CAL_SUCCESS != result) {
 			cout << "Failed (" << result << ") to add key frame!" << endl;
@@ -1074,18 +1076,19 @@ inline bool collision_free(const state& x) {
 
 	// Rotate the robot
 #if (DYNAMICS == QUADROTOR)
+	
 	Eigen::Matrix<double,3,3> rot = Eigen::Matrix<double,3,3>::Zero();
 	rot(0,2) = x[4];
 	rot(1,2) = -x[3];
 	rot(2,0) = -x[4];
 	rot(2,1) = x[3];
-
-	Eigen::Quaternion<double> q(rot.exp());
+	Eigen::Matrix<double,3,3> R = rot.exp();
+	Eigen::Quaternion<double> q(R);
 	result = CAL_SetGroupQuaternion(robot_group,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
-	//result = CAL_SetGroupQuaternion(robot_group, q[1], q[2], q[3], q[0]);
 	if (CAL_SUCCESS != result) {
 		cout << "CAL_SetGroupQuaternion failed (" << result << ")" << endl;
 	}
+	
 #elif (DYNAMICS == NONHOLONOMIC)
 	double rot = x[2] - 0.5*M_PI;
 	while (rot < 0) rot += 2*M_PI;
@@ -1203,7 +1206,6 @@ bool computeCostClosedForm(const state& x0, const state& x1, double radius, doub
 	p[6] = (0.50400e5 * pow(inertia, 0.2e1) * control_penalty * gravity * x1[7] * x0[0] - 0.122400e6 * pow(inertia, 0.2e1) * control_penalty * x1[4] * x0[4] - 0.50400e5 * pow(inertia, 0.2e1) * control_penalty * gravity * x1[6] * x0[1] - 0.122400e6 * pow(inertia, 0.2e1) * control_penalty * x1[3] * x0[3] - 0.64800e5 * pow(inertia, 0.2e1) * control_penalty * pow(x0[3], 0.2e1) - 0.50400e5 * pow(inertia, 0.2e1) * control_penalty * x0[0] * gravity * x0[7] + 0.50400e5 * pow(inertia, 0.2e1) * control_penalty * gravity * x1[6] * x1[1] + 0.50400e5 * pow(inertia, 0.2e1) * control_penalty * x0[1] * gravity * x0[6] - 0.50400e5 * pow(inertia, 0.2e1) * control_penalty * gravity * x1[7] * x1[0] - 0.64800e5 * pow(inertia, 0.2e1) * control_penalty * pow(x1[4], 0.2e1) - 0.50400e5 * pow(inertia, 0.2e1) * control_penalty * x1[1] * gravity * x0[6] - 0.64800e5 * pow(inertia, 0.2e1) * control_penalty * pow(x0[4], 0.2e1) - 0.64800e5 * pow(inertia, 0.2e1) * control_penalty * pow(x1[3], 0.2e1) + 0.50400e5 * pow(inertia, 0.2e1) * control_penalty * x1[0] * gravity * x0[7]);
 	p[7] = (-0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x0[0] * x0[3] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[4] * x1[1] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[3] * x0[0] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[1] * x0[4] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[4] * x0[1] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[0] * x0[3] + 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x1[3] * x1[0] - 0.302400e6 * pow(inertia, 0.2e1) * control_penalty * x0[1] * x0[4]);
 	p[8] = - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x1[0], 0.2e1) - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x1[1], 0.2e1) - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x0[1], 0.2e1) + 0.705600e6 * pow(inertia, 0.2e1) * control_penalty * x1[0] * x0[0] + 0.705600e6 * pow(inertia, 0.2e1) * control_penalty * x1[1] * x0[1] - 0.352800e6 * pow(inertia, 0.2e1) * control_penalty * pow(x0[0], 0.2e1);
-
 	///*
       //MapleGenVar3 = g*g*l*l*_Z*_Z*_Z*_Z*_Z*_Z*_Z*_Z+(-8.0*j*j*r*g*g*x0_8*x0_8-m~*m*r*g*g*l*l*x0_5*x0_5-4.0*j*j*r*x1_8*g*g*x0_8-m*m*r*x1_5*g*g*l*l*x0_5-8.0*j*j~*r*x1_8*x1_8*g*g-4.0*j*j*r*x1_9*g*g*x0_9-8.0*j*j*r*x1_9*x1_9*g*g-m*m*r*x1_5*x1_5~*g*g*l*l-8.0*j*j*r*g*g*x0_9*x0_9)*_Z*_Z*_Z*_Z*_Z*_Z+(-120.0*j*j*r*x1_8*g*g*x0_6+120.0*j*j*r*g*g*x1_7*x0_9+240.0*j*j*r*g*g*x1_7*x1_9-6.0*m*m*r*x1_5*g*g*l*l~*x0_2-6.0*m*m*r*g*g*l*l*x0_2*x0_5+240.0*j*j*r*g*g*x1_6*x1_8-120.0*j*j*r*x1_9*g~*g*x0_7+6.0*m*m*r*g*g*l*l*x1_2*x0_5+6.0*m*m*r*x1_5*g*g*l*l*x1_2-240.0*j*j*r*g*g*x0_6*x0_8+120.0*j*j*r*g*g*x1_6*x0_8-240.0*j*j*r*g*g*x0_7*x0_9)*_Z*_Z*_Z*_Z*_Z;
       //MapleGenVar4 = MapleGenVar3+(2520.0*j*j*r*g*g*x1_7*x0_7+18.0*m*m*r*g*g*l*l~*x1_2*x0_2-1800.0*j*j*r*g*g*x1_7*x1_7-1440.0*j*j*r*x0_3*g*x0_9-1080.0*j*j*r*x1_3~*g*x0_9+1080.0*j*j*r*x1_8*g*x0_4+1440.0*j*j*r*x0_4*g*x0_8-9.0*m*m*r*g*g*l*l~*x0_2*x0_2-9.0*m*m*r*g*g*l*l*x1_2*x1_2-1440.0*j*j*r*x1_3*g*x1_9-1800.0*j*j*r*g~*g*x0_7*x0_7+1440.0*j*j*r*x1_4*g*x1_8+1080.0*j*j*r*x1_4*g*x0_8-1800.0*j*j*r*g*g*x0_6*x0_6-1080.0*j*j*r*x1_9*g*x0_3+2520.0*j*j*r*g*g*x1_6*x0_6-1800.0*j*j*r*g*g*x1_6*x1_6)*_Z*_Z*_Z*_Z;
@@ -1413,7 +1415,6 @@ bool computeCostClosedForm(const state& x0, const state& x1, double radius, doub
 		d[7] = 5040.0*t61*t97-2700.0*t67*t54+600.0*t133*t134*x1diffbarx0[7]-60.0*t138*t68;
 		d[8] = 420.0*t67*t111-240.0*t107*t75-60.0*t138*t78+8.0*t133*t158*x1diffbarx0[8];
 		d[9] = -420.0*t67*t97+240.0*t107*t54-60.0*t138*t62+8.0*t133*t158*x1diffbarx0[9];
-
 #elif (DYNAMICS == NONHOLONOMIC)
 		double tau = realRoots[i];
 		x1diffbarx0[0] = -px + px2 + (tau*v*(-2*cth + ka*tau*v*sth))/2.;
@@ -1698,7 +1699,6 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 			chi[17] = t11*d_tau[0]-t135*d_tau[3]+d_tau[7];
 			chi[18] = t23*d_tau[1]-t11*d_tau[4]-t1*d_tau[6]+d_tau[8];
 			chi[19] = -t23*d_tau[0]+t11*d_tau[3]-t1*d_tau[7]+d_tau[9];
-
 #elif (DYNAMICS == NONHOLONOMIC)
 	double px = x0[0];
 	double py = x0[1];
@@ -4097,6 +4097,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		// Generate a random configuration
 		state x_rand;
 #if (DYNAMICS == QUADROTOR) && (USE_OBSTACLES == 5)
+		
 		double area = rand_value(0, 1);
 
 		if (area < 0.1) {
