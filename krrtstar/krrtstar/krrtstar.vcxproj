@@ -50,11 +50,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-<<<<<<< HEAD
       <AdditionalIncludeDirectories>C:\Eigen;$(SolutionDir)\..\callisto2.20;$(SolutionDir)\..\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-=======
-      <AdditionalIncludeDirectories>C:\Users\Dustin\Documents\GitHub\krrtstar\callisto2.20;C:\Users\Dustin\Documents\GitHub\krrtstar\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
->>>>>>> parent of 8dc7fe4... Updated project properties to use relative paths.
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -72,11 +68,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-<<<<<<< HEAD
       <AdditionalIncludeDirectories>C:\Eigen;$(SolutionDir)\..\callisto2.20;$(SolutionDir)\..\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-=======
-      <AdditionalIncludeDirectories>C:\Users\Dustin\Documents\GitHub\krrtstar\callisto2.20;C:\Users\Dustin\Documents\GitHub\krrtstar\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
->>>>>>> parent of 8dc7fe4... Updated project properties to use relative paths.
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

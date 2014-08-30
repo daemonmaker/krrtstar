@@ -107,7 +107,7 @@ double sphere_volume;
 #define NODE_SIZE 0.01
 
 #elif (DYNAMICS == NONHOLONOMIC) // Car
-#define TARGET_NODES 750
+#define TARGET_NODES 10000
 #define START_RADIUS 20
 #define RADIUS_MULTIPLIER 1
 

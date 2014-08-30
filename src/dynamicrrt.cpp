@@ -811,10 +811,10 @@ void setupVisualization(const state& x0, const state& x1) {
 //inline Matrix<4,1> quatFromRot(const Matrix<3,3>& R) {
 //	Matrix<4,1> q;
 //
-//	q[0] = 0.5*sqrt(max(1+R(0,0)-R(1,1)-R(2,2),0.0))*(R(2,1) - R(1,2) >= 0 ? 1 : -1);
-//	q[1] = 0.5*sqrt(max(1-R(0,0)+R(1,1)-R(2,2),0.0))*(R(0,2) - R(2,0) >= 0 ? 1 : -1);
-//	q[2] = 0.5*sqrt(max(1-R(0,0)-R(1,1)+R(2,2),0.0))*(R(1,0) - R(0,1) >= 0 ? 1 : -1);
-//	q[3] = 0.5*sqrt(max(1+R(0,0)+R(1,1)+R(2,2),0.0));
+//	q[0] = 0.5*sqrt(max(1+R(0,0)-R(1,1)-R(2,2),0.0))*(R(2,1) - R(1,2) >= 0 ? 1 : -1); // x
+//	q[1] = 0.5*sqrt(max(1-R(0,0)+R(1,1)-R(2,2),0.0))*(R(0,2) - R(2,0) >= 0 ? 1 : -1); // y
+//	q[2] = 0.5*sqrt(max(1-R(0,0)-R(1,1)+R(2,2),0.0))*(R(1,0) - R(0,1) >= 0 ? 1 : -1); // z
+//	q[3] = 0.5*sqrt(max(1+R(0,0)+R(1,1)+R(2,2),0.0)); // w
 //
 //	return q;
 //}
@@ -844,6 +844,7 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 	rot(1,2) = -x[6];
 	rot(2,0) = -x[7];
 	rot(2,1) = x[6];
+
 	Eigen::Matrix<double,3,3> R = rot.exp();
 	Eigen::Quaternion<double> q(R);
 	float o[4] = {(float)q.x(), (float)q.y(), (float)q.z(), (float)q.w()};
@@ -903,7 +904,6 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 
 	} else {
 		// Daman
-		float o[4];
 		int result = CAL_AddGroupKeyState(robot_model, (float) t, p, o, CAL_NULL, isQuat);
 		if (CAL_SUCCESS != result) {
 			cout << "Failed (" << result << ") to add key frame!" << endl;
@@ -4054,7 +4054,7 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 #endif
 }
 
-void rrtstar(const state& x_init, const state& x_final, int n, double radius, tree_t& tree) {
+void rrtstar(const state& x_init, const state& x_final, int n, double radius, tree_t& tree, const bool rewire, const float epsilon) {
 	// local variables
 	ostringstream os;
 	node_ids_t k_d_results;
@@ -4094,33 +4094,43 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		draw_path = false;
 #endif
 
-		// Generate a random configuration
+		// Sample configuration
 		state x_rand;
+		bool check_goal = false;
+		// Occasionally check the goal
+		if ((float)rand()/(float)RAND_MAX < epsilon) {
+			check_goal = true;
+			x_rand = tree[0].x;
+		}
+		// Most the time generate a random configuration
+		else {
 #if (DYNAMICS == QUADROTOR) && (USE_OBSTACLES == 5)
 		
-		double area = rand_value(0, 1);
+			double area = rand_value(0, 1);
 
-		if (area < 0.1) {
-			rand_vec(x_rand, x_bounds_window_1);
-		}
+			if (area < 0.1) {
+				rand_vec(x_rand, x_bounds_window_1);
+			}
 
-		else if (area < 0.2) {
-			rand_vec(x_rand, x_bounds_window_2);
-		}
+			else if (area < 0.2) {
+				rand_vec(x_rand, x_bounds_window_2);
+			}
 
-		else {
-			rand_vec(x_rand, x_bounds);
-		}
+			else {
+				rand_vec(x_rand, x_bounds);
+			}
 
 #else
-		rand_vec(x_rand, x_bounds);
+			rand_vec(x_rand, x_bounds);
 #endif
+		}
 
 		// Only continue if the configuration is not in collision
 		if (!collision_free(x_rand)) {
 			continue;
 		}
 
+		// Re-linearize about the sample
 #if (DYNAMICS == NONHOLONOMIC)
 		double cth = cos(x_rand[4]);
 		double sth = sin(x_rand[4]);
@@ -4150,7 +4160,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 		priority_queue<node_cost_pair_t, vector<node_cost_pair_t >, greater<node_cost_pair_t > > Q;
 
-#ifdef K_D_TREE_BACKWARD
+#ifdef K_D_TREE_BACKWARD // Use kd-tree for fast search
 		k_d_query.clear();
 		BOUNDS q_bounds;
 		calc_backward_reachable_bounds(x_rand, radius, k_d_query);
@@ -4173,7 +4183,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			}
 
 		}
-#else
+#else // Use linear search through all nodes
 		Q.push(make_pair(applyHeuristics(tree[1].x, x_rand), 1)); // push start onto queue
 		while (!Q.empty() && Q.top().first < min_dist) {
 			node_id_t j = Q.top().second;
@@ -4192,6 +4202,8 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			}
 		}
 #endif
+
+		// Move to the next sample if we could not find a nearby configuration
 		if (x_near_id == NO_PARENT) {
 #ifndef ALLOW_ORPHANS
 			continue;
@@ -4205,28 +4217,47 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		cout << setw(9) << time_diff << " " << setw(11) << i << "/" << n << " tree: " << setw(9) << tree.size() << " radius: " << setw(9) << radius << " orphans: " << orphans.size() << "\r";
 
 		// Update the tree
-		node_id_t x_rand_node_id = tree.size();
-
-		// Create a node for the new configuration
+		node_id_t x_rand_node_id;
 		Node x_rand_node;
-		x_rand_node.parent = x_near_id;
-		x_rand_node.x = x_rand;
-		x_rand_node.cost_from_start = min_dist;
+		if (check_goal) {
+			// Update goal if new path is shorter
+			if ((tree[0].parent != x_near_id) && min_dist < tree[0].cost_from_start) {
+				tree[0].parent = x_near_id;
+				tree[0].cost_from_start = min_dist;
 
-		// Add it to the tree and k-d tree
-		tree.push_back(x_rand_node);
-		k_d_tree.add(x_rand_node_id);
+				x_rand_node_id = 0;
+				x_rand_node = tree[0];
 
-		if ((i % 1000) == 0) {
-			os.str("");
-			os << i << "\t" << time_diff << endl;
-			fputs(os.str().c_str(), time_log);
-			fflush(time_log);
+				draw_path = true;
+			} else {
+				continue;
+			}
 		}
 
-		i++;
+		// Add a new node
+		else {
+			x_rand_node_id = tree.size();
 
-		if (x_near_id != NO_PARENT) {
+			// Create a node for the new configuration
+			x_rand_node.parent = x_near_id;
+			x_rand_node.x = x_rand;
+			x_rand_node.cost_from_start = min_dist;
+
+			// Add it to the tree and k-d tree
+			tree.push_back(x_rand_node);
+			k_d_tree.add(x_rand_node_id);
+
+			if ((i % 1000) == 0) {
+				os.str("");
+				os << i << "\t" << time_diff << endl;
+				fputs(os.str().c_str(), time_log);
+				fflush(time_log);
+			}
+
+			i++;
+		}
+
+		if (rewire && !check_goal && x_near_id != NO_PARENT) {
 
 			// This starts from the first. Instead it should grab a region in space that the new state (x_rand)
 			// can reach. It should then search those for the cheaper connections and rewire as appropriate.
@@ -4329,8 +4360,10 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 #ifdef K_D_TREE_FORWARD
 		    }
 #endif
+		}
 
-			// check orphans
+		// check orphans
+		if (x_near_id != NO_PARENT) {
 			for (size_t j = 0; j < orphans.size(); ) {
 				double junk;
 				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
@@ -4779,7 +4812,7 @@ x1[5] = 0;
 
 	//KD_Tree::testKDTree(tree);
 	
-	rrtstar(x0, x1, TARGET_NODES, radius, tree);
+	rrtstar(x0, x1, TARGET_NODES, radius, tree, true, 0.0);
 	end_time = clock();
 
 	cout << "Runtime: " << (double)(end_time - start_time)/(double)CLOCKS_PER_SEC << endl;
