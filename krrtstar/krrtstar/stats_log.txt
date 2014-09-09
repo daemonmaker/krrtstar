@@ -1,2 +1,1 @@
 time	number_of_nodes	target_number_of_nodes	cost_from_start	radius	number_of_orphans
-112.371	906	5000	14.4177	87.635	1

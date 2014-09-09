@@ -301,8 +301,9 @@ void setupRobot() {
 #else
 	CAL_CreateCylinder(robot_group, 5, 3, 0, 0, 0, &robot_object);
 
-	CAL_CreateCylinder(robot_model, 5, 3, 0, 0, 0);
+	//CAL_CreateCylinder(robot_model, 5, 3, 0, 0, 0);
 	CAL_SetGroupColor(robot_model, 0.05, 0.05, 0.05);
+	CAL_SetObjectOrientation(robot_object, M_PI/2.0, 0, 0);
 #endif
 
 	CAL_SetGroupVisibility(robot_group, 0, false, true);
@@ -314,7 +315,7 @@ void setupRobot() {
 #endif
 }
 
-void makeWall(float x, float y, float z, int length, int height, bool vertical, bool reverse) {
+void makeWall(float x, float y, float z, int length, double height, bool vertical, bool reverse) {
 #if (DYNAMICS == QUADROTOR)
 	double width = (vertical ? length : 0);
 	double depth = (vertical ? 0 : length);
@@ -325,6 +326,7 @@ void makeWall(float x, float y, float z, int length, int height, bool vertical, 
 	double yw = depth;
 	double 	zw = height;
 #else
+	/*
 	double width = (vertical ? length : 0.5);
 	double depth = (vertical ? 0.5 : length);
 	double x_pos = (reverse ? y - width/2 : y + width/2);
@@ -333,9 +335,39 @@ void makeWall(float x, float y, float z, int length, int height, bool vertical, 
 	double xw = width;
 	double yw = height;
 	double zw = depth;
+	*/
+	double depth = height;
+	height = (vertical ? length : 0.25);
+	double width = (vertical ? 0.25 : length);
+	double x_pos = (reverse ? x - width/2.0 : x + width/2.0);
+	double y_pos = (reverse ? y - height/2.0 : y + height/2.0);
+	double z_pos = z; // + height/2.0;
+	double xw = width;
+	double yw = height;
+	double zw = depth;
 #endif
 
 	CAL_CreateBox(obstacle_group, xw, yw, zw, x_pos, y_pos, z_pos);
+}
+
+void renderAxis() {
+	double length = 10.0;
+	double radius = 1.0;
+	double position = 1.5;
+
+	int origin_id = 0;
+	int x_point_id = 0, y_point_id = 0, z_point_id = 0;
+	CAL_CreateSphere(axis_group, 1, 0, 0, 0, &origin_id);
+	CAL_SetObjectColor(origin_id, 0, 0, 0);
+
+	CAL_CreateSphere(axis_group, 1, position, 0, 0, &x_point_id);
+	CAL_SetObjectColor(x_point_id, 1, 0, 0);
+
+	CAL_CreateSphere(axis_group, 1, 0, position, 0, &y_point_id);
+	CAL_SetObjectColor(y_point_id, 0, 1, 0);
+
+	CAL_CreateSphere(axis_group, 1, 0, 0, position, &z_point_id);
+	CAL_SetObjectColor(z_point_id, 0, 0, 1);
 }
 
 void buildEnvironment() {
@@ -512,13 +544,13 @@ void buildEnvironment() {
 	makeWall(210, -10, offset, 120, 20, true, false);
 	makeWall(-10, 110, offset, 220, 20, false, false);
 
-	CAL_CreateBox(obstacle_group, 50, 20, 50, 50, 10, 50);
+	CAL_CreateBox(obstacle_group, 50, 50, 20, 50, 50, 10);
 
 	int temp;
 	CAL_CreateGroup(&temp, 0, false, "Faux hole");
 	CAL_SetGroupColor(temp, 1, 1, 1);
 	CAL_SetGroupVisibility(temp, 0, true, true);
-	CAL_CreateBox(temp, 49.25, 22, 49.25, 50, 10, 50);
+	CAL_CreateBox(temp, 49.25, 49.25, 22, 50, 50, 10);
 
 	makeWall(-10, 50, offset, 135, 20, false, false);
 	makeWall(210, 50, offset, 60, 20, false, true);
@@ -530,13 +562,148 @@ void buildEnvironment() {
 	makeWall(100, -10, offset, 35, 20, true, false);
 	makeWall(100, 110, offset, 35, 20, true, true);
 #else
+	x_bounds[0] = std::make_pair(0, 200);
+	x_bounds[1] = std::make_pair(0, 100);
+
+	x0[0] = 15;
+	x0[1] = 50;
+	x1[0] = 140;
+	x1[1] = 50;
+	double offset = 0;
+
+    // Make bounding box	
+	makeWall(-10, -10, offset, 120, 20, true, false);
+	makeWall(-10, -10, offset, 220, 20, false, false);
+	makeWall(210, -10, offset, 120, 20, true, false);
+	makeWall(-10, 110, offset, 220, 20, false, false);
+
+	//CAL_CreateBox(obstacle_group, 50, 50, 20, 50, 50, 10);
+
+	//int temp;
+	//CAL_CreateGroup(&temp, 0, false, "Faux hole");
+	//CAL_SetGroupColor(temp, 1, 1, 1);
+	//CAL_SetGroupVisibility(temp, 0, true, true);
+	//CAL_CreateBox(temp, 49.25, 49.25, 22, 50, 50, 10);
+
+    // Build long center dividing wall	
+	makeWall(25, 50, offset, 100, 20, false, false);
+
+	// Build top S-curve
+	makeWall(25, 50, offset, 25, 20, true, false);
+	makeWall(50, 110, offset, 35, 20, true, true);
+	makeWall(75, 50, offset, 25, 20, true, false);
+	makeWall(100, 110, offset, 35, 20, true, true);
+
+    // Build bottom S-curve	
+	makeWall(50, -10, offset, 35, 20, true, false);
+	makeWall(75, 50, offset, 25, 20, true, true);
+	makeWall(100, -10, offset, 35, 20, true, false);
+
+	// Build box around goal on left
+	makeWall(125, 25, offset, 50, 20, true, false);
+	makeWall(125, 25, offset, 50, 20, false, false);
+	makeWall(125, 75, offset, 50, 20, false, false);
+	makeWall(210, 50, offset, 60, 20, false, true);
+#endif
+#elif USE_OBSTACLES == 5
+
+#if (DYNAMICS == NONHOLONOMIC)
+	x_bounds[0] = std::make_pair(0, 200);
+	x_bounds[1] = std::make_pair(0, 100);
+
+	x0[1] = 44;
+	x0[0] = 10;
+	x1[1] = 56;
+	x1[0] = 10;
+#else
+	x_bounds[0] = std::make_pair(0, 200);
+	x_bounds[1] = std::make_pair(0, 100);
+
+	x0[1] = 44;
+	x0[0] = 10;
+	x1[1] = 56;
+	x1[0] = 10;
+#endif
+
+	int obstacle_height = 5;
+	double offset = 0;
+	makeWall(-10, -10, offset, 120, obstacle_height, true, false);
+	makeWall(-10, -10, offset, 220, obstacle_height, false, false);
+	makeWall(210, -10, offset, 120, obstacle_height, true, false);
+	makeWall(-10, 110, offset, 220, obstacle_height, false, false);
+
+	CAL_CreateBox(obstacle_group, 50, 50, obstacle_height, 50, 50, 2.5);
+	CAL_CreateBox(obstacle_group, 50, 50, obstacle_height, 150, 50, 2.5);
+	CAL_CreateBox(obstacle_group, 50, 10, obstacle_height, 100, 70, 2.5);
+
+	makeWall(100, -10, offset, 50, obstacle_height, true, false);
+	makeWall(-10, 50, offset, 40, obstacle_height, false, false);
+	//makeWall(10, 10, offset, 80, obstacle_height, true, false);
+	//makeWall(10, 10, offset, 30, obstacle_height, true, true);
+
+#elif USE_OBSTACLES == 4
+	makeWall(-20, -20, 0, 140, 20, true, false);
+	makeWall(-20, -20, 0, 140, 20, false, false);
+	makeWall(120, -20, 0, 140, 20, true, false);
+	makeWall(-20, 120, 0, 140, 20, false, false);
+
+	makeWall(25, -20, 0, 90, 20, true, false);
+	makeWall(75, 120, 0, 90, 20, true, true);
+
+	x1[0] = x1[1] = 100;
+
+#elif USE_OBSTACLES == 3
+	makeWall(-20, -20, 0, 140, 20, true, false);
+	makeWall(-20, -20, 0, 140, 20, false, false);
+	makeWall(120, -20, 0, 140, 20, true, false);
+	makeWall(-20, 120, 0, 140, 20, false, false);
+
+	makeWall(25, -20, 0, 70, 20, true, false);
+	makeWall(75, 120, 0, 70, 20, true, true);
+
+	x1[0] = x1[1] = 100;
+
+#elif USE_OBSTACLES == 2
+	makeWall(-20, -20, 0, 140, 20, true, false);
+	makeWall(-20, -20, 0, 140, 20, false, false);
+	makeWall(120, -20, 0, 140, 20, true, false);
+	makeWall(-20, 120, 0, 140, 20, false, false);
+
+	makeWall(50, -20, 0, 50, 20, true, false);
+	makeWall(-20, 50, 0, 50, 20, false, false);
+	makeWall(120, 50, 0, 50, 20, false, true);
+	makeWall(50, 120, 0, 50, 20, true, true);
+#elif USE_OBSTACLES == 1
+	int cylinder_id = 0;
+	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 25, 5, &cylinder_id);
+	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
+
+	CAL_CreateCylinder(obstacle_group, 5, 10, 50, 25, 5, &cylinder_id);
+	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
+
+	CAL_CreateCylinder(obstacle_group, 5, 10, 75, 25, 5, &cylinder_id);
+	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
+
+	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 50, 5, &cylinder_id);
+	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
+
+	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 75, 5, &cylinder_id);
+	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
+
+	CAL_CreateCylinder(obstacle_group, 5, 10, 75, 75, 5, &cylinder_id);
+	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
+
+	x1[0] = x1[1] = 100;
+#endif
+#elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
+#if USE_OBSTACLES == 6
 	x_bounds[0] = std::make_pair(0, 100);
 	x_bounds[1] = std::make_pair(0, 200);
 
-	x0[1] = 15;
-	x0[0] = 50;
-	x1[1] = 140;
-	x1[0] = 50;
+	x0[X_COORD] = 15;
+	x0[Y_COORD] = 50;
+	x1[X_COORD] = 140;
+	x1[Y_COORD] = 50;
 	double offset = 0;
 
     // Make bounding box	
@@ -554,6 +721,7 @@ void buildEnvironment() {
 	//CAL_CreateBox(temp, 49.25, 22, 49.25, 50, 10, 50);
 	//
 
+	/*
     // Build long center dividing wall	
 	makeWall(25, 50, offset, 100, 20, false, false);
 
@@ -568,12 +736,12 @@ void buildEnvironment() {
 	makeWall(75, 50, offset, 25, 20, true, true);
 	makeWall(100, -10, offset, 35, 20, true, false);
 
-	// Build box around goal on left	
+	// Build box around goal on left
 	makeWall(125, 25, offset, 50, 20, true, false);
 	makeWall(125, 25, offset, 50, 20, false, false);
 	makeWall(125, 75, offset, 50, 20, false, false);
 	makeWall(210, 50, offset, 60, 20, false, true);
-#endif
+	*/
 #elif USE_OBSTACLES == 5
 
 #if (DYNAMICS == NONHOLONOMIC)
@@ -680,6 +848,7 @@ void setupVisualization(const state& x0, const state& x1) {
 #if defined(EXPERIMENT)
 	CAL_SuspendVisualisation();
 #endif
+	CAL_CreateGroup(&axis_group, 0, false, "Axis group");
 
 	CAL_CreateGroup(&collision_hit_group, 0, false, "Collision hit");
 	CAL_CreateGroup(&collision_free_group, 0, false, "Collision free");
@@ -689,6 +858,8 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_CreateGroup(&node_group, 0, false, "Nodes");
 	CAL_CreateGroup(&edge_group, 0, false, "Edges");
 	CAL_CreateGroup(&velocity_group, 0, false, "Velocities");
+
+	CAL_SetGroupVisibility(axis_group, 0, SHOW_AXIS, true);
 	
 	CAL_SetGroupVisibility(node_group, 0, false, true);
 	CAL_SetGroupVisibility(edge_group, 0, SHOW_TREE, true);
@@ -724,6 +895,8 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_SetGroupColor(velocity_group, 0, 0, 1);
 	CAL_SetGroupColor(edge_group, 0.65, 0.16, 0.16);
 
+	renderAxis();
+
 	buildEnvironment();
 
 	setupRobot();
@@ -754,18 +927,15 @@ void setupVisualization(const state& x0, const state& x1) {
 	eye_z = 3*x_bounds[2].second;
 	up_y = 1;
 	up_x = 0;
-#elif (DYNAMICS == NONHOLONOMIC)
-	camera_x = eye_x = x_bounds[1].second/2.0;
-	eye_y = 150;
-	camera_z = eye_z = x_bounds[0].second/2.0;
-#elif (DYNAMICS == SINGLE_INTEGRATOR_2D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-	camera_x = eye_x = x_bounds[0].second/2.0;
-	eye_y = 150;
-	camera_z = eye_z = x_bounds[1].second/2.0;
+
 #else
 	camera_x = eye_x = x_bounds[0].second/2.0;
-	eye_y = 125;
-	camera_z = eye_z = x_bounds[1].second/2.0;
+	camera_y = eye_y = x_bounds[1].second/2.0;
+	eye_z = 150;
+
+	up_x = 0.0;
+	up_y = 1.0;
+	up_z = 0.0;
 #endif
 
 	CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
@@ -777,12 +947,10 @@ void setupVisualization(const state& x0, const state& x1) {
 	start_x = x0[0]; goal_x = x1[0];
 	start_y = x0[1]; goal_y = x1[1];
 	start_z = x0[2]; goal_z = x1[2];
-#elif (DYNAMICS == NONHOLONOMIC)
-	start_x = x0[1]; goal_x = x1[1];
-	start_z = x0[0]; goal_z = x1[0];
+
 #else
 	start_x = x0[0]; goal_x = x1[0];
-	start_z = x0[1]; goal_z = x1[1];
+	start_y = x0[1]; goal_y = x1[1];
 #endif 
 
 	// Position the robot
@@ -792,8 +960,8 @@ void setupVisualization(const state& x0, const state& x1) {
 	double rot = x0[2] - 0.5*M_PI;
 	while (rot < 0) rot += 2*M_PI;
 
-	CAL_SetGroupOrientation(robot_model, 0, rot, 0);
-	CAL_SetGroupOrientation(robot_group, 0, rot, 0);
+	CAL_SetGroupOrientation(robot_model, 0, 0, rot);
+	CAL_SetGroupOrientation(robot_group, 0, 0, rot);
 #endif
 
 #ifdef SHOW_PATHS
@@ -830,12 +998,14 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 	x_pos = x[0];
 	y_pos = x[1];
 	z_pos = x[2];
-#elif (DYNAMICS == NONHOLONOMIC)
+/*
+elif
 	x_pos = x[1];
 	z_pos = x[0];
+*/
 #else
 	x_pos = x[0];
-	z_pos = x[1];
+	y_pos = x[1];
 #endif
 
 #if (DYNAMICS == QUADROTOR)
@@ -852,7 +1022,7 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 	isQuat = false;
 	double rot = x[2] - 0.5*M_PI;
 	while (rot < 0) rot += 2*M_PI;
-	float o[3] = {0, rot, 0};
+	float o[3] = {0, 0, rot};
 #else
 	float *o = CAL_NULL;
 #endif
@@ -1093,7 +1263,7 @@ inline bool collision_free(const state& x) {
 	double rot = x[2] - 0.5*M_PI;
 	while (rot < 0) rot += 2*M_PI;
 
-	CAL_SetGroupOrientation(robot_group, 0, rot, 0);
+	CAL_SetGroupOrientation(robot_group, 0, 0, rot);
 #endif
 
 	// Position the robot
@@ -1101,12 +1271,14 @@ inline bool collision_free(const state& x) {
 	x_pos = x[0];
 	y_pos = x[1];
 	z_pos = x[2];
-#elif (DYNAMICS == NONHOLONOMIC)
+/*
+elif 
 	x_pos = x[1];
 	z_pos = x[0];
+*/
 #else
 	x_pos = x[0];
-	z_pos = x[1];
+	y_pos = x[1];
 #endif
 
 	result = CAL_SetGroupPosition(robot_group, x_pos, y_pos, z_pos);
@@ -2135,10 +2307,15 @@ void drawTree(const tree_t& tree) {
 		p[4] = tree[current.parent].x[1];
 		p[5] = tree[current.parent].x[2];
 #elif (DYNAMICS == NONHOLONOMIC)
-		p[0] = current.x[1];
-		p[2] = current.x[0];
-		p[3] = tree[current.parent].x[1];
-		p[5] = tree[current.parent].x[0];
+		p[0] = current.x[0];
+		p[1] = current.x[1];
+		p[3] = tree[current.parent].x[0];
+		p[4] = tree[current.parent].x[1];
+#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+		p[X_COORD] = current.x[0];
+		p[Y_COORD] = current.x[1];
+		p[XV_COORD] = tree[current.parent].x[0];
+		p[YV_COORD] = tree[current.parent].x[1];
 #else
 		p[0] = current.x[0];
 		p[2] = current.x[1];
@@ -2170,28 +2347,28 @@ void drawTree(const tree_t& tree) {
 		v_y = y + tree[i].x[4];
 		v_z = z + tree[i].x[5];
 #elif (DYNAMICS == NONHOLONOMIC)
-		x = tree[i].x[1];
-		z = tree[i].x[0];
+		x = tree[i].x[0];
+		y = tree[i].x[1];
 		if (tree[i].parent != NO_PARENT) {
-			x_parent = tree[tree[i].parent].x[1];
-			z_parent = tree[tree[i].parent].x[0];
+			x_parent = tree[tree[i].parent].x[0];
+			y_parent = tree[tree[i].parent].x[1];
 		}
 		// TODO DWEBB implement velocity drawing
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
 		x = tree[i].x[0];
-		z = tree[i].x[1];
+		y = tree[i].x[1];
 		if (tree[i].parent != NO_PARENT) {
 			x_parent = tree[tree[i].parent].x[0];
-			z_parent = tree[tree[i].parent].x[1];
+			y_parent = tree[tree[i].parent].x[1];
 		}
 		v_x = x + tree[i].x[2];
-		v_z = z + tree[i].x[3];
+		v_y = y + tree[i].x[3];
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
 		x = tree[i].x[0];
-		z = tree[i].x[1];
+		y = tree[i].x[1];
 		if (tree[i].parent != NO_PARENT) {
 			x_parent = tree[tree[i].parent].x[0];
-			z_parent = tree[tree[i].parent].x[1];
+			y_parent = tree[tree[i].parent].x[1];
 		}
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
 		x = tree[i].x[0];
@@ -2218,10 +2395,12 @@ void drawTree(const tree_t& tree) {
 
 			CAL_CreatePolyline(velocity_group, 1, np, p);
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-			p[0] = x;
-			p[2] = z;
-			p[3] = v_x;
-			p[5] = v_z;
+			p[X_COORD] = x;
+			//p[2] = z;
+			p[Y_COORD] = y;
+			p[XV_COORD] = v_x;
+			//p[5] = v_z;
+			p[YV_COORD] = v_y;
 
 			CAL_CreatePolyline(velocity_group, 1, np, p);
 #endif
