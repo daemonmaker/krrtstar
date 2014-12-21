@@ -29,6 +29,7 @@
 #include "rpoly.h"
 
 //#define _DEBUG_COMPUTE_COST
+#define SHOW_AXIS true
 
 // Optimization flags
 //#define FRONT_LOAD_RK4 // Forces the RK4 stuff to be loaded globally and initialized in the main as opposed to in the function calls where it's used
@@ -54,11 +55,11 @@
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS QUADROTOR
+#define DYNAMICS NONHOLONOMIC
 
 // Flags to control various features of the program
 //#define EXPERIMENT
-#define REDUCE_RADIUS // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
+//#define REDUCE_RADIUS // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
 #define USE_OBSTACLES 6 // Determines whether to create obstacles
@@ -107,7 +108,7 @@ double sphere_volume;
 #define NODE_SIZE 0.01
 
 #elif (DYNAMICS == NONHOLONOMIC) // Car
-#define TARGET_NODES 10000
+#define TARGET_NODES 5000
 #define START_RADIUS 20
 #define RADIUS_MULTIPLIER 1
 
@@ -117,7 +118,7 @@ double sphere_volume;
 #define U_DIM 2
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
-#define TARGET_NODES 100000 // Determines how many nodes the tree should have
+#define TARGET_NODES 500 // Determines how many nodes the tree should have
 #define START_RADIUS 1000000 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
@@ -125,6 +126,11 @@ double sphere_volume;
 #define DIM 2
 #define X_DIM 4
 #define U_DIM 2
+
+#define X_COORD 0
+#define Y_COORD 1
+#define XV_COORD 3
+#define YV_COORD 4
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define TARGET_NODES 1000
@@ -210,7 +216,7 @@ typedef std::pair<int, node_id_t > splitting_dim_node_id_t;
 typedef std::vector<splitting_dim_node_id_t > k_d_stack_t;
 typedef std::vector<node_id_t > node_ids_t;
 
-int collision_hit_group, collision_free_group, obstacle_group, robot_group, robot_object
+int axis_group, collision_hit_group, collision_free_group, obstacle_group, robot_group, robot_object
 	, start_node_group, goal_node_group, node_group, edge_group, velocity_group, solution_group
 	, solution_marker_group, robot_model, border_group;
 
