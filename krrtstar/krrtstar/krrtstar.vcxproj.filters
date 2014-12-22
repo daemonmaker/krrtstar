@@ -27,6 +27,12 @@
     <ClInclude Include="..\..\includes\rpoly.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\includes\worlds.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\includes\bounds.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\dynamicrrt.cpp">

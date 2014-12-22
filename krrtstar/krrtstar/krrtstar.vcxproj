@@ -80,10 +80,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\includes\bounds.hpp" />
     <ClInclude Include="..\..\includes\dynamicrrt.h" />
     <ClInclude Include="..\..\includes\matrix.h" />
     <ClInclude Include="..\..\includes\polynomial.h" />
     <ClInclude Include="..\..\includes\rpoly.h" />
+    <ClInclude Include="..\..\includes\worlds.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\dynamicrrt.cpp" />

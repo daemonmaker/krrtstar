@@ -55,7 +55,7 @@
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS NONHOLONOMIC
+#define DYNAMICS SINGLE_INTEGRATOR_2D
 
 // Flags to control various features of the program
 //#define EXPERIMENT
@@ -154,6 +154,9 @@ double sphere_volume;
 
 #endif
 
+#include "bounds.hpp"
+#include "worlds.hpp"
+
 #define REACHABILITY_CONSTANT 1.5
 unsigned int TWO_TO_X_DIM;
 double statespace_volume;
@@ -166,8 +169,6 @@ FILE* time_log;
 FILE* stats_log;
 FILE* path_log;
 
-typedef std::pair<double, double> BOUND;
-typedef std::vector< BOUND > BOUNDS;
 const int NO_PARENT = -1;
 typedef int node_id_t;
 typedef std::list<node_id_t> node_list_t;
@@ -216,7 +217,7 @@ typedef std::pair<int, node_id_t > splitting_dim_node_id_t;
 typedef std::vector<splitting_dim_node_id_t > k_d_stack_t;
 typedef std::vector<node_id_t > node_ids_t;
 
-int axis_group, collision_hit_group, collision_free_group, obstacle_group, robot_group, robot_object
+int axis_group, collision_hit_group, collision_free_group, robot_group, robot_object
 	, start_node_group, goal_node_group, node_group, edge_group, velocity_group, solution_group
 	, solution_marker_group, robot_model, border_group;
 

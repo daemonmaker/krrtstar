@@ -4,6 +4,8 @@
 
 using namespace std;
 
+World * world = NULL;
+
 void dynamicsError() {
 	cout << "Invalid dynamics (" << DYNAMICS << ")" << endl;
 	_getchar();
@@ -315,41 +317,6 @@ void setupRobot() {
 #endif
 }
 
-void makeWall(float x, float y, float z, int length, double height, bool vertical, bool reverse) {
-#if (DYNAMICS == QUADROTOR)
-	double width = (vertical ? length : 0);
-	double depth = (vertical ? 0 : length);
-	double x_pos = (reverse ? x - width/2 : x + width/2);
-	double y_pos = (reverse ? y - depth/2 : y + depth/2);
-	double z_pos = z + height/2.0;
-	double xw = width;
-	double yw = depth;
-	double 	zw = height;
-#else
-	/*
-	double width = (vertical ? length : 0.5);
-	double depth = (vertical ? 0.5 : length);
-	double x_pos = (reverse ? y - width/2 : y + width/2);
-	double y_pos = z + height/2.0;
-	double z_pos = (reverse ? x - depth/2 : x + depth/2);
-	double xw = width;
-	double yw = height;
-	double zw = depth;
-	*/
-	double depth = height;
-	height = (vertical ? length : 0.25);
-	double width = (vertical ? 0.25 : length);
-	double x_pos = (reverse ? x - width/2.0 : x + width/2.0);
-	double y_pos = (reverse ? y - height/2.0 : y + height/2.0);
-	double z_pos = z; // + height/2.0;
-	double xw = width;
-	double yw = height;
-	double zw = depth;
-#endif
-
-	CAL_CreateBox(obstacle_group, xw, yw, zw, x_pos, y_pos, z_pos);
-}
-
 void renderAxis() {
 	double length = 10.0;
 	double radius = 1.0;
@@ -569,6 +536,8 @@ void buildEnvironment() {
 	x0[1] = 50;
 	x1[0] = 140;
 	x1[1] = 50;
+
+	/*
 	double offset = 0;
 
     // Make bounding box	
@@ -604,6 +573,7 @@ void buildEnvironment() {
 	makeWall(125, 25, offset, 50, 20, false, false);
 	makeWall(125, 75, offset, 50, 20, false, false);
 	makeWall(210, 50, offset, 60, 20, false, true);
+	*/
 #endif
 #elif USE_OBSTACLES == 5
 
@@ -897,7 +867,11 @@ void setupVisualization(const state& x0, const state& x1) {
 
 	renderAxis();
 
+	// TODO select the world appropriately
 	buildEnvironment();
+	world = new TwoPathMaze(x_bounds);
+	//world = new EmptyWorld(x_bounds);
+	world->buildEnvironment();
 
 	setupRobot();
 
@@ -906,9 +880,12 @@ void setupVisualization(const state& x0, const state& x1) {
 	double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
 	double up_x = 1.0, up_y = 0.0, up_z = 0.0;
 
+	if (world != NULL) {
+		world->setCamera();
+	} else {
 #if (DYNAMICS == QUADROTOR)
-	up_x = 0.0;
-	up_z = 1.0;
+		up_x = 0.0;
+		up_z = 1.0;
 ///* isometric
 //	eye_x = -x_bounds[0].second;
 //	eye_y = 2*x_bounds[1].second;
@@ -924,21 +901,18 @@ void setupVisualization(const state& x0, const state& x1) {
 //
 
 ///* above 
-	eye_z = 3*x_bounds[2].second;
-	up_y = 1;
-	up_x = 0;
+		eye_z = 3*x_bounds[2].second;
+		up_y = 1;
+		up_x = 0;
 
 #else
-	camera_x = eye_x = x_bounds[0].second/2.0;
-	camera_y = eye_y = x_bounds[1].second/2.0;
-	eye_z = 150;
+		camera_x = eye_x = x_bounds[0].second/2.0;
+		camera_y = eye_y = x_bounds[1].second/2.0;
 
-	up_x = 0.0;
-	up_y = 1.0;
-	up_z = 0.0;
 #endif
 
-	CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
+		CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
+	}
 
 	double start_x = 0.0, start_y = 0.0, start_z = 0.0;
 	double goal_x = 0.0, goal_y = 0.0, goal_z = 0.0;
@@ -1227,17 +1201,6 @@ inline double dcost(double tau, const Eigen::Matrix<double,_numRows,_numRows>& G
 	return 1 + 2*((A*x1).transpose()*d).trace() - (d.transpose()*BRiBt*d).trace();
 }
 
-template<typename vec>
-bool checkBounds(const vec& v, const BOUNDS& v_bounds) {
-//return true; // TODO REMOVE
-	for (size_t i = 0; i < v.rows(); i++) {
-		if ((v[i] < v_bounds[i].first) || (v[i] > v_bounds[i].second)) {
-			return false;
-		}
-	}
-	return true;
-}
-
 inline bool collision_free(const state& x) {
 #if (USE_OBSTACLES > 0)
 	int result = 0;
@@ -1289,7 +1252,11 @@ elif
 	}
 
 	// Check for collisions
-	result = CAL_CheckGroupCollision(robot_group, obstacle_group, false, &collisions);
+	if (world != NULL) {
+		result = world->checkCollisions(robot_group, &collisions);
+	} else {
+		result = CAL_CheckGroupCollision(robot_group, obstacle_group, false, &collisions);
+	}
 	if (result != CAL_SUCCESS) {
 		cout << "CAL_CheckGroupCollision failed (" << result << ")." << endl;
 		_getchar();
@@ -1331,23 +1298,25 @@ inline double applyHeuristics(const state& x0, const state& x1) {
 	
   // Calculate the cost
   double cost = 0.0;
+  const BOUNDS& temp_x_bounds = (world != NULL ? world->getBounds() : x_bounds);
+
 #if (DYNAMICS == QUADROTOR)
-	double cost1 = max(computeHeuristic(x0[0], x1[0], x_bounds[3]), computeHeuristic(x0[1], x1[1], x_bounds[4]));
-	double cost2 = max(computeHeuristic(x0[2], x1[2], x_bounds[5]), computeHeuristic(x0[6], x1[6], x_bounds[8]));
+	double cost1 = max(computeHeuristic(x0[0], x1[0], temp_x_bounds[3]), computeHeuristic(x0[1], x1[1], temp_x_bounds[4]));
+	double cost2 = max(computeHeuristic(x0[2], x1[2], temp_x_bounds[5]), computeHeuristic(x0[6], x1[6], temp_x_bounds[8]));
 
 	cost = max(cost1, cost2);
-	cost = max(cost, computeHeuristic(x0[7], x1[7], x_bounds[9]));
+	cost = max(cost, computeHeuristic(x0[7], x1[7], temp_x_bounds[9]));
 #elif (DYNAMICS == NONHOLONOMIC)
-  cost = sqrt(pow(x1[0] - x0[0],2) + pow(x1[1] - x0[1],2))/x_bounds[3].second;
+	cost = sqrt(pow(x1[0] - x0[0],2) + pow(x1[1] - x0[1],2))/temp_x_bounds[3].second;
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-	double cost1 = max(computeHeuristic(x0[0], x1[0], x_bounds[2]), computeHeuristic(x0[1], x1[1], x_bounds[3]));
+	double cost1 = max(computeHeuristic(x0[0], x1[0], temp_x_bounds[2]), computeHeuristic(x0[1], x1[1], temp_x_bounds[3]));
 	double cost2 = max(computeHeuristic(x0[2], x1[2], u_bounds[0]), computeHeuristic(x0[3], x1[3], u_bounds[1]));
 
 	cost = max(cost1, cost2);
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
 	cost = max(computeHeuristic(x0[0], x1[0], u_bounds[0]), computeHeuristic(x0[1], x1[1], u_bounds[1]));
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
-	cost = max(computeHeuristic(x0[0], x1[0], x_bounds[1]), computeHeuristic(x0[1], x1[1], u_bounds[0]));
+	cost = max(computeHeuristic(x0[0], x1[0], temp_x_bounds[1]), computeHeuristic(x0[1], x1[1], u_bounds[0]));
 #else
   dynamicsError();
 #endif
@@ -1763,7 +1732,9 @@ BOUNDS x_bounds_real = x_bounds;
 	x_bounds_real[2].first = -DBL_MAX;
 	x_bounds_real[2].second = DBL_MAX;
 #endif
-	return checkBounds(x, x_bounds_real) && checkBounds(u, u_bounds) && collision_free(x);
+	bool goodState = (world != NULL ? world->validateState(x) : checkBounds(x, x_bounds_real));
+	bool goodControl = checkBounds(u, u_bounds);
+	return goodState && goodControl && collision_free(x);
 }
 
 void plotPath(const state& x0, const state& x1, const double radius) {
@@ -4239,7 +4210,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 	node_ids_t k_d_results;
 	int xdims = X_DIM;
 	int expected_nodes = 2*TARGET_NODES;
-	KD_Tree k_d_tree(tree, xdims, x_bounds, expected_nodes);
+	KD_Tree k_d_tree(tree, xdims, (world != NULL ? world->getBounds() : x_bounds), expected_nodes);
 	BOUNDS k_d_query;
 
 	// Construct start and goal nodes
@@ -4300,7 +4271,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			}
 
 #else
-			rand_vec(x_rand, x_bounds);
+			rand_vec(x_rand, (world != NULL ? world->getBounds() : x_bounds));
 #endif
 		}
 
