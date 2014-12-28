@@ -13,29 +13,29 @@ void dynamicsError() {
 }
 
 void setupParameters(void) {
-	x_bounds.resize(X_DIM);
+	//x_bounds.resize(X_DIM);
 	u_bounds.resize(U_DIM);
 
 #if (DYNAMICS == QUADROTOR)
 	control_penalty = 0.1;
 
 	// Position
-	x_bounds[0] = std::make_pair(-2.5, 2.5);
-	x_bounds[1] = std::make_pair(-2.5, 2.5);
-	x_bounds[2] = std::make_pair(0, 5);
+	//x_bounds[0] = std::make_pair(-2.5, 2.5);
+	//x_bounds[1] = std::make_pair(-2.5, 2.5);
+	//x_bounds[2] = std::make_pair(0, 5);
 
 	// Velocity
-	x_bounds[3] = std::make_pair(-5, 5);
-	x_bounds[4] = std::make_pair(-5, 5);
-	x_bounds[5] = std::make_pair(-5, 5);
+	//x_bounds[3] = std::make_pair(-5, 5);
+	//x_bounds[4] = std::make_pair(-5, 5);
+	//x_bounds[5] = std::make_pair(-5, 5);
 
 	// Angular position
-	x_bounds[6] = std::make_pair(-1000, 1000);
-	x_bounds[7] = std::make_pair(-1000, 1000);
-
+	//x_bounds[6] = std::make_pair(-1000, 1000);
+	//x_bounds[7] = std::make_pair(-1000, 1000);
+	
 	// Angular velocity
-	x_bounds[8] = std::make_pair(-5000, 5000);
-	x_bounds[9] = std::make_pair(-5000, 5000);
+	//x_bounds[8] = std::make_pair(-5000, 5000);
+	//x_bounds[9] = std::make_pair(-5000, 5000);
 
 	u_bounds[0] = std::make_pair(-gravity*mass, 2*gravity*mass);
 	u_bounds[1] = std::make_pair(-1.5*gravity*mass, 1.5*gravity*mass);
@@ -62,22 +62,22 @@ void setupParameters(void) {
 	R(0,0) = 0.25*control_penalty;
 	R(1,1) = R(2,2) = 0.5*control_penalty;
 
-	x0 = state::Zero();
-	x0[0] = 1;
-	x0[2] = 4;
+	//x0 = state::Zero();
+	//x0[0] = 1;
+	//x0[2] = 4;
 
-	x1 = state::Zero();
-	x1[0] = 4;
-	x1[2] = 1;
+	//x1 = state::Zero();
+	//x1[0] = 4;
+	//x1[2] = 1;
 #elif (DYNAMICS == NONHOLONOMIC)
 	control_penalty = 1;
 	control_penalty1 = 50;
 
-	x_bounds[0] = std::make_pair(0,100);
-	x_bounds[1] = std::make_pair(0,100);
-	x_bounds[2] = std::make_pair(-M_PI,M_PI);
-	x_bounds[3] = std::make_pair(0.01,10);
-	x_bounds[4] = std::make_pair(-0.25,0.25);
+	//x_bounds[0] = std::make_pair(0,100);
+	//x_bounds[1] = std::make_pair(0,100);
+	//x_bounds[2] = std::make_pair(-M_PI,M_PI);
+	//x_bounds[3] = std::make_pair(0.01,10);
+	//x_bounds[4] = std::make_pair(-0.25,0.25);
 
 	u_bounds[0] = std::make_pair(-DBL_MAX,DBL_MAX);
 	u_bounds[1] = std::make_pair(-DBL_MAX,DBL_MAX);
@@ -102,10 +102,10 @@ void setupParameters(void) {
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
 	control_penalty = 0.25;
 
-	x_bounds[0] = std::make_pair(0, 100);
-	x_bounds[1] = std::make_pair(0, 100);
-	x_bounds[2] = std::make_pair(-10, 10);
-	x_bounds[3] = std::make_pair(-10, 10);
+	//x_bounds[0] = std::make_pair(0, 100);
+	//x_bounds[1] = std::make_pair(0, 100);
+	//x_bounds[2] = std::make_pair(-10, 10);
+	//x_bounds[3] = std::make_pair(-10, 10);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -123,11 +123,11 @@ void setupParameters(void) {
 	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
 	// 2.99034 
-	x0 = state::Zero();
+	//x0 = state::Zero();
 
-	x1 = state::Zero();
-	x1[0] = 0;
-	x1[1] = 100;
+	//x1 = state::Zero();
+	//x1[0] = 0;
+	//x1[1] = 100;
 
 	// 2.95112
 	//x0 = state::Zero();
@@ -140,10 +140,8 @@ void setupParameters(void) {
 	//
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
-	x_bounds[0] = std::make_pair(0, 100);
-	x_bounds[1] = std::make_pair(0, 100);
-	//x_bounds[2] = std::make_pair(-10, 10);
-	//x_bounds[3] = std::make_pair(-10, 10);
+	//x_bounds[0] = std::make_pair(0, 100);
+	//x_bounds[1] = std::make_pair(0, 100);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -158,17 +156,17 @@ void setupParameters(void) {
 
 	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
-	x0 = state::Zero();
-	//x0[2] = 1;
+	//x0 = state::Zero();
+	////x0[2] = 1;
 
-	x1 = state::Zero();
-	x1[0] = 100;
-	x1[1] = 100;
-	//x1[3] = 0.5;
+	//x1 = state::Zero();
+	//x1[0] = 100;
+	//x1[1] = 100;
+	////x1[3] = 0.5;
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
-	x_bounds[0] = std::make_pair(0, 100);
-	x_bounds[1] = std::make_pair(-10, 10);
+	//x_bounds[0] = std::make_pair(0, 100);
+	//x_bounds[1] = std::make_pair(-10, 10);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 
@@ -339,6 +337,7 @@ void renderAxis() {
 
 void buildEnvironment() {
 #if (DYNAMICS == QUADROTOR)
+/*
 	CAL_CreateGroup(&border_group, 0, false, "Borders");
 	CAL_SetGroupColor(border_group, 0.25, 0.25, 0.25);
 
@@ -430,17 +429,10 @@ void buildEnvironment() {
 	  bounds[CALCULATE_WINDOW_AREA_i] = x_bounds[CALCULATE_WINDOW_AREA_i]; \
 	} //
 	//CAL_CreateBox(obstacle_group, window[3], window[4], window[5], window[0], window[1], window[2]);
+*/
 
 #if USE_OBSTACLES == 5
-
-	x0[0] = 2.5;
-	x0[1] = -1;
-	x0[2] = 4;
-	x1[0] = -2.5;
-	x1[1] = 1;
-	x1[2] = 1;
-
-
+	/*
 	// Position window
 	window[0] = 1.0; // x pos
 	window[1] = 1.0; // y pos
@@ -461,7 +453,7 @@ void buildEnvironment() {
 	CALCULATE_WINDOW_AREA(window, x_bounds_window_2);
 
 	BUILD_SEGMENTS();
-
+	*/
 #elif USE_OBSTACLES == 4
 	double wall_start_x = 0.0, wall_start_y = x_bounds[1].first, wall_start_z = x_bounds[2].first;
 	double wall_length = (x_bounds[0].second - x_bounds[0].first), wall_height = (x_bounds[2].second - x_bounds[2].first)/3.0;
@@ -494,303 +486,164 @@ void buildEnvironment() {
 	CAL_CreateBox(obstacle_group, 0.1, wall_length, wall_height, 0, 0, wall_height/2.0);
 #endif
 
+	world = new TwoWalls();
+
+	x0[0] = world->getStartState()[0];
+	x0[1] = world->getStartState()[1];
+	x0[2] = world->getStartState()[2];
+	x1[0] = world->getFinalState()[0];
+	x1[1] = world->getFinalState()[1];
+	x1[2] = world->getFinalState()[2];
+
+	world->setBound(3, make_pair(-5, 5));
+	world->setBound(4, make_pair(-5, 5));
+	world->setBound(5, make_pair(-5, 5));
+	world->setBound(6, make_pair(-1000, 1000));
+	world->setBound(7, make_pair(-1000, 1000));
+	world->setBound(8, make_pair(-5000, 5000));
+	world->setBound(9, make_pair(-5000, 5000));
+
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D) || (DYNAMICS == NONHOLONOMIC)
 #if USE_OBSTACLES == 6
 #if (DYNAMICS == NONHOLONOMIC)
-	x_bounds[0] = std::make_pair(0, 200);
-	x_bounds[1] = std::make_pair(0, 100);
+	world = new SymmetricRaceTrackMaze();
+	world->setBound(2, make_pair(-M_PI,M_PI));
+	world->setBound(3, make_pair(0.01,10));
+	world->setBound(4, make_pair(-0.25,0.25));
 
 	x0[1] = 44;
 	x0[0] = 10;
 	x1[1] = 60;
 	x1[0] = 10;
+#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+	world = new TwoPathMaze();
+	world->setBound(2, make_pair(-10.0, 10.0));
+	world->setBound(3, make_pair(-10.0, 10.0));
 
-	double offset = 0;
-	makeWall(-10, -10, offset, 120, 20, true, false);
-	makeWall(-10, -10, offset, 220, 20, false, false);
-	makeWall(210, -10, offset, 120, 20, true, false);
-	makeWall(-10, 110, offset, 220, 20, false, false);
-
-	CAL_CreateBox(obstacle_group, 50, 50, 20, 50, 50, 10);
-
-	int temp;
-	CAL_CreateGroup(&temp, 0, false, "Faux hole");
-	CAL_SetGroupColor(temp, 1, 1, 1);
-	CAL_SetGroupVisibility(temp, 0, true, true);
-	CAL_CreateBox(temp, 49.25, 49.25, 22, 50, 50, 10);
-
-	makeWall(-10, 50, offset, 135, 20, false, false);
-	makeWall(210, 50, offset, 60, 20, false, true);
-
-	makeWall(125, 25, offset, 50, 20, true, false);
-	makeWall(125, 25, offset, 50, 20, false, false);
-	makeWall(125, 75, offset, 50, 20, false, false);
-
-	makeWall(100, -10, offset, 35, 20, true, false);
-	makeWall(100, 110, offset, 35, 20, true, true);
+	x0[0] = world->getStartState()[0];
+	x0[1] = world->getStartState()[1];
+	x1[0] = world->getFinalState()[0];
+	x1[1] = world->getFinalState()[1];
 #else
-	x_bounds[0] = std::make_pair(0, 200);
-	x_bounds[1] = std::make_pair(0, 100);
+	world = new TwoPathMaze();
 
-	x0[0] = 15;
-	x0[1] = 50;
-	x1[0] = 140;
-	x1[1] = 50;
-
-	/*
-	double offset = 0;
-
-    // Make bounding box	
-	makeWall(-10, -10, offset, 120, 20, true, false);
-	makeWall(-10, -10, offset, 220, 20, false, false);
-	makeWall(210, -10, offset, 120, 20, true, false);
-	makeWall(-10, 110, offset, 220, 20, false, false);
-
-	//CAL_CreateBox(obstacle_group, 50, 50, 20, 50, 50, 10);
-
-	//int temp;
-	//CAL_CreateGroup(&temp, 0, false, "Faux hole");
-	//CAL_SetGroupColor(temp, 1, 1, 1);
-	//CAL_SetGroupVisibility(temp, 0, true, true);
-	//CAL_CreateBox(temp, 49.25, 49.25, 22, 50, 50, 10);
-
-    // Build long center dividing wall	
-	makeWall(25, 50, offset, 100, 20, false, false);
-
-	// Build top S-curve
-	makeWall(25, 50, offset, 25, 20, true, false);
-	makeWall(50, 110, offset, 35, 20, true, true);
-	makeWall(75, 50, offset, 25, 20, true, false);
-	makeWall(100, 110, offset, 35, 20, true, true);
-
-    // Build bottom S-curve	
-	makeWall(50, -10, offset, 35, 20, true, false);
-	makeWall(75, 50, offset, 25, 20, true, true);
-	makeWall(100, -10, offset, 35, 20, true, false);
-
-	// Build box around goal on left
-	makeWall(125, 25, offset, 50, 20, true, false);
-	makeWall(125, 25, offset, 50, 20, false, false);
-	makeWall(125, 75, offset, 50, 20, false, false);
-	makeWall(210, 50, offset, 60, 20, false, true);
-	*/
+	x0[0] = world->getStartState()[0];
+	x0[1] = world->getStartState()[1];
+	x1[0] = world->getFinalState()[0];
+	x1[1] = world->getFinalState()[1];
 #endif
 #elif USE_OBSTACLES == 5
 
 #if (DYNAMICS == NONHOLONOMIC)
-	x_bounds[0] = std::make_pair(0, 200);
-	x_bounds[1] = std::make_pair(0, 100);
+	//x_bounds[0] = std::make_pair(0, 200);
+	//x_bounds[1] = std::make_pair(0, 100);
 
-	x0[1] = 44;
-	x0[0] = 10;
-	x1[1] = 56;
-	x1[0] = 10;
+	//x0[1] = 44;
+	//x0[0] = 10;
+	//x1[1] = 56;
+	//x1[0] = 10;
 #else
-	x_bounds[0] = std::make_pair(0, 200);
-	x_bounds[1] = std::make_pair(0, 100);
+	//x_bounds[0] = std::make_pair(0, 200);
+	//x_bounds[1] = std::make_pair(0, 100);
 
-	x0[1] = 44;
-	x0[0] = 10;
-	x1[1] = 56;
-	x1[0] = 10;
+	//x0[1] = 44;
+	//x0[0] = 10;
+	//x1[1] = 56;
+	//x1[0] = 10;
 #endif
+	world = new SimpleRaceTrack();
 
-	int obstacle_height = 5;
-	double offset = 0;
-	makeWall(-10, -10, offset, 120, obstacle_height, true, false);
-	makeWall(-10, -10, offset, 220, obstacle_height, false, false);
-	makeWall(210, -10, offset, 120, obstacle_height, true, false);
-	makeWall(-10, 110, offset, 220, obstacle_height, false, false);
-
-	CAL_CreateBox(obstacle_group, 50, 50, obstacle_height, 50, 50, 2.5);
-	CAL_CreateBox(obstacle_group, 50, 50, obstacle_height, 150, 50, 2.5);
-	CAL_CreateBox(obstacle_group, 50, 10, obstacle_height, 100, 70, 2.5);
-
-	makeWall(100, -10, offset, 50, obstacle_height, true, false);
-	makeWall(-10, 50, offset, 40, obstacle_height, false, false);
-	//makeWall(10, 10, offset, 80, obstacle_height, true, false);
-	//makeWall(10, 10, offset, 30, obstacle_height, true, true);
-
-#elif USE_OBSTACLES == 4
-	makeWall(-20, -20, 0, 140, 20, true, false);
-	makeWall(-20, -20, 0, 140, 20, false, false);
-	makeWall(120, -20, 0, 140, 20, true, false);
-	makeWall(-20, 120, 0, 140, 20, false, false);
-
-	makeWall(25, -20, 0, 90, 20, true, false);
-	makeWall(75, 120, 0, 90, 20, true, true);
-
-	x1[0] = x1[1] = 100;
-
-#elif USE_OBSTACLES == 3
-	makeWall(-20, -20, 0, 140, 20, true, false);
-	makeWall(-20, -20, 0, 140, 20, false, false);
-	makeWall(120, -20, 0, 140, 20, true, false);
-	makeWall(-20, 120, 0, 140, 20, false, false);
-
-	makeWall(25, -20, 0, 70, 20, true, false);
-	makeWall(75, 120, 0, 70, 20, true, true);
-
-	x1[0] = x1[1] = 100;
-
-#elif USE_OBSTACLES == 2
-	makeWall(-20, -20, 0, 140, 20, true, false);
-	makeWall(-20, -20, 0, 140, 20, false, false);
-	makeWall(120, -20, 0, 140, 20, true, false);
-	makeWall(-20, 120, 0, 140, 20, false, false);
-
-	makeWall(50, -20, 0, 50, 20, true, false);
-	makeWall(-20, 50, 0, 50, 20, false, false);
-	makeWall(120, 50, 0, 50, 20, false, true);
-	makeWall(50, 120, 0, 50, 20, true, true);
-#elif USE_OBSTACLES == 1
-	int cylinder_id = 0;
-	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 25, 5, &cylinder_id);
-	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
-
-	CAL_CreateCylinder(obstacle_group, 5, 10, 50, 25, 5, &cylinder_id);
-	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
-
-	CAL_CreateCylinder(obstacle_group, 5, 10, 75, 25, 5, &cylinder_id);
-	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
-
-	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 50, 5, &cylinder_id);
-	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
-
-	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 75, 5, &cylinder_id);
-	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
-
-	CAL_CreateCylinder(obstacle_group, 5, 10, 75, 75, 5, &cylinder_id);
-	CAL_SetObjectOrientation(cylinder_id, 1.57, 0, 0);
-
-	x1[0] = x1[1] = 100;
-#endif
-#elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
-#if USE_OBSTACLES == 6
-	x_bounds[0] = std::make_pair(0, 100);
-	x_bounds[1] = std::make_pair(0, 200);
-
-	x0[X_COORD] = 15;
-	x0[Y_COORD] = 50;
-	x1[X_COORD] = 140;
-	x1[Y_COORD] = 50;
-	double offset = 0;
-
-    // Make bounding box	
-	makeWall(-10, -10, offset, 120, 20, true, false);
-	makeWall(-10, -10, offset, 220, 20, false, false);
-	makeWall(210, -10, offset, 120, 20, true, false);
-	makeWall(-10, 110, offset, 220, 20, false, false);
-	//
-	//CAL_CreateBox(obstacle_group, 50, 20, 50, 50, 10, 50);
-	//
-	//int temp;
-	//CAL_CreateGroup(&temp, 0, false, "Faux hole");
-	//CAL_SetGroupColor(temp, 1, 1, 1);
-	//CAL_SetGroupVisibility(temp, 0, true, true);
-	//CAL_CreateBox(temp, 49.25, 22, 49.25, 50, 10, 50);
-	//
-
-	/*
-    // Build long center dividing wall	
-	makeWall(25, 50, offset, 100, 20, false, false);
-
-	// Build top S-curve
-	makeWall(25, 50, offset, 25, 20, true, false);
-	makeWall(50, 110, offset, 35, 20, true, true);
-	makeWall(75, 50, offset, 25, 20, true, false);
-	makeWall(100, 110, offset, 35, 20, true, true);
-
-    // Build bottom S-curve	
-	makeWall(50, -10, offset, 35, 20, true, false);
-	makeWall(75, 50, offset, 25, 20, true, true);
-	makeWall(100, -10, offset, 35, 20, true, false);
-
-	// Build box around goal on left
-	makeWall(125, 25, offset, 50, 20, true, false);
-	makeWall(125, 25, offset, 50, 20, false, false);
-	makeWall(125, 75, offset, 50, 20, false, false);
-	makeWall(210, 50, offset, 60, 20, false, true);
-	*/
-#elif USE_OBSTACLES == 5
+	x0[0] = world->getStartState()[0];
+	x0[1] = world->getStartState()[1];
+	x1[0] = world->getFinalState()[0];
+	x1[1] = world->getFinalState()[1];
 
 #if (DYNAMICS == NONHOLONOMIC)
-	x_bounds[0] = std::make_pair(0, 200);
-	x_bounds[1] = std::make_pair(0, 100);
-
-	x0[1] = 44;
-	x0[0] = 10;
-	x1[1] = 56;
-	x1[0] = 10;
-#else
-	x_bounds[0] = std::make_pair(0, 100);
-	x_bounds[1] = std::make_pair(0, 200);
-
-	x0[0] = 44;
-	x0[1] = 10;
-	x1[0] = 56;
-	x1[1] = 10;
+	world->setBound(2, make_pair(-M_PI,M_PI));
+	world->setBound(3, make_pair(0.01,10));
+	world->setBound(4, make_pair(-0.25,0.25));
+#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+	world->setBound(2, make_pair(-10.0, 10.0));
+	world->setBound(3, make_pair(-10.0, 10.0));
 #endif
-
-	int obstacle_height = 5;
-	double offset = 0;
-	makeWall(-10, -10, offset, 120, obstacle_height, true, false);
-	makeWall(-10, -10, offset, 220, obstacle_height, false, false);
-	makeWall(210, -10, offset, 120, obstacle_height, true, false);
-	makeWall(-10, 110, offset, 220, obstacle_height, false, false);
-
-	CAL_CreateBox(obstacle_group, 50, obstacle_height, 50, 50, 2.5, 50);
-	CAL_CreateBox(obstacle_group, 50, obstacle_height, 50, 50, 2.5, 150);
-	CAL_CreateBox(obstacle_group, 10, obstacle_height, 50, 70, 2.5, 100);
-
-	makeWall(100, -10, offset, 50, obstacle_height, true, false);
-	makeWall(-10, 50, offset, 40, obstacle_height, false, false);
-	//makeWall(10, 10, offset, 80, obstacle_height, true, false);
-	//makeWall(10, 10, offset, 30, obstacle_height, true, true);
-
 #elif USE_OBSTACLES == 4
-	makeWall(-20, -20, 0, 140, 20, true, false);
-	makeWall(-20, -20, 0, 140, 20, false, false);
-	makeWall(120, -20, 0, 140, 20, true, false);
-	makeWall(-20, 120, 0, 140, 20, false, false);
+	//x1[0] = x1[1] = 100;
 
-	makeWall(25, -20, 0, 90, 20, true, false);
-	makeWall(75, 120, 0, 90, 20, true, true);
+	world = new HardSMaze();
 
-	x1[0] = x1[1] = 100;
+	x0[0] = world->getStartState()[0];
+	x0[1] = world->getStartState()[1];
+	x1[0] = world->getFinalState()[0];
+	x1[1] = world->getFinalState()[1];
 
+#if (DYNAMICS == NONHOLONOMIC)
+	world->setBound(2, make_pair(-M_PI,M_PI));
+	world->setBound(3, make_pair(0.01,10));
+	world->setBound(4, make_pair(-0.25,0.25));
+#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+	world->setBound(2, make_pair(-10.0, 10.0));
+	world->setBound(3, make_pair(-10.0, 10.0));
+#endif
 #elif USE_OBSTACLES == 3
-	makeWall(-20, -20, 0, 140, 20, true, false);
-	makeWall(-20, -20, 0, 140, 20, false, false);
-	makeWall(120, -20, 0, 140, 20, true, false);
-	makeWall(-20, 120, 0, 140, 20, false, false);
-
-	makeWall(25, -20, 0, 70, 20, true, false);
-	makeWall(75, 120, 0, 70, 20, true, true);
-
 	x1[0] = x1[1] = 100;
+
+	world = new EasySMaze();
+
+	x0[0] = world->getStartState()[0];
+	x0[1] = world->getStartState()[1];
+	x1[0] = world->getFinalState()[0];
+	x1[1] = world->getFinalState()[1];
+
+#if (DYNAMICS == NONHOLONOMIC)
+	world->setBound(2, make_pair(-M_PI,M_PI));
+	world->setBound(3, make_pair(0.01,10));
+	world->setBound(4, make_pair(-0.25,0.25));
+#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+	world->setBound(2, make_pair(-10.0, 10.0));
+	world->setBound(3, make_pair(-10.0, 10.0));
+#endif
 
 #elif USE_OBSTACLES == 2
-	makeWall(-20, -20, 0, 140, 20, true, false);
-	makeWall(-20, -20, 0, 140, 20, false, false);
-	makeWall(120, -20, 0, 140, 20, true, false);
-	makeWall(-20, 120, 0, 140, 20, false, false);
+	world = new FourRooms();
 
-	makeWall(50, -20, 0, 50, 20, true, false);
-	makeWall(-20, 50, 0, 50, 20, false, false);
-	makeWall(120, 50, 0, 50, 20, false, true);
-	makeWall(50, 120, 0, 50, 20, true, true);
+	x0[0] = world->getStartState()[0];
+	x0[1] = world->getStartState()[1];
+	x1[0] = world->getFinalState()[0];
+	x1[1] = world->getFinalState()[1];
+
+#if (DYNAMICS == NONHOLONOMIC)
+	world->setBound(2, make_pair(-M_PI,M_PI));
+	world->setBound(3, make_pair(0.01,10));
+	world->setBound(4, make_pair(-0.25,0.25));
+#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+	world->setBound(2, make_pair(-10.0, 10.0));
+	world->setBound(3, make_pair(-10.0, 10.0));
+#endif
 #elif USE_OBSTACLES == 1
-	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 5, 25);
-	CAL_CreateCylinder(obstacle_group, 5, 10, 50, 5, 25);
-	CAL_CreateCylinder(obstacle_group, 5, 10, 75, 5, 25);
-	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 5, 50);
-	CAL_CreateCylinder(obstacle_group, 5, 10, 25, 5, 75);
-	CAL_CreateCylinder(obstacle_group, 5, 10, 75, 5, 75);
+	world = new Cylinders();
 
-	x1[0] = x1[1] = 100;
+	x0[0] = world->getStartState()[0];
+	x0[1] = world->getStartState()[1];
+	x1[0] = world->getFinalState()[0];
+	x1[1] = world->getFinalState()[1];
+
+#if (DYNAMICS == NONHOLONOMIC)
+	world->setBound(2, make_pair(-M_PI,M_PI));
+	world->setBound(3, make_pair(0.01,10));
+	world->setBound(4, make_pair(-0.25,0.25));
+#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+	world->setBound(2, make_pair(-10.0, 10.0));
+	world->setBound(3, make_pair(-10.0, 10.0));
 #endif
 #endif
+#else
+	world = new EmptyWorld(x_bounds);
+	world->setBound(1, make_pair(-10.0, 10.0));
+#endif
+
+	// TODO remove this
+	if (world != NULL)
+		world->buildEnvironment();
 }
 
 void setupVisualization(const state& x0, const state& x1) {
@@ -869,10 +722,6 @@ void setupVisualization(const state& x0, const state& x1) {
 
 	// TODO select the world appropriately
 	buildEnvironment();
-	world = new TwoPathMaze(x_bounds);
-	//world = new EmptyWorld(x_bounds);
-	world->buildEnvironment();
-
 	setupRobot();
 
 	// Position the camera based on the state bounds
@@ -901,9 +750,9 @@ void setupVisualization(const state& x0, const state& x1) {
 //
 
 ///* above 
-		eye_z = 3*x_bounds[2].second;
-		up_y = 1;
-		up_x = 0;
+//		eye_z = 3*x_bounds[2].second;
+//		up_y = 1;
+//		up_x = 0;
 
 #else
 		camera_x = eye_x = x_bounds[0].second/2.0;
@@ -1727,7 +1576,10 @@ bool computeCostRK4(const state& x0, const state& x1, double radius, double& cos
 }
 
 bool checkState(const state& x, const control& u) {
-BOUNDS x_bounds_real = x_bounds;
+	BOUNDS x_bounds_real = x_bounds;
+	if (world != NULL)
+		x_bounds_real = world->getBounds();
+
 #if (DYNAMICS == NONHOLONOMIC)
 	x_bounds_real[2].first = -DBL_MAX;
 	x_bounds_real[2].second = DBL_MAX;
@@ -4255,21 +4107,19 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		// Most the time generate a random configuration
 		else {
 #if (DYNAMICS == QUADROTOR) && (USE_OBSTACLES == 5)
-		
 			double area = rand_value(0, 1);
 
 			if (area < 0.1) {
-				rand_vec(x_rand, x_bounds_window_1);
+				rand_vec(x_rand, ((TwoWalls*)world)->x_bounds_window_1);
 			}
 
 			else if (area < 0.2) {
-				rand_vec(x_rand, x_bounds_window_2);
+				rand_vec(x_rand, ((TwoWalls*)world)->x_bounds_window_2);
 			}
 
 			else {
-				rand_vec(x_rand, x_bounds);
+				rand_vec(x_rand, (world != NULL ? world->getBounds() : x_bounds));
 			}
-
 #else
 			rand_vec(x_rand, (world != NULL ? world->getBounds() : x_bounds));
 #endif
@@ -4598,6 +4448,7 @@ char _getchar() {
 	return k;
 }
 
+/*
 void graphPath() {
 	double radius = START_RADIUS; //DBL_MAX;
 
@@ -4672,7 +4523,7 @@ void graphPath() {
 
 	exit(0);
 }
-
+*/
 void visualizeLog() {
 	path_log = fopen("path_log.txt", "rb");
 
@@ -4953,9 +4804,9 @@ x1[5] = 0;
 	fputs(os.str().c_str(), time_log);
 	fflush(time_log);
 
-#ifdef GRAPH_PATH
-	graphPath();
-#endif
+//#ifdef GRAPH_PATH
+//	graphPath();
+//#endif
 
 	start_time = clock();
 	tree_t tree;

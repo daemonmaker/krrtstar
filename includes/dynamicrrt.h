@@ -29,7 +29,7 @@
 #include "rpoly.h"
 
 //#define _DEBUG_COMPUTE_COST
-#define SHOW_AXIS true
+#define SHOW_AXIS false
 
 // Optimization flags
 //#define FRONT_LOAD_RK4 // Forces the RK4 stuff to be loaded globally and initialized in the main as opposed to in the function calls where it's used
@@ -55,7 +55,7 @@
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS SINGLE_INTEGRATOR_2D
+#define DYNAMICS QUADROTOR
 
 // Flags to control various features of the program
 //#define EXPERIMENT
@@ -108,7 +108,7 @@ double sphere_volume;
 #define NODE_SIZE 0.01
 
 #elif (DYNAMICS == NONHOLONOMIC) // Car
-#define TARGET_NODES 5000
+#define TARGET_NODES 25000
 #define START_RADIUS 20
 #define RADIUS_MULTIPLIER 1
 
@@ -180,8 +180,8 @@ BOUNDS x_bounds;
 BOUNDS u_bounds;
 #if (DYNAMICS == QUADROTOR)
 #if (USE_OBSTACLES == 5)
-BOUNDS x_bounds_window_1;
-BOUNDS x_bounds_window_2;
+//BOUNDS x_bounds_window_1;
+//BOUNDS x_bounds_window_2;
 #endif
 #endif
 
@@ -219,7 +219,7 @@ typedef std::vector<node_id_t > node_ids_t;
 
 int axis_group, collision_hit_group, collision_free_group, robot_group, robot_object
 	, start_node_group, goal_node_group, node_group, edge_group, velocity_group, solution_group
-	, solution_marker_group, robot_model, border_group;
+	, solution_marker_group, robot_model;
 
 int stills_group;
 std::vector< std::pair<int, Eigen::Matrix<double,3,1> > > stills_groups;
@@ -594,6 +594,7 @@ public:
 		int total_nodes = 100000;
 
 		// Setup bounds
+		BOUNDS x_bounds;
 		x_bounds.resize(2);
 		x_bounds[0].first = x_bounds[1].first = -10;
 		x_bounds[0].second = x_bounds[1].second = 10;
