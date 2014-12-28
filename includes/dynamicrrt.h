@@ -1,5 +1,14 @@
 #define _USE_MATH_DEFINES
 
+/*
+TODO
+- Add functionality to world to select random vector - position only, the rest should come from the state
+- Abstract state
+- Abstract robot
+- Re-organize initialization
+- Abstract dynamics
+*/
+
 #include <SDKDDKVer.h>
 #include <stdio.h>
 #include <tchar.h>
@@ -55,7 +64,7 @@
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS QUADROTOR
+#define DYNAMICS NONHOLONOMIC
 
 // Flags to control various features of the program
 //#define EXPERIMENT
@@ -97,7 +106,7 @@ double sphere_volume;
 #if (DYNAMICS == QUADROTOR) // Quadrotor
 #define STILL_RATE 5
 #define USE_OBSTACLES 5 // Determines whether to create obstacles
-#define TARGET_NODES 1000 // Determines how many 2000s the tree should have
+#define TARGET_NODES 10000 // Determines how many 2000s the tree should have
 #define START_RADIUS 100 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 10
 
@@ -176,7 +185,7 @@ typedef std::pair<double, node_id_t> node_cost_pair_t; // The first element is t
 typedef std::pair<double, state> state_time_t;
 typedef std::vector< state_time_t, Eigen::aligned_allocator<state_time_t> > state_time_list_t;
 
-BOUNDS x_bounds;
+//BOUNDS x_bounds;
 BOUNDS u_bounds;
 #if (DYNAMICS == QUADROTOR)
 #if (USE_OBSTACLES == 5)

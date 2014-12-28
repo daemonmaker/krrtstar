@@ -19,24 +19,6 @@ void setupParameters(void) {
 #if (DYNAMICS == QUADROTOR)
 	control_penalty = 0.1;
 
-	// Position
-	//x_bounds[0] = std::make_pair(-2.5, 2.5);
-	//x_bounds[1] = std::make_pair(-2.5, 2.5);
-	//x_bounds[2] = std::make_pair(0, 5);
-
-	// Velocity
-	//x_bounds[3] = std::make_pair(-5, 5);
-	//x_bounds[4] = std::make_pair(-5, 5);
-	//x_bounds[5] = std::make_pair(-5, 5);
-
-	// Angular position
-	//x_bounds[6] = std::make_pair(-1000, 1000);
-	//x_bounds[7] = std::make_pair(-1000, 1000);
-	
-	// Angular velocity
-	//x_bounds[8] = std::make_pair(-5000, 5000);
-	//x_bounds[9] = std::make_pair(-5000, 5000);
-
 	u_bounds[0] = std::make_pair(-gravity*mass, 2*gravity*mass);
 	u_bounds[1] = std::make_pair(-1.5*gravity*mass, 1.5*gravity*mass);
 	u_bounds[2] = std::make_pair(-1.5*gravity*mass, 1.5*gravity*mass);
@@ -73,12 +55,6 @@ void setupParameters(void) {
 	control_penalty = 1;
 	control_penalty1 = 50;
 
-	//x_bounds[0] = std::make_pair(0,100);
-	//x_bounds[1] = std::make_pair(0,100);
-	//x_bounds[2] = std::make_pair(-M_PI,M_PI);
-	//x_bounds[3] = std::make_pair(0.01,10);
-	//x_bounds[4] = std::make_pair(-0.25,0.25);
-
 	u_bounds[0] = std::make_pair(-DBL_MAX,DBL_MAX);
 	u_bounds[1] = std::make_pair(-DBL_MAX,DBL_MAX);
 
@@ -102,11 +78,6 @@ void setupParameters(void) {
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
 	control_penalty = 0.25;
 
-	//x_bounds[0] = std::make_pair(0, 100);
-	//x_bounds[1] = std::make_pair(0, 100);
-	//x_bounds[2] = std::make_pair(-10, 10);
-	//x_bounds[3] = std::make_pair(-10, 10);
-
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
@@ -122,27 +93,7 @@ void setupParameters(void) {
 
 	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
-	// 2.99034 
-	//x0 = state::Zero();
-
-	//x1 = state::Zero();
-	//x1[0] = 0;
-	//x1[1] = 100;
-
-	// 2.95112
-	//x0 = state::Zero();
-	//x0[0] = x0[1] = 1;
-	//x0[3] = 1;
-	//
-	//x1 = state::Zero();
-	//x1[0] = x1[1] = 2;
-	//x1[2] = 1;
-	//
-
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
-	//x_bounds[0] = std::make_pair(0, 100);
-	//x_bounds[1] = std::make_pair(0, 100);
-
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
@@ -156,18 +107,7 @@ void setupParameters(void) {
 
 	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
-	//x0 = state::Zero();
-	////x0[2] = 1;
-
-	//x1 = state::Zero();
-	//x1[0] = 100;
-	//x1[1] = 100;
-	////x1[3] = 0.5;
-
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
-	//x_bounds[0] = std::make_pair(0, 100);
-	//x_bounds[1] = std::make_pair(-10, 10);
-
 	u_bounds[0] = std::make_pair(-10, 10);
 
 	A = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
@@ -337,155 +277,6 @@ void renderAxis() {
 
 void buildEnvironment() {
 #if (DYNAMICS == QUADROTOR)
-/*
-	CAL_CreateGroup(&border_group, 0, false, "Borders");
-	CAL_SetGroupColor(border_group, 0.25, 0.25, 0.25);
-
-	int nl = 1;
-	int np[1] = {2};
-	float left_x = x_bounds[0].first;
-	float right_x = x_bounds[0].second;
-	float back_y = x_bounds[1].first;
-	float front_y = x_bounds[1].second;
-	float bottom_z = x_bounds[2].first;
-	float top_z = x_bounds[2].second;
-	float p[6];
-
-#define MAKE_LINE(x1, y1, z1, x2, y2, z2) \
-	p[0] = x1; \
-	p[1] = y1; \
-	p[2] = z1; \
-	p[3] = x2; \
-	p[4] = y2; \
-	p[5] = z2; \
-	CAL_CreatePolyline(border_group, 1, np, p);
-
-	MAKE_LINE(left_x, back_y, bottom_z, right_x, back_y, bottom_z);
-	MAKE_LINE(right_x, back_y, bottom_z, right_x, back_y, top_z);
-	MAKE_LINE(right_x, back_y, top_z, left_x, back_y, top_z);
-	MAKE_LINE(left_x, back_y, top_z, left_x, back_y, bottom_z);
-	
-	MAKE_LINE(left_x, front_y, bottom_z, left_x, back_y, bottom_z);
-	MAKE_LINE(right_x, front_y, bottom_z, right_x, back_y, bottom_z);
-	MAKE_LINE(right_x, front_y, top_z, right_x, back_y, top_z);
-	MAKE_LINE(left_x, front_y, top_z, left_x, back_y, top_z);
-	
-	MAKE_LINE(left_x, front_y, bottom_z, right_x, front_y, bottom_z);
-	MAKE_LINE(right_x, front_y, bottom_z, right_x, front_y, top_z);
-	MAKE_LINE(right_x, front_y, top_z, left_x, front_y, top_z);
-	MAKE_LINE(left_x, front_y, top_z, left_x, front_y, bottom_z);
-	
-	// Make & reset matrices
-	Eigen::Matrix<double,6,1> bottom_segment, top_segment, left_segment, right_segment, window;
-	bottom_segment = Eigen::Matrix<double,6,1>::Zero();
-	top_segment= Eigen::Matrix<double,6,1>::Zero();
-	left_segment = Eigen::Matrix<double,6,1>::Zero();
-	right_segment = Eigen::Matrix<double,6,1>::Zero();
-	window = Eigen::Matrix<double,6,1>::Zero();
-
-	// Get environment stats
-	double total_height = x_bounds[0].second - x_bounds[0].first;
-	double total_depth = x_bounds[1].second - x_bounds[1].first;
-	double window_height = 1.0, window_width = 2.0;
-
-#define BUILD_SEGMENTS() \
-	bottom_segment[3] = 0.1; \
-	bottom_segment[4] = total_depth; \
-	bottom_segment[5] = window[2] - window[5]/2.0 - x_bounds[2].first; \
-	bottom_segment[0] = window[0]; \
-	bottom_segment[2] = bottom_segment[5]/2.0; \
-	\
-	top_segment[3] = bottom_segment[3]; \
-	top_segment[4] = total_depth; \
-	top_segment[5] = x_bounds[2].second - (window[2] + window[5]/2.0); \
-	top_segment[0] = window[0]; \
-	top_segment[2] = top_segment[5]/2.0 + window[2] + window[5]/2.0; \
-	\
-	right_segment[3] = bottom_segment[3]; \
-	right_segment[4] = abs(x_bounds[1].second - (window[1] + window[4]/2.0)); \
-	right_segment[5] = total_height - top_segment[5] - bottom_segment[5]; \
-	right_segment[0] = window[0]; \
-	right_segment[1] = window[1] + window[4]/2.0 + right_segment[4]/2.0; \
-	right_segment[2] = bottom_segment[5] + right_segment[5]/2.0; \
-	\
-	left_segment[3] = bottom_segment[3]; \
-	left_segment[4] = total_depth - window[4] - right_segment[4]; \
-	left_segment[5] = right_segment[5]; \
-	left_segment[0] = window[0]; \
-	left_segment[1] = window[1] - window[4]/2.0 - left_segment[4]/2.0; \
-	left_segment[2] = right_segment[2]; \
-	\
-	CAL_CreateBox(obstacle_group, bottom_segment[3], bottom_segment[4], bottom_segment[5], bottom_segment[0], bottom_segment[1], bottom_segment[2]); \
-	CAL_CreateBox(obstacle_group, top_segment[3], top_segment[4], top_segment[5], top_segment[0], top_segment[1], top_segment[2]); \
-	CAL_CreateBox(obstacle_group, left_segment[3], left_segment[4], left_segment[5], left_segment[0], left_segment[1], left_segment[2]); \
-	CAL_CreateBox(obstacle_group, right_segment[3], right_segment[4], right_segment[5], right_segment[0], right_segment[1], right_segment[2]);
-
-#define CALCULATE_WINDOW_AREA(window, bounds) \
-	bounds.resize(X_DIM); \
-	bounds[0] = make_pair(window[0] - window[3]/2.0, window[0] + window[3]/2.0); \
-	bounds[1] = make_pair(window[1] - window[4]/2.0, window[1] + window[4]/2.0); \
-	bounds[2] = make_pair(window[2] - window[5]/2.0, window[2] + window[5]/2.0); \
-	for (int CALCULATE_WINDOW_AREA_i = 3; CALCULATE_WINDOW_AREA_i < X_DIM; CALCULATE_WINDOW_AREA_i++) { \
-	  bounds[CALCULATE_WINDOW_AREA_i] = x_bounds[CALCULATE_WINDOW_AREA_i]; \
-	} //
-	//CAL_CreateBox(obstacle_group, window[3], window[4], window[5], window[0], window[1], window[2]);
-*/
-
-#if USE_OBSTACLES == 5
-	/*
-	// Position window
-	window[0] = 1.0; // x pos
-	window[1] = 1.0; // y pos
-	window[2] = 1.0; // z pos
-	window[3] = 1.0; // width - this is really controlling the width of the sample area
-	window[4] = 1.0; // depth
-	window[5] = 0.5; // height
-
-	CALCULATE_WINDOW_AREA(window, x_bounds_window_1);
-
-	BUILD_SEGMENTS();
-
-	// Position window
-	window[0] = -1.0; // x pos
-	window[1] = -1.0; // y pos
-	window[2] = 4.0; // z pos
-
-	CALCULATE_WINDOW_AREA(window, x_bounds_window_2);
-
-	BUILD_SEGMENTS();
-	*/
-#elif USE_OBSTACLES == 4
-	double wall_start_x = 0.0, wall_start_y = x_bounds[1].first, wall_start_z = x_bounds[2].first;
-	double wall_length = (x_bounds[0].second - x_bounds[0].first), wall_height = (x_bounds[2].second - x_bounds[2].first)/3.0;
-	CAL_CreateBox(obstacle_group, 0.1, wall_length, wall_height + 1, 0, 0, (wall_height + 1)/2.0);
-	CAL_CreateBox(obstacle_group, 0.1, wall_length, wall_height, 0, 0, x_bounds[2].second - wall_height/2.0);
-	double segment_height = (x_bounds[2].second - x_bounds[2].first) - (wall_height + 1) - wall_height;
- 	CAL_CreateBox(obstacle_group, 0.1, wall_length/3.0, segment_height, 0, 2*x_bounds[1].second/3.0, wall_height + 1 + segment_height/2.0);
- 	CAL_CreateBox(obstacle_group, 0.1, wall_length/3.0, segment_height, 0, 2*x_bounds[1].first/3.0, wall_height + 1 + segment_height/2.0);
-
-#elif USE_OBSTACLES == 3
-	double wall_start_x = 0.0, wall_start_y = x_bounds[1].first, wall_start_z = x_bounds[2].first;
-	double wall_length = (x_bounds[0].second - x_bounds[0].first), wall_height = (x_bounds[2].second - x_bounds[2].first)/3.0;
-	CAL_CreateBox(obstacle_group, 0.1, wall_length, wall_height + 1, 0, 0, (wall_height + 1)/2.0);
-	CAL_CreateBox(obstacle_group, 0.1, wall_length, wall_height, 0, 0, x_bounds[2].second - wall_height/2.0);
-	double segment_height = (x_bounds[2].second - x_bounds[2].first) - (wall_height + 1) - wall_height;
- 	CAL_CreateBox(obstacle_group, 0.1, wall_length/4.0, segment_height, 0, 3*x_bounds[1].first/4.0, wall_height + 1 + segment_height/2.0);
- 	CAL_CreateBox(obstacle_group, 0.1, wall_length/4.0, segment_height, 0, -3*x_bounds[1].first/4.0, wall_height + 1 + segment_height/2.0);
-
-#elif USE_OBSTACLES == 2
-	double wall_start_x = 0.0, wall_start_y = x_bounds[1].first, wall_start_z = x_bounds[2].first;
-	double wall_length = (x_bounds[0].second - x_bounds[0].first), wall_height = (x_bounds[2].second - x_bounds[2].first)/3.0;
-	CAL_CreateBox(obstacle_group, 0.1, wall_length, wall_height + 1, 0, 0, (wall_height + 1)/2.0);
-	CAL_CreateBox(obstacle_group, 0.1, wall_length, wall_height, 0, 0, x_bounds[2].second - wall_height/2.0);
-	double segment_height = (x_bounds[2].second - x_bounds[2].first) - (wall_height + 1) - wall_height;
-	CAL_CreateBox(obstacle_group, 0.1, 3*wall_length/4.0, segment_height, 0, x_bounds[1].first/4.0, wall_height + 1 + segment_height/2.0);
-
-#elif USE_OBSTACLES == 1
-	double wall_start_x = 0.0, wall_start_y = x_bounds[1].first, wall_start_z = x_bounds[2].first;
-	double wall_length = (x_bounds[0].second - x_bounds[0].first), wall_height = 3*(x_bounds[2].second - x_bounds[2].first)/4.0;
-	CAL_CreateBox(obstacle_group, 0.1, wall_length, wall_height, 0, 0, wall_height/2.0);
-#endif
-
 	world = new TwoWalls();
 
 	x0[0] = world->getStartState()[0];
@@ -533,24 +324,6 @@ void buildEnvironment() {
 	x1[1] = world->getFinalState()[1];
 #endif
 #elif USE_OBSTACLES == 5
-
-#if (DYNAMICS == NONHOLONOMIC)
-	//x_bounds[0] = std::make_pair(0, 200);
-	//x_bounds[1] = std::make_pair(0, 100);
-
-	//x0[1] = 44;
-	//x0[0] = 10;
-	//x1[1] = 56;
-	//x1[0] = 10;
-#else
-	//x_bounds[0] = std::make_pair(0, 200);
-	//x_bounds[1] = std::make_pair(0, 100);
-
-	//x0[1] = 44;
-	//x0[0] = 10;
-	//x1[1] = 56;
-	//x1[0] = 10;
-#endif
 	world = new SimpleRaceTrack();
 
 	x0[0] = world->getStartState()[0];
@@ -567,8 +340,6 @@ void buildEnvironment() {
 	world->setBound(3, make_pair(-10.0, 10.0));
 #endif
 #elif USE_OBSTACLES == 4
-	//x1[0] = x1[1] = 100;
-
 	world = new HardSMaze();
 
 	x0[0] = world->getStartState()[0];
@@ -637,13 +408,11 @@ void buildEnvironment() {
 #endif
 #endif
 #else
-	world = new EmptyWorld(x_bounds);
+	world = new EmptyWorld();
 	world->setBound(1, make_pair(-10.0, 10.0));
 #endif
 
-	// TODO remove this
-	if (world != NULL)
-		world->buildEnvironment();
+	world->buildEnvironment();
 }
 
 void setupVisualization(const state& x0, const state& x1) {
@@ -653,20 +422,6 @@ void setupVisualization(const state& x0, const state& x1) {
 #if (DYNAMICS != QUADROTOR)
 	CAL_SetViewOptions(0, CAL_ORTHOPROJ);
 #endif
-
-	//
-	//int temp;
-	//CAL_CreateGroup(&temp, 0, false);
-	//CAL_SetGroupColor(temp, 1, 0, 0);
-	//CAL_CreateSphere(temp, 0.25, 0, 0, 0);
-	//int nl = 1;
-	//int np[1] = {2};
-	//CAL_scalar p[6] = {0, 0, 0, 0, 0, 10};
-	//CAL_CreatePolyline(temp, nl, np, p);
-	//p[3] = 10.0;
-	//p[5] = 0.0;
-	//CAL_CreatePolyline(temp, nl, np, p);
-	//
 
 #if defined(EXPERIMENT)
 	CAL_SuspendVisualisation();
@@ -729,39 +484,7 @@ void setupVisualization(const state& x0, const state& x1) {
 	double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
 	double up_x = 1.0, up_y = 0.0, up_z = 0.0;
 
-	if (world != NULL) {
-		world->positionCamera();
-	} else {
-#if (DYNAMICS == QUADROTOR)
-		up_x = 0.0;
-		up_z = 1.0;
-///* isometric
-//	eye_x = -x_bounds[0].second;
-//	eye_y = 2*x_bounds[1].second;
-//	eye_z = 2*x_bounds[2].second;
-//	camera_x = x_bounds[0].second/2.0;
-//	camera_y = x_bounds[1].first/2.0;
-//
-
-///* side
-//	eye_y = 3*x_bounds[1].second;
-//	eye_z = x_bounds[2].second/2.0;
-//	camera_z = x_bounds[2].second/2.0;
-//
-
-///* above 
-//		eye_z = 3*x_bounds[2].second;
-//		up_y = 1;
-//		up_x = 0;
-
-#else
-		camera_x = eye_x = x_bounds[0].second/2.0;
-		camera_y = eye_y = x_bounds[1].second/2.0;
-
-#endif
-
-		CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
-	}
+	world->positionCamera();
 
 	double start_x = 0.0, start_y = 0.0, start_z = 0.0;
 	double goal_x = 0.0, goal_y = 0.0, goal_z = 0.0;
@@ -821,11 +544,6 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 	x_pos = x[0];
 	y_pos = x[1];
 	z_pos = x[2];
-/*
-elif
-	x_pos = x[1];
-	z_pos = x[0];
-*/
 #else
 	x_pos = x[0];
 	y_pos = x[1];
@@ -1101,11 +819,7 @@ elif
 	}
 
 	// Check for collisions
-	if (world != NULL) {
-		result = world->checkCollisions(robot_group, &collisions);
-	} else {
-		result = CAL_CheckGroupCollision(robot_group, obstacle_group, false, &collisions);
-	}
+	result = world->checkCollisions(robot_group, &collisions);
 	if (result != CAL_SUCCESS) {
 		cout << "CAL_CheckGroupCollision failed (" << result << ")." << endl;
 		_getchar();
@@ -1147,7 +861,7 @@ inline double applyHeuristics(const state& x0, const state& x1) {
 	
   // Calculate the cost
   double cost = 0.0;
-  const BOUNDS& temp_x_bounds = (world != NULL ? world->getBounds() : x_bounds);
+  const BOUNDS& temp_x_bounds = world->getBounds();
 
 #if (DYNAMICS == QUADROTOR)
 	double cost1 = max(computeHeuristic(x0[0], x1[0], temp_x_bounds[3]), computeHeuristic(x0[1], x1[1], temp_x_bounds[4]));
@@ -1576,15 +1290,13 @@ bool computeCostRK4(const state& x0, const state& x1, double radius, double& cos
 }
 
 bool checkState(const state& x, const control& u) {
-	BOUNDS x_bounds_real = x_bounds;
-	if (world != NULL)
-		x_bounds_real = world->getBounds();
+	BOUNDS x_bounds_real = world->getBounds();
 
 #if (DYNAMICS == NONHOLONOMIC)
 	x_bounds_real[2].first = -DBL_MAX;
 	x_bounds_real[2].second = DBL_MAX;
 #endif
-	bool goodState = (world != NULL ? world->validateState(x) : checkBounds(x, x_bounds_real));
+	bool goodState = world->validateState(x);
 	bool goodControl = checkBounds(u, u_bounds);
 	return goodState && goodControl && collision_free(x);
 }
@@ -4062,7 +3774,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 	node_ids_t k_d_results;
 	int xdims = X_DIM;
 	int expected_nodes = 2*TARGET_NODES;
-	KD_Tree k_d_tree(tree, xdims, (world != NULL ? world->getBounds() : x_bounds), expected_nodes);
+	KD_Tree k_d_tree(tree, xdims, world->getBounds(), expected_nodes);
 	BOUNDS k_d_query;
 
 	// Construct start and goal nodes
@@ -4121,10 +3833,10 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			}
 
 			else {
-				rand_vec(x_rand, (world != NULL ? world->getBounds() : x_bounds));
+				rand_vec(x_rand, world->getBounds());
 			}
 #else
-			rand_vec(x_rand, (world != NULL ? world->getBounds() : x_bounds));
+			rand_vec(x_rand, world->getBounds());
 #endif
 		}
 
@@ -4406,14 +4118,6 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 void init() {
 	srand(time(NULL));
-	
-	TWO_TO_X_DIM = pow(2.0, X_DIM);
-	statespace_volume = 1;
-	for (BOUNDS::iterator p = x_bounds.begin(); p != x_bounds.end(); p++) {
-		statespace_volume *= (p->second - p->first);
-	}
-
-	sphere_volume = volume();
 	
 #if defined(CLOSED_FORM) || defined(CLOSED_FORM_FORWARD)
 	cout << "Using forward closed form." << endl;
@@ -4753,6 +4457,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	setRadius(2, radius);
 
 	setupVisualization(x0, x1);
+
+	TWO_TO_X_DIM = pow(2.0, X_DIM);
+	statespace_volume = 1;
+	const BOUNDS x_bounds = world->getBounds();
+	for (BOUNDS::const_iterator p = x_bounds.begin(); p != x_bounds.end(); p++) {
+		statespace_volume *= (p->second - p->first);
+	}
+
+	sphere_volume = volume();
 
 	//testReduceRadius();
 	

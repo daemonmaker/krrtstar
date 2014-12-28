@@ -173,7 +173,7 @@ class EmptyWorld
 	: public World
 {
 public:
-	EmptyWorld(const BOUNDS& x_bounds)
+	EmptyWorld()
 		: World()
 	{}
 
