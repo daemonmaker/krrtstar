@@ -105,7 +105,7 @@ public:
 		this->_buildEnvironment();
 	}
 
-	virtual void setCamera() {
+	virtual void positionCamera() {
 		double eye_x = 0.0, eye_y = 0.0, eye_z = 0.0;
 		double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
 		double up_x = 1.0, up_y = 0.0, up_z = 0.0;
@@ -430,6 +430,37 @@ public:
 		this->x1[2] = 1;
 	}
 
+	virtual void positionCamera() {
+	double eye_x = 0.0, eye_y = 0.0, eye_z = 0.0;
+	double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
+	double up_x = 1.0, up_y = 0.0, up_z = 0.0;
+
+		up_x = 0.0;
+		up_z = 1.0;
+
+
+//* isometric
+	eye_x = -x_bounds[0].second;
+	eye_y = 2*x_bounds[1].second;
+	eye_z = 2*x_bounds[2].second;
+	camera_x = x_bounds[0].second/2.0;
+	camera_y = x_bounds[1].first/2.0;
+
+
+//* side
+//	eye_y = 3*x_bounds[1].second;
+//	eye_z = x_bounds[2].second/2.0;
+//	camera_z = x_bounds[2].second/2.0;
+
+
+//* above 
+//		eye_z = 3*x_bounds[2].second;
+//		up_y = 1;
+//		up_x = 0;
+
+		CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
+	}
+
 protected:
 	virtual void _buildEnvironment() {
 		CAL_CreateGroup(&border_group, 0, false, "Borders");
@@ -448,7 +479,7 @@ protected:
 #define MAKE_LINE(x1, y1, z1, x2, y2, z2) \
 	p[0] = x1; \
 	p[1] = y1; \
-	p[2] = z1; \+
+	p[2] = z1; \
 	p[3] = x2; \
 	p[4] = y2; \
 	p[5] = z2; \
@@ -497,7 +528,7 @@ protected:
 	\
 	right_segment[3] = bottom_segment[3]; \
 	right_segment[4] = abs(this->x_bounds[1].second - (window[1] + window[4]/2.0)); \
-	right_segment[5] = total_height - top_segment[5] - bottom_segment[5]; \
+	right_segment[5] = window[5]; \
 	right_segment[0] = window[0]; \
 	right_segment[1] = window[1] + window[4]/2.0 + right_segment[4]/2.0; \
 	right_segment[2] = bottom_segment[5] + right_segment[5]/2.0; \

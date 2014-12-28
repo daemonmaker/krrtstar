@@ -97,7 +97,7 @@ double sphere_volume;
 #if (DYNAMICS == QUADROTOR) // Quadrotor
 #define STILL_RATE 5
 #define USE_OBSTACLES 5 // Determines whether to create obstacles
-#define TARGET_NODES 5000 // Determines how many 2000s the tree should have
+#define TARGET_NODES 1000 // Determines how many 2000s the tree should have
 #define START_RADIUS 100 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 10
 

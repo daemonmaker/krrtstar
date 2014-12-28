@@ -730,7 +730,7 @@ void setupVisualization(const state& x0, const state& x1) {
 	double up_x = 1.0, up_y = 0.0, up_z = 0.0;
 
 	if (world != NULL) {
-		world->setCamera();
+		world->positionCamera();
 	} else {
 #if (DYNAMICS == QUADROTOR)
 		up_x = 0.0;
@@ -4092,6 +4092,9 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 	// Create n nodes -- counter variable only incremented when a valid new node is found
 	for (int i = 1; i <= n;) {
+#if defined(SHOW_COLLISION_CHECKS) or defined(SHOW_COLLISIONS)
+		Sleep(100);
+#endif
 #ifndef EXPERIMENT
 		draw_path = false;
 #endif
