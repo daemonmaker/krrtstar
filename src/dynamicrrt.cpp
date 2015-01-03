@@ -1,10 +1,13 @@
 #include "dynamicrrt.h"
 #include <cmath>
 #include <complex>
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 
 using namespace std;
 
 World * world = NULL;
+StateSpace * state_space = NULL;
 
 void dynamicsError() {
 	cout << "Invalid dynamics (" << DYNAMICS << ")" << endl;
@@ -277,7 +280,9 @@ void renderAxis() {
 
 void buildEnvironment() {
 #if (DYNAMICS == QUADROTOR)
-	world = new TwoWalls();
+#define STATE_SPACE QuadrotorStateSpace
+#define WORLD TwoWalls
+	world = new WORLD();
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -297,7 +302,9 @@ void buildEnvironment() {
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D) || (DYNAMICS == NONHOLONOMIC)
 #if USE_OBSTACLES == 6
 #if (DYNAMICS == NONHOLONOMIC)
-	world = new SymmetricRaceTrackMaze();
+#define STATE_SPACE NonholonomicStateSpace
+#define WORLD SymmetricRaceTrackMaze
+	world = new WORLD();
 	world->setBound(2, make_pair(-M_PI,M_PI));
 	world->setBound(3, make_pair(0.01,10));
 	world->setBound(4, make_pair(-0.25,0.25));
@@ -307,7 +314,9 @@ void buildEnvironment() {
 	x1[1] = 60;
 	x1[0] = 10;
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-	world = new TwoPathMaze();
+#define STATE_SPACE StateSpace
+#define WORLD TwoPathMaze
+	world = new WORLD();
 	world->setBound(2, make_pair(-10.0, 10.0));
 	world->setBound(3, make_pair(-10.0, 10.0));
 
@@ -316,7 +325,9 @@ void buildEnvironment() {
 	x1[0] = world->getFinalState()[0];
 	x1[1] = world->getFinalState()[1];
 #else
-	world = new TwoPathMaze();
+#define STATE_SPACE StateSpace
+#define WORLD TwoPathMaze
+	world = new WORLD();
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -411,6 +422,9 @@ void buildEnvironment() {
 	world = new EmptyWorld();
 	world->setBound(1, make_pair(-10.0, 10.0));
 #endif
+
+	boost::function<void (state&)> position_generator(boost::bind(&WORLD::randPosition, (WORLD*)world, _1));
+	state_space = new STATE_SPACE(position_generator, world->getBounds());
 
 	world->buildEnvironment();
 }
@@ -1656,25 +1670,6 @@ inline bool connect(const state& x0, const state& x1, const double radius, doubl
 	}
 
 	return false;
-}
-
-inline double rand_value(double a, double b) {
-	return ((double) (rand()*(RAND_MAX+1) + rand()) / (RAND_MAX*(RAND_MAX + 2))) * (b - a) + a;
-}
-
-template<typename vec, typename bounds>
-inline void rand_vec(vec& v, const bounds& b) {
-	int count = v.rows();
-#if (DYNAMICS == QUADROTOR)
-	v = Eigen::MatrixXd::Zero(v.rows(),v.cols());
-	count = 6;
-#endif
-	for (size_t i = 0; i < count; i++) {
-		v[i] = rand_value(b[i].first, b[i].second);
-	}
-#if (DYNAMICS == NONHOLONOMIC)
-	v[4] = 0;
-#endif
 }
 
 ///**
@@ -3821,23 +3816,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		}
 		// Most the time generate a random configuration
 		else {
-#if (DYNAMICS == QUADROTOR) && (USE_OBSTACLES == 5)
-			double area = rand_value(0, 1);
-
-			if (area < 0.1) {
-				rand_vec(x_rand, ((TwoWalls*)world)->x_bounds_window_1);
-			}
-
-			else if (area < 0.2) {
-				rand_vec(x_rand, ((TwoWalls*)world)->x_bounds_window_2);
-			}
-
-			else {
-				rand_vec(x_rand, world->getBounds());
-			}
-#else
-			rand_vec(x_rand, world->getBounds());
-#endif
+			state_space->randState(x_rand);
 		}
 
 		// Only continue if the configuration is not in collision

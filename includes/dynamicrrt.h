@@ -2,9 +2,8 @@
 
 /*
 TODO
-- Add functionality to world to select random vector - position only, the rest should come from the state
-- Abstract state
 - Abstract robot
+-- Abstract control
 - Re-organize initialization
 - Abstract dynamics
 */
@@ -64,7 +63,9 @@ TODO
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS NONHOLONOMIC
+#define DYNAMICS SINGLE_INTEGRATOR_2D
+
+#define POSITION_DIM 2
 
 // Flags to control various features of the program
 //#define EXPERIMENT
@@ -104,6 +105,8 @@ double control_penalty1 = 0;
 double sphere_volume;
 
 #if (DYNAMICS == QUADROTOR) // Quadrotor
+#define POSITION_DIM 3
+
 #define STILL_RATE 5
 #define USE_OBSTACLES 5 // Determines whether to create obstacles
 #define TARGET_NODES 10000 // Determines how many 2000s the tree should have
@@ -164,15 +167,13 @@ double sphere_volume;
 #endif
 
 #include "bounds.hpp"
+#include "state.hpp"
 #include "worlds.hpp"
 
 #define REACHABILITY_CONSTANT 1.5
 unsigned int TWO_TO_X_DIM;
 double statespace_volume;
 const double X_DIM_INVERSE = 1.0/X_DIM;
-
-typedef Eigen::Matrix<double,X_DIM,1> state;
-typedef Eigen::Matrix<double,U_DIM,1> control;
 
 FILE* time_log;
 FILE* stats_log;

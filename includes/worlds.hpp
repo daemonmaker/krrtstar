@@ -1,5 +1,10 @@
 #include <Eigen/Dense>
 
+#include "state.hpp"
+
+#ifndef __WORLDS_HPP__
+#define __WORLDS_HPP__
+
 int obstacle_group;
 
 void makeWall(float x, float y, float z, int length, double height, bool vertical, bool reverse) {
@@ -121,6 +126,13 @@ public:
 		CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
 	}
 
+	virtual void randPosition(state& s) {
+		this->_randPosition(s, this->x_bounds);
+	}
+
+	virtual void test() {
+	}
+
 	virtual int checkCollisions(int robot_group, int * collisions) {
 		return CAL_CheckGroupCollision(robot_group, this->obstacle_group, false, collisions);
 	}
@@ -167,6 +179,17 @@ protected:
 	}
 
 	virtual void _buildEnvironment() {}
+
+	void inline _randPosition(state& s, const BOUNDS& b) {
+		int i = 0;
+		s[i] = rand_value(b[i].first, b[i].second);
+		++i;
+		s[i] = rand_value(b[i].first, b[i].second);
+#if POSITION_DIM == 3
+		++i;
+		s[i] = rand_value(b[i].first, b[i].second);
+#endif
+	}
 };
 
 class EmptyWorld
@@ -461,6 +484,20 @@ public:
 		CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
 	}
 
+	virtual void randPosition(state& s) {
+		double area = rand_value(0, 1);
+
+		BOUNDS *bounds = &(this->x_bounds);
+		if (area < 0.1) {
+			bounds = &(this->x_bounds_window_1);
+		}
+
+		else if (area < 0.2) {
+			bounds = &(this->x_bounds_window_2);
+		}
+
+		this->_randPosition(s, *bounds);
+	}
 protected:
 	virtual void _buildEnvironment() {
 		CAL_CreateGroup(&border_group, 0, false, "Borders");
@@ -577,3 +614,5 @@ protected:
 		BUILD_SEGMENTS();
 	}
 };
+
+#endif // __WORLDS_HPP__
