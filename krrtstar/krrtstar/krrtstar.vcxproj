@@ -85,8 +85,10 @@
     <ClInclude Include="..\..\includes\dynamicrrt.h" />
     <ClInclude Include="..\..\includes\matrix.h" />
     <ClInclude Include="..\..\includes\polynomial.h" />
+    <ClInclude Include="..\..\includes\robots.hpp" />
     <ClInclude Include="..\..\includes\rpoly.h" />
     <ClInclude Include="..\..\includes\state.hpp" />
+    <ClInclude Include="..\..\includes\utils.hpp" />
     <ClInclude Include="..\..\includes\worlds.hpp" />
   </ItemGroup>
   <ItemGroup>

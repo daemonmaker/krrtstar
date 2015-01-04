@@ -1,6 +1,8 @@
-#include <Eigen/Dense>
-
 #include "state.hpp"
+#include "robots.hpp"
+
+#include <iostream>
+#include <Eigen/Dense>
 
 #ifndef __WORLDS_HPP__
 #define __WORLDS_HPP__
@@ -133,13 +135,43 @@ public:
 	virtual void test() {
 	}
 
+/*
 	virtual int checkCollisions(int robot_group, int * collisions) {
 		return CAL_CheckGroupCollision(robot_group, this->obstacle_group, false, collisions);
+	}
+*/
+
+	virtual void checkCollisions(Robot * robot, int * collisions) {
+		int result = robot->checkCollision(this->obstacle_group, collisions);
+		if (result != CAL_SUCCESS) {
+			std::cout << "CAL_CheckGroupCollision failed (" << result << ")." << std::endl;
+			_getchar();
+			exit(1);
+		}
 	}
 
 	template<typename vec>
 	bool validateState(const vec& v) {
 		return checkBounds(v, this->x_bounds);
+	}
+
+	void showCollisionCheck(const state& s, bool collision) {
+		int x_pos = s[0];
+		int y_pos = s[1];
+#if POSITION_DIM == 3
+		int z_pos = s[2];
+#else
+		int z_pos = 0;
+#endif
+		if (collision) {
+#ifdef SHOW_COLLISIONS
+			CAL_CreateSphere(collision_hit_group, 3*NODE_SIZE, x_pos, y_pos, z_pos);
+#endif
+		} else {
+#ifdef SHOW_COLLISION_CHECKS
+			CAL_CreateSphere(collision_free_group, 3*NODE_SIZE, x_pos, y_pos, z_pos);
+#endif
+		}
 	}
 
 protected:

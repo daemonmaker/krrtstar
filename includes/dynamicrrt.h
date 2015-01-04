@@ -3,7 +3,9 @@
 /*
 TODO
 - Abstract robot
--- Abstract control
+-- World::checkCollisions currently rotates and positions the robot, the robot or the dynamics should do it
+-- Abstract control space
+- Separate state space from world
 - Re-organize initialization
 - Abstract dynamics
 */
@@ -168,6 +170,7 @@ double sphere_volume;
 
 #include "bounds.hpp"
 #include "state.hpp"
+#include "robots.hpp"
 #include "worlds.hpp"
 
 #define REACHABILITY_CONSTANT 1.5

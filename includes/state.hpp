@@ -6,7 +6,6 @@
 #define __STATE_HPP__
 
 typedef Eigen::Matrix<double,X_DIM,1> state;
-typedef Eigen::Matrix<double,U_DIM,1> control;
 
 inline double rand_value(double a, double b) {
 	return ((double) (rand()*(RAND_MAX+1) + rand()) / (RAND_MAX*(RAND_MAX + 2))) * (b - a) + a;
@@ -23,6 +22,10 @@ public:
 		this->_randState(s.rows(), s);
 	}
 
+protected:
+	BOUNDS bounds;
+	boost::function<void (state&)> position_generator;
+
 	void _randState(int count, state& s) {
 		(this->position_generator)(s);
 
@@ -30,10 +33,6 @@ public:
 			s[i] = rand_value(this->bounds[i].first, this->bounds[i].second);
 		}
 	}
-
-protected:
-	BOUNDS bounds;
-	boost::function<void (state&)> position_generator;
 };
 
 class QuadrotorStateSpace

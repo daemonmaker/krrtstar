@@ -1,3 +1,4 @@
+#include "utils.hpp"
 #include "dynamicrrt.h"
 #include <cmath>
 #include <complex>
@@ -8,6 +9,7 @@ using namespace std;
 
 World * world = NULL;
 StateSpace * state_space = NULL;
+Robot * robot = NULL;
 
 void dynamicsError() {
 	cout << "Invalid dynamics (" << DYNAMICS << ")" << endl;
@@ -16,10 +18,14 @@ void dynamicsError() {
 }
 
 void setupParameters(void) {
+	CAL_Initialisation(true, true, true);
+
 	//x_bounds.resize(X_DIM);
 	u_bounds.resize(U_DIM);
 
 #if (DYNAMICS == QUADROTOR)
+	robot = new Quadrotor();
+
 	control_penalty = 0.1;
 
 	u_bounds[0] = std::make_pair(-gravity*mass, 2*gravity*mass);
@@ -55,6 +61,8 @@ void setupParameters(void) {
 	//x1[0] = 4;
 	//x1[2] = 1;
 #elif (DYNAMICS == NONHOLONOMIC)
+	robot = new Nonholonomic();
+
 	control_penalty = 1;
 	control_penalty1 = 50;
 
@@ -79,6 +87,8 @@ void setupParameters(void) {
 
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+	robot = new Puck();
+
 	control_penalty = 0.25;
 
 	u_bounds[0] = std::make_pair(-10, 10);
@@ -97,6 +107,8 @@ void setupParameters(void) {
 	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
+	robot = new Puck();
+
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
@@ -111,6 +123,8 @@ void setupParameters(void) {
 	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
+	robot = new Puck();
+
 	u_bounds[0] = std::make_pair(-10, 10);
 
 	A = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
@@ -132,6 +146,7 @@ void setupParameters(void) {
 #endif
 }
 
+/*
 void setupRobot() {
 	int obj;
 
@@ -257,6 +272,7 @@ void setupRobot() {
 	CAL_SetGroupVisibility(robot_model, 0, false, false);
 #endif
 }
+*/
 
 void renderAxis() {
 	double length = 10.0;
@@ -431,7 +447,7 @@ void buildEnvironment() {
 
 void setupVisualization(const state& x0, const state& x1) {
 	// visualization
-	CAL_Initialisation(true, true, true);
+	//CAL_Initialisation(true, true, true);
 
 #if (DYNAMICS != QUADROTOR)
 	CAL_SetViewOptions(0, CAL_ORTHOPROJ);
@@ -476,7 +492,7 @@ void setupVisualization(const state& x0, const state& x1) {
 
 	CAL_SetGroupColor(collision_hit_group, 1, 0, 0);
 	CAL_SetGroupColor(collision_free_group, 0, 1, 0);
-	CAL_SetGroupColor(robot_group, 0, 0, 0);
+	//CAL_SetGroupColor(robot_group, 0, 0, 0);
 #if defined(MAKE_STILLS) && (DYNAMICS != QUADROTOR)
 	CAL_SetGroupColor(obstacle_group, 0.1, 0.1, 0.1, 1);
 #else
@@ -491,7 +507,7 @@ void setupVisualization(const state& x0, const state& x1) {
 
 	// TODO select the world appropriately
 	buildEnvironment();
-	setupRobot();
+	//setupRobot();
 
 	// Position the camera based on the state bounds
 	double eye_x = 0.0, eye_y = 0.0, eye_z = 0.0;
@@ -513,6 +529,7 @@ void setupVisualization(const state& x0, const state& x1) {
 	start_y = x0[1]; goal_y = x1[1];
 #endif 
 
+	/*
 	// Position the robot
 	CAL_SetGroupPosition(robot_model, start_x, start_y, start_z);
 
@@ -523,6 +540,9 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_SetGroupOrientation(robot_model, 0, 0, rot);
 	CAL_SetGroupOrientation(robot_group, 0, 0, rot);
 #endif
+	*/
+	robot->position(x0);
+	robot->rotate(x0);
 
 #ifdef SHOW_PATHS
 	// Setup the start and goal nodes
@@ -786,6 +806,7 @@ inline bool collision_free(const state& x) {
 #if (USE_OBSTACLES > 0)
 	int result = 0;
 	int collisions = 0;
+	/*
 	double x_pos = 0.0, y_pos = 0.0, z_pos = 0.0;
 
 	// Rotate the robot
@@ -815,11 +836,9 @@ inline bool collision_free(const state& x) {
 	x_pos = x[0];
 	y_pos = x[1];
 	z_pos = x[2];
-/*
-elif 
-	x_pos = x[1];
-	z_pos = x[0];
-*/
+//elif 
+//	x_pos = x[1];
+//	z_pos = x[0];
 #else
 	x_pos = x[0];
 	y_pos = x[1];
@@ -839,9 +858,14 @@ elif
 		_getchar();
 		exit(1);
 	}
+	*/
+
+	robot->rotate(x);
+	robot->position(x);
+	world->checkCollisions(robot, &collisions);
 
 #if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS)
-
+/*
 	if (collisions > 0) {
 #ifdef SHOW_COLLISIONS
 		CAL_CreateSphere(collision_hit_group, 3*NODE_SIZE, x_pos, y_pos, z_pos);
@@ -851,7 +875,10 @@ elif
 		CAL_CreateSphere(collision_free_group, 3*NODE_SIZE, x_pos, y_pos, z_pos);
 #endif
 	}
+*/
+	world->showCollisionCheck(x, collisions > 0);
 #endif
+
 	return (collisions == 0 ? true : false);
 #else
 	return true;
@@ -1303,7 +1330,7 @@ bool computeCostRK4(const state& x0, const state& x1, double radius, double& cos
 	return result;
 }
 
-bool checkState(const state& x, const control& u) {
+bool validateStateAndControl(const state& x, const control& u) {
 	BOUNDS x_bounds_real = world->getBounds();
 
 #if (DYNAMICS == NONHOLONOMIC)
@@ -1534,7 +1561,7 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 			state x = chi.block<X_DIM,1>(0,0);
 			control u = R.ldlt().solve(B.transpose()*chi.block<X_DIM,1>(X_DIM,0));
 
-			if (!(plot || vis) && !checkState(x, u)) {
+			if (!(plot || vis) && !validateStateAndControl(x, u)) {
 				return false;
 			}
 
@@ -1606,7 +1633,7 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 
 		//cout << "checkBounds(x, x_bounds): " << checkBounds(x, x_bounds) << "\tcheckBounds(u, u_bounds): " << checkBounds(u, u_bounds) << endl;
 
-		if (!(plot || vis) && !checkState(x, u)) {
+		if (!(plot || vis) && !validateStateAndControl(x, u)) {
 			return false;
 		}
 
@@ -4126,12 +4153,6 @@ void init() {
 	back.A = &Alpha;
 	back.c = &c0;
 #endif
-}
-
-char _getchar() {
-	char k;
-	cin >> k;
-	return k;
 }
 
 /*
