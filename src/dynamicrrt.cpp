@@ -4,6 +4,7 @@
 #include <complex>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <cassert>
 
 using namespace std;
 
@@ -2176,6 +2177,9 @@ void calc_backward_reachable_bounds(const state& state, const double& radius, BO
 		bounds[1].first = t6_min.real();
 		bounds[1].second = t6_max.real();
 	}
+#else
+	assert(1==0);
+	exit(-1);
 #endif
 }
 
@@ -3403,7 +3407,8 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 	calc_forward_reachable_bounds(x_rand_node.x, radius, k_d_query);
 
 #else
-			k_d_query = x_bounds;
+			//k_d_query = x_bounds;
+			k_d_query = world->getBounds();
 #endif
 
 			// Query k-d tree for nodes that could be reached by new node
@@ -3622,13 +3627,10 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	setupParameters();
 	init();
-	
-	double radius = START_RADIUS;
-	double temp = DBL_MAX;
-	setRadius(2, radius);
 
 	vis::setupVisualization(x0, x1);
 
+	sphere_volume = volume();
 	TWO_TO_X_DIM = pow(2.0, X_DIM);
 	statespace_volume = 1;
 	const BOUNDS x_bounds = world->getBounds();
@@ -3636,7 +3638,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		statespace_volume *= (p->second - p->first);
 	}
 
-	sphere_volume = volume();
+	double radius = START_RADIUS;
+	double temp = DBL_MAX;
+	setRadius(2, radius);
 
 	//testReduceRadius();
 	

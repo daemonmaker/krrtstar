@@ -2,6 +2,7 @@
 
 /*
 TODO
+- Add asserts to verify that certain values exist like sphere_volume
 - Abstract robot
 -- World::checkCollisions currently rotates and positions the robot, the robot or the dynamics should do it
 -- Abstract control space
@@ -60,28 +61,28 @@ TODO
 #endif
 
 // Manages which dynamics are used
-#define SINGLE_INTEGRATOR_2D 1
+#define SINGLE_INTEGRATOR_2D 1  // KD tree is not defined for this -- more specifically calc_forward_reachable_set is not defined.
 #define DOUBLE_INTEGRATOR_1D 2
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS QUADROTOR
+#define DYNAMICS DOUBLE_INTEGRATOR_2D
 
 #define POSITION_DIM 2
 
 // Flags to control various features of the program
 //#define EXPERIMENT
-//#define REDUCE_RADIUS // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
+#define REDUCE_RADIUS // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
-#define SHOW_COLLISION_SLEEP_TIME 1000
+//#define SHOW_ROBOT // Determines whether the robot collision checker should be displayed
+#define SHOW_COLLISION_SLEEP_TIME 100
 #define USE_OBSTACLES 6 // Determines whether to create obstacles
 #define SHOW_TREE true // Determines whether to render the tree -- set to true or false
 #define USE_HEURISTICS // Determines whether heuristics should be used in evaluating sample points
 #define NODE_SIZE 0.1 // Determines the base size of noedes use for displaying things like the path, milestones, etc.
 //#define ALLOW_ORPHANS // Determines whether orphans are permitted
 #define SHOW_PATHS // Determines whether the paths should be displayed
-#define SHOW_ROBOT // Determines whether the robot should be displayed
 //#define VISUALIZE_LOG // Determines whether paths from the log should be played back
 #define MAKE_STILLS -1 // Determines whether stills should be made -- set to -1 to disable
 #define STILL_RATE 25 // Determines how frequently stills should be made
@@ -133,7 +134,7 @@ double sphere_volume;
 #define U_DIM 2
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
-#define TARGET_NODES 500 // Determines how many nodes the tree should have
+#define TARGET_NODES 10000 // Determines how many nodes the tree should have
 #define START_RADIUS 1000000 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
