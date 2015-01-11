@@ -65,7 +65,7 @@ TODO
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS SINGLE_INTEGRATOR_2D
+#define DYNAMICS QUADROTOR
 
 #define POSITION_DIM 2
 
@@ -74,13 +74,14 @@ TODO
 //#define REDUCE_RADIUS // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
+#define SHOW_COLLISION_SLEEP_TIME 1000
 #define USE_OBSTACLES 6 // Determines whether to create obstacles
 #define SHOW_TREE true // Determines whether to render the tree -- set to true or false
 #define USE_HEURISTICS // Determines whether heuristics should be used in evaluating sample points
 #define NODE_SIZE 0.1 // Determines the base size of noedes use for displaying things like the path, milestones, etc.
 //#define ALLOW_ORPHANS // Determines whether orphans are permitted
 #define SHOW_PATHS // Determines whether the paths should be displayed
-//#define SHOW_ROBOT // Determines whether the robot should be displayed
+#define SHOW_ROBOT // Determines whether the robot should be displayed
 //#define VISUALIZE_LOG // Determines whether paths from the log should be played back
 #define MAKE_STILLS -1 // Determines whether stills should be made -- set to -1 to disable
 #define STILL_RATE 25 // Determines how frequently stills should be made
