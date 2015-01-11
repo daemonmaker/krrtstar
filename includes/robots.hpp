@@ -6,40 +6,51 @@
 #ifndef __ROBOTS_HPP__
 #define __ROBOTS_HPP__
 
+#define SET_ROBOT_POSITION(s)	\
+	double x_pos, y_pos, z_pos;	\
+	this->getPosition(s, &x_pos, &y_pos, &z_pos);
+
+#define SET_ROBOT_ORIENTATION(s)	\
+	bool isQuat = true;		\
+	float * o;	\
+	this->getRotation(s, &o, &isQuat);
+
 typedef Eigen::Matrix<double,U_DIM,1> control;
 
 class Robot
 {
 public:
-	Robot() {
+	Robot(bool show_robot = false) {
 		int temp;
 		CAL_CreateGroup(&(this->robot_model), 0, false, "Robot Model");
 		CAL_CreateGroup(&(this->robot_group), 0, true, "Robot Group");
 
-		CAL_SetGroupVisibility(this->robot_group, 0, false, true);
 		CAL_SetGroupColor(this->robot_group, 0, 0, 0);
 
-		this->hide();
+		this->show_model();
+		this->hide_collision_checker();
 	}
 
-	void show() {
+	void show_model() {
 		CAL_SetGroupVisibility(this->robot_model, 0, true, true);
 	}
 
-	void hide() {
-		CAL_SetGroupVisibility(this->robot_model, 0, false, false);
+	void hide_model() {
+		CAL_SetGroupVisibility(this->robot_model, 0, false, true);
 	}
 
-	virtual void rotate(const state& s) = 0;
+	void show_collision_checker() {
+		CAL_SetGroupVisibility(this->robot_group, 0, true, true);
+	}
 
-	virtual void position(const state& s) {
-		int x_pos = s[0];
-		int y_pos = s[1];
-#if POSITION_DIM == 3
-		int z_pos = s[2];
-#else
-		int z_pos = 0;
-#endif
+	void hide_collision_checker() {
+		CAL_SetGroupVisibility(this->robot_group, 0, false, true);
+	}
+
+	virtual void rotate(const state& s, bool model = false) = 0;
+
+	virtual void position(const state& s, bool model = false) {
+		SET_ROBOT_POSITION(s);
 
 		int result = CAL_SetGroupPosition(this->robot_group, x_pos, y_pos, z_pos);
 		if (result != CAL_SUCCESS) {
@@ -47,10 +58,52 @@ public:
 			_getchar();
 			exit(1);
 		}
+
+		if (model) {
+			int result = CAL_SetGroupPosition(this->robot_model, x_pos, y_pos, z_pos);
+			if (result != CAL_SUCCESS) {
+				std::cout << "CAL_SetObjectPosition failed (" << result << ")." << std::endl;
+				_getchar();
+				exit(1);
+			}
+		}
 	}
 
 	virtual int checkCollision(const int obstacle_group, int * collisions) {
 		return CAL_CheckGroupCollision(this->robot_group, obstacle_group, false, collisions);
+	}
+
+	virtual void addGroupKeyState(const double& t, const state& s) {
+		SET_ROBOT_POSITION(s)
+		SET_ROBOT_ORIENTATION(s)
+
+		//cout << "Key frame (" << t << "): " << ~x << "\t" << x[6] << ": " << x_rot << endl;
+		float p[3] = {(float) x_pos, (float) y_pos, (float) z_pos};
+
+		// Daman
+		int result = CAL_AddGroupKeyState(this->robot_model, (float) t, p, o, CAL_NULL, isQuat);
+		if (CAL_SUCCESS != result) {
+			std::cout << "Failed (" << result << ") to add key frame!" << std::endl;
+		}
+	}
+
+	virtual void clearGroupKeyStates(bool subgroups=false) {
+		CAL_ClearGroupKeyStates(this->robot_model, subgroups);
+	}
+
+	virtual void getRotation(const state& s, float ** o, bool * isQuat) {
+		*isQuat = true;
+		(*o) = CAL_NULL;
+	}
+
+	inline void getPosition(const state& s, double * x_pos, double * y_pos, double * z_pos) {
+		*x_pos = s[0];
+		*y_pos = s[1];
+#if POSITION_DIM == 3
+		*z_pos = s[2];
+#else
+		*z_pos = 0;
+#endif
 	}
 
 protected:
@@ -58,12 +111,20 @@ protected:
 	int robot_group;
 	int robot_object;
 
-	void _rotate(const Eigen::Quaternion<double>& q) {
-		int result = CAL_SetGroupQuaternion(robot_group,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
+	void _rotate(const Eigen::Quaternion<double>& q, bool model = false) {
+		int result = CAL_SetGroupQuaternion(this->robot_group,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
 		if (CAL_SUCCESS != result) {
 			std::cout << "CAL_SetGroupQuaternion failed (" << result << ")" << std::endl;
 			_getchar();
 			exit(1);
+		}
+		if (false) {
+			int result = CAL_SetGroupQuaternion(this->robot_model,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
+			if (CAL_SUCCESS != result) {
+				std::cout << "CAL_SetGroupQuaternion failed (" << result << ")" << std::endl;
+				_getchar();
+				exit(1);
+			}
 		}
 	}
 };
@@ -78,9 +139,10 @@ public:
 		CAL_CreateCylinder(this->robot_model, 5, 3, 0, 0, 0);
 		CAL_SetGroupColor(this->robot_model, 0.05, 0.05, 0.05);
 		CAL_SetObjectOrientation(this->robot_object, M_PI/2.0, 0, 0);
+		CAL_SetObjectOrientation(this->robot_model, M_PI/2.0, 0, 0);
 	}
 
-	virtual void rotate(const state& s) {}
+	virtual void rotate(const state& s, bool model = false) {}
 };
 
 class Quadrotor : public Robot
@@ -189,7 +251,7 @@ public:
 		CAL_SetObjectColor(obj, 0.15, 0.15, 0.15);
 	}
 
-	virtual void rotate(const state& s)
+	virtual void rotate(const state& s, bool model = false)
 	{
 		Eigen::Matrix<double,3,3> rot = Eigen::Matrix<double,3,3>::Zero();
 		rot(0,2) = s[4];
@@ -198,8 +260,26 @@ public:
 		rot(2,1) = s[3];
 		Eigen::Matrix<double,3,3> R = rot.exp();
 		Eigen::Quaternion<double> q(R);
-		this->_rotate(q);
+		this->_rotate(q, model);
 		//this->_rotate(Eigen::Quaternion<double>(rot.exp()));
+	}
+
+	virtual void getRotation(const state& s, float ** o, bool * isQuat) {
+		*isQuat = true;
+
+		Eigen::Matrix<double,3,3> rot = Eigen::Matrix<double,3,3>::Zero();
+		rot(0,2) = s[7];
+		rot(1,2) = -s[6];
+		rot(2,0) = -s[7];
+		rot(2,1) = s[6];
+
+		Eigen::Matrix<double,3,3> R = rot.exp();
+		Eigen::Quaternion<double> q(R);
+		*o = new float[4];
+		(*o)[0] = (double)q.x();
+		(*o)[1] = (double)q.y();
+		(*o)[2] = (double)q.z();
+		(*o)[3] = (double)q.w();
 	}
 };
 
@@ -219,7 +299,7 @@ public:
 		double rot = s[2] - 0.5*M_PI;
 		while (rot < 0) rot += 2*M_PI;
 
-		int result = CAL_SetGroupOrientation(robot_group, 0, 0, rot);
+		int result = CAL_SetGroupOrientation(this->robot_group, 0, 0, rot);
 		if (result != CAL_SUCCESS) {
 			std::cout << "CAL_SetGroupOrientation failed (" << result << ")." << std::endl;
 			_getchar();
@@ -227,13 +307,23 @@ public:
 		}
 
 		if (model) {
-			result = CAL_SetGroupOrientation(robot_group, 0, 0, rot);
+			result = CAL_SetGroupOrientation(this->robot_model, 0, 0, rot);
 			if (result != CAL_SUCCESS) {
 				std::cout << "CAL_SetGroupOrientation failed (" << result << ")." << std::endl;
 				_getchar();
 				exit(1);
 			}
 		}
+	}
+
+	virtual void getRotation(const state& s, float ** o, bool * isQuat) {
+		*isQuat = false;
+		double rot = s[2] - 0.5*M_PI;
+		while (rot < 0) rot += 2*M_PI;
+		*o = new float[3];
+		(*o)[0] = 0;
+		(*o)[1] = 0;
+		(*o)[2] = rot;
 	}
 };
 

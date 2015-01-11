@@ -89,6 +89,7 @@
     <ClInclude Include="..\..\includes\rpoly.h" />
     <ClInclude Include="..\..\includes\state.hpp" />
     <ClInclude Include="..\..\includes\utils.hpp" />
+    <ClInclude Include="..\..\includes\visualization.hpp" />
     <ClInclude Include="..\..\includes\worlds.hpp" />
   </ItemGroup>
   <ItemGroup>

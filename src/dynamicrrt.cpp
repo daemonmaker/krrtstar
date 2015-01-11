@@ -144,6 +144,14 @@ void setupParameters(void) {
 #else
     dynamicsError();
 #endif
+
+	robot->show_model();
+
+#if defined(SHOW_ROBOT)
+	robot->show_collision_checker();
+#else
+	robot->hide_collision_checker();
+#endif
 }
 
 /*
@@ -274,6 +282,7 @@ void setupRobot() {
 }
 */
 
+/*
 void renderAxis() {
 	double length = 10.0;
 	double radius = 1.0;
@@ -293,6 +302,7 @@ void renderAxis() {
 	CAL_CreateSphere(axis_group, 1, 0, 0, position, &z_point_id);
 	CAL_SetObjectColor(z_point_id, 0, 0, 1);
 }
+*/
 
 void buildEnvironment() {
 #if (DYNAMICS == QUADROTOR)
@@ -351,6 +361,7 @@ void buildEnvironment() {
 	x1[1] = world->getFinalState()[1];
 #endif
 #elif USE_OBSTACLES == 5
+#define WORLD SimpleRaceTrack
 	world = new SimpleRaceTrack();
 
 	x0[0] = world->getStartState()[0];
@@ -367,7 +378,8 @@ void buildEnvironment() {
 	world->setBound(3, make_pair(-10.0, 10.0));
 #endif
 #elif USE_OBSTACLES == 4
-	world = new HardSMaze();
+#define WORLD HardSMaze
+	world = new WORLD();
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -402,7 +414,8 @@ void buildEnvironment() {
 #endif
 
 #elif USE_OBSTACLES == 2
-	world = new FourRooms();
+#define WORLD FourRooms
+	world = new WORLD();
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -418,7 +431,8 @@ void buildEnvironment() {
 	world->setBound(3, make_pair(-10.0, 10.0));
 #endif
 #elif USE_OBSTACLES == 1
-	world = new Cylinders();
+#define WORLD Cylinders
+	world = new WORLD();
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -435,7 +449,9 @@ void buildEnvironment() {
 #endif
 #endif
 #else
-	world = new EmptyWorld();
+#define STATE_SPACE StateSpace
+#define WORLD EmptyWorld
+	world = new WORLD();
 	world->setBound(1, make_pair(-10.0, 10.0));
 #endif
 
@@ -445,6 +461,9 @@ void buildEnvironment() {
 	world->buildEnvironment();
 }
 
+#include "visualization.hpp"
+
+/*
 void setupVisualization(const state& x0, const state& x1) {
 	// visualization
 	//CAL_Initialisation(true, true, true);
@@ -529,20 +548,19 @@ void setupVisualization(const state& x0, const state& x1) {
 	start_y = x0[1]; goal_y = x1[1];
 #endif 
 
-	/*
-	// Position the robot
-	CAL_SetGroupPosition(robot_model, start_x, start_y, start_z);
+//	// Position the robot
+//	CAL_SetGroupPosition(robot_model, start_x, start_y, start_z);
+//
+//#if (DYNAMICS == NONHOLONOMIC)
+//	double rot = x0[2] - 0.5*M_PI;
+//	while (rot < 0) rot += 2*M_PI;
+//
+//	CAL_SetGroupOrientation(robot_model, 0, 0, rot);
+//	CAL_SetGroupOrientation(robot_group, 0, 0, rot);
+//#endif
 
-#if (DYNAMICS == NONHOLONOMIC)
-	double rot = x0[2] - 0.5*M_PI;
-	while (rot < 0) rot += 2*M_PI;
-
-	CAL_SetGroupOrientation(robot_model, 0, 0, rot);
-	CAL_SetGroupOrientation(robot_group, 0, 0, rot);
-#endif
-	*/
-	robot->position(x0);
-	robot->rotate(x0);
+	robot->position(x0, true);
+	robot->rotate(x0, true);
 
 #ifdef SHOW_PATHS
 	// Setup the start and goal nodes
@@ -554,6 +572,7 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_CreateSphere(goal_node_group, 5*NODE_SIZE, goal_x, goal_y, goal_z);
 #endif
 }
+*/
 
 ///*
 //inline Matrix<4,1> quatFromRot(const Matrix<3,3>& R) {
@@ -568,42 +587,43 @@ void setupVisualization(const state& x0, const state& x1) {
 //}
 //
 
-
+/*
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
 	bool isQuat = true;
 	double x_rot, y_rot;
 	double x_pos = 0.0, y_pos = 0.0, z_pos = 0.0;
 
-#if (DYNAMICS == QUADROTOR)
-	x_pos = x[0];
-	y_pos = x[1];
-	z_pos = x[2];
-#else
-	x_pos = x[0];
-	y_pos = x[1];
-#endif
+//#if (DYNAMICS == QUADROTOR)
+//	x_pos = x[0];
+//	y_pos = x[1];
+//	z_pos = x[2];
+//#else
+//	x_pos = x[0];
+//	y_pos = x[1];
+//#endif
+//
+//#if (DYNAMICS == QUADROTOR)
+//	Eigen::Matrix<double,3,3> rot = Eigen::Matrix<double,3,3>::Zero();
+//	rot(0,2) = x[7];
+//	rot(1,2) = -x[6];
+//	rot(2,0) = -x[7];
+//	rot(2,1) = x[6];
+//
+//	Eigen::Matrix<double,3,3> R = rot.exp();
+//	Eigen::Quaternion<double> q(R);
+//	float o[4] = {(float)q.x(), (float)q.y(), (float)q.z(), (float)q.w()};
+//#elif (DYNAMICS == NONHOLONOMIC)
+//	isQuat = false;
+//	double rot = x[2] - 0.5*M_PI;
+//	while (rot < 0) rot += 2*M_PI;
+//	float o[3] = {0, 0, rot};
+//#else
+//	float *o = CAL_NULL;
+//#endif
 
-#if (DYNAMICS == QUADROTOR)
-	Eigen::Matrix<double,3,3> rot = Eigen::Matrix<double,3,3>::Zero();
-	rot(0,2) = x[7];
-	rot(1,2) = -x[6];
-	rot(2,0) = -x[7];
-	rot(2,1) = x[6];
-
-	Eigen::Matrix<double,3,3> R = rot.exp();
-	Eigen::Quaternion<double> q(R);
-	float o[4] = {(float)q.x(), (float)q.y(), (float)q.z(), (float)q.w()};
-#elif (DYNAMICS == NONHOLONOMIC)
-	isQuat = false;
-	double rot = x[2] - 0.5*M_PI;
-	while (rot < 0) rot += 2*M_PI;
-	float o[3] = {0, 0, rot};
-#else
-	float *o = CAL_NULL;
-#endif
-
-	//cout << "Key frame (" << t << "): " << ~x << "\t" << x[6] << ": " << x_rot << endl;
-	float p[3] = {(float) x_pos, (float) y_pos, (float) z_pos};
+	robot->getPosition(x, &x_pos, &y_pos, &z_pos);
+	float * o;
+	robot->getRotation(x, &o, &isQuat);
 
 	if (still) {
 		Eigen::Matrix<double,3,1> current_pos;
@@ -614,11 +634,9 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 		int new_group;
 
 #if (DYNAMICS == QUADROTOR)
-		/*
-		CAL_CloneGroup(&new_group, robot_model, stills_group, false, "Stills subgroup");
-		CAL_SetGroupVisibility(new_group, 0, true, true);
-		CAL_SetGroupQuaternion(new_group,o[0],o[1],o[2],o[3]);
-		*/
+		//CAL_CloneGroup(&new_group, robot_model, stills_group, false, "Stills subgroup");
+		//CAL_SetGroupVisibility(new_group, 0, true, true);
+		//CAL_SetGroupQuaternion(new_group,o[0],o[1],o[2],o[3]);
 #elif (DYNAMICS == NONHOLONOMIC)
 		CAL_CreateGroup(&new_group, stills_group, false, "Stills subgroup");
 
@@ -648,29 +666,38 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 #endif
 
 	} else {
-		// Daman
-		int result = CAL_AddGroupKeyState(robot_model, (float) t, p, o, CAL_NULL, isQuat);
-		if (CAL_SUCCESS != result) {
-			cout << "Failed (" << result << ") to add key frame!" << endl;
-		}
+		robot->addGroupKeyState(t, x);
+		////cout << "Key frame (" << t << "): " << ~x << "\t" << x[6] << ": " << x_rot << endl;
+		//float p[3] = {(float) x_pos, (float) y_pos, (float) z_pos};
+
+		//// Daman
+		//int result = CAL_AddGroupKeyState(robot_model, (float) t, p, o, CAL_NULL, isQuat);
+		//if (CAL_SUCCESS != result) {
+		//	cout << "Failed (" << result << ") to add key frame!" << endl;
+		//}
 	}
 
 #ifdef SHOW_PATHS
 	CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_pos, y_pos, z_pos);
 #endif
 }
+*/
 
+/*
 bool state_order(const state_time_t& a, const state_time_t& b) {
 	return (a.first < b.first);
 }
+*/
 
+/*
 void visualize(const tree_t& tree) {
 	CAL_EmptyGroup(solution_group);
 	CAL_EmptyGroup(solution_marker_group);
 	CAL_SetGroupColor(solution_group, 0, 0, 1);
 	CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
 
-	CAL_ClearGroupKeyStates(robot_model, true);
+	//CAL_ClearGroupKeyStates(robot_model, true);
+	robot->clearGroupKeyStates(true);
 	
 	Node current = tree[0];
 	double cost, tau;
@@ -714,6 +741,7 @@ void visualize(const tree_t& tree) {
 	fwrite((const void *)&sentinel, sizeof(double), 1, path_log);
 	fflush(path_log);
 }
+*/
 
 template <size_t _numRows>
 struct lyapunov {
@@ -876,7 +904,7 @@ inline bool collision_free(const state& x) {
 #endif
 	}
 */
-	world->showCollisionCheck(x, collisions > 0);
+	world->showCollisionCheck(x, collisions > 0, collision_hit_group, collision_free_group);
 #endif
 
 	return (collisions == 0 ? true : false);
@@ -1342,6 +1370,7 @@ bool validateStateAndControl(const state& x, const control& u) {
 	return goodState && goodControl && collision_free(x);
 }
 
+/*
 void plotPath(const state& x0, const state& x1, const double radius) {
 	state_time_list_t segment;
 	double max_tau = 0.0;
@@ -1360,6 +1389,7 @@ void plotPath(const state& x0, const state& x1, const double radius) {
 		}
 	}
 }
+*/
 
 bool checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
 	double t;
@@ -1581,7 +1611,8 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 				if (plot) {
 					fwrite((const void *)&t, sizeof(double), 1, path_log);
 					fwrite(x.data(), sizeof(double), (x.rows())*(x.cols()), path_log);
-					CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
+					//CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
+					vis::createSphere(2*NODE_SIZE, x_coord, y_coord, z_coord);
 				}
 
 				if (vis) {
@@ -1655,7 +1686,8 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 				fwrite((const void *)&(temp), sizeof(double), 1, path_log);
 				//FIX HERE
 				fwrite(x.data(), sizeof(double), (x.rows())*(x.cols()), path_log);
-				CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
+				//CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
+				vis::createSphere(2*NODE_SIZE, x_coord, y_coord, z_coord);
 			}
 
 			if (vis) {
@@ -1849,7 +1881,7 @@ inline void setRadius(const double& num_states, double& radius) {
 	return;
 #endif
 }
-
+/*
 void drawTree(const tree_t& tree) {
 	int np[1] = {2};
 	float p[6] = {0, 0, 0, 0, 0, 0};
@@ -1972,7 +2004,7 @@ void drawTree(const tree_t& tree) {
 		}
 	}
 }
-
+*/
 #define summarize_path(os, time_diff, number_of_nodes, target_number_of_nodes, cost_from_start, radius, number_of_orphans) {\
 	paths++; \
 	cout << "                                                                              \r"; \
@@ -4114,7 +4146,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 #ifndef EXPERIMENT
 		if (draw_path) {
-			visualize(tree);
+			vis::visualize(tree);
 		}
 #endif
 
@@ -4231,6 +4263,7 @@ void graphPath() {
 	exit(0);
 }
 */
+/*
 void visualizeLog() {
 	path_log = fopen("path_log.txt", "rb");
 
@@ -4256,7 +4289,8 @@ void visualizeLog() {
 			CAL_SetGroupColor(solution_group, 0, 0, 1);
 			CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
 
-			CAL_ClearGroupKeyStates(robot_model, true);
+			//CAL_ClearGroupKeyStates(robot_model, true);
+			robot->clearGroupKeyStates(true);
 			fread((void *)&t, sizeof(double), 1, path_log);
 		}
 		for (int i = 0; i < X_DIM; i++) {
@@ -4276,7 +4310,9 @@ void visualizeLog() {
 	_getchar();
 	exit(0);
 }
+*/
 
+/*
 void makeStills(int path) {
 	path_log = fopen("path_log.txt", "rb");
 
@@ -4304,7 +4340,7 @@ void makeStills(int path) {
 				float current_z = 0;
 				reverse(states.begin(), states.end());
 				for (state_time_list_t::iterator p = states.begin(); p != states.end(); p++) {
-///*
+//
 //				CAL_SetGroupColor(p->first, current_r, current_g, current_b);
 //				current_r += alpha_change;
 //				current_g -= alpha_change;
@@ -4340,7 +4376,7 @@ void makeStills(int path) {
 
 
 			CAL_EmptyGroup(stills_group, true);
-///*
+//
 //			CAL_EmptyGroup(solution_group);
 //			CAL_EmptyGroup(solution_marker_group);
 //			CAL_SetGroupColor(solution_group, 0, 0, 1);
@@ -4377,7 +4413,7 @@ void makeStills(int path) {
 	_getchar();
 	exit(0);
 }
-
+*/
 void convertTreeToPoints(const tree_t& tree, double *points) {
 	int i = 0;
 	for (tree_t::const_iterator p = tree.begin(); p != tree.end(); p++) {
@@ -4456,7 +4492,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	double temp = DBL_MAX;
 	setRadius(2, radius);
 
-	setupVisualization(x0, x1);
+	vis::setupVisualization(x0, x1);
 
 	TWO_TO_X_DIM = pow(2.0, X_DIM);
 	statespace_volume = 1;
@@ -4520,9 +4556,9 @@ x1[5] = 0;
 	fputs(os.str().c_str(), time_log);
 	fflush(time_log);
 
-//#ifdef GRAPH_PATH
-//	graphPath();
-//#endif
+#ifdef GRAPH_PATH
+	vis::graphPath();
+#endif
 
 	start_time = clock();
 	tree_t tree;
@@ -4538,16 +4574,16 @@ x1[5] = 0;
 		cout << setw(10) << 0 << " " << setw(11) << TARGET_NODES << "/" << TARGET_NODES << " cost: " << tree[0].cost_from_start << endl;
 	} else {
 		cout << endl << "No path found" << endl;
-		drawTree(tree);
+		vis::drawTree(tree);
 		_getchar();
 		exit(0);
 	}
 
 	// Build a visualization of the final path
-	visualize(tree);
+	vis::visualize(tree);
 
 	// Draw the tree
-	drawTree(tree);
+	vis::drawTree(tree);
 
 	CAL_ResumeVisualisation();
 

@@ -80,7 +80,7 @@ TODO
 #define NODE_SIZE 0.1 // Determines the base size of noedes use for displaying things like the path, milestones, etc.
 //#define ALLOW_ORPHANS // Determines whether orphans are permitted
 #define SHOW_PATHS // Determines whether the paths should be displayed
-#define SHOW_ROBOT // Determines whether the robot should be displayed
+//#define SHOW_ROBOT // Determines whether the robot should be displayed
 //#define VISUALIZE_LOG // Determines whether paths from the log should be played back
 #define MAKE_STILLS -1 // Determines whether stills should be made -- set to -1 to disable
 #define STILL_RATE 25 // Determines how frequently stills should be made
@@ -230,9 +230,9 @@ typedef std::pair<int, node_id_t > splitting_dim_node_id_t;
 typedef std::vector<splitting_dim_node_id_t > k_d_stack_t;
 typedef std::vector<node_id_t > node_ids_t;
 
-int axis_group, collision_hit_group, collision_free_group, robot_group, robot_object
+/*int axis_group, collision_hit_group, collision_free_group, robot_group, robot_object
 	, start_node_group, goal_node_group, node_group, edge_group, velocity_group, solution_group
-	, solution_marker_group, robot_model;
+	, solution_marker_group, robot_model*/;
 
 int stills_group;
 std::vector< std::pair<int, Eigen::Matrix<double,3,1> > > stills_groups;

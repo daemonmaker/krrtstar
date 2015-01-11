@@ -155,7 +155,7 @@ public:
 		return checkBounds(v, this->x_bounds);
 	}
 
-	void showCollisionCheck(const state& s, bool collision) {
+	void showCollisionCheck(const state& s, bool collision, int collision_hit_group, int collision_free_group) {
 		int x_pos = s[0];
 		int y_pos = s[1];
 #if POSITION_DIM == 3
