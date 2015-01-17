@@ -66,13 +66,13 @@ TODO
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS DOUBLE_INTEGRATOR_2D
+#define DYNAMICS DOUBLE_INTEGRATOR_1D
 
 #define POSITION_DIM 2
 
 // Flags to control various features of the program
 //#define EXPERIMENT
-#define REDUCE_RADIUS // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
+#define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
 //#define SHOW_ROBOT // Determines whether the robot collision checker should be displayed
@@ -89,6 +89,15 @@ TODO
 #define HUE_SHIFT
 //#define GRAPH_PATH
 //#define PLOT_PATH // Displays just a single spline
+
+#if (defined(REDUCE_RADIUS) && DYNAMICS == SINGLE_INTEGRATOR_2D)
+#undef REDUCE_RADIUS
+#endif
+
+#if (defined(REDUCE_RADIUS) && DYNAMICS == SINGLE_INTEGRATOR_2D)
+#error Reduce radius does not work with this system.
+#endif
+
 #ifdef REDUCE_RADIUS
 #define K_D_TREE_BACKWARD
 #define K_D_TREE_FORWARD
@@ -120,6 +129,7 @@ double sphere_volume;
 #define POLY_DEGREE 8
 #define DIM 3
 #define X_DIM 10
+#define Z_DIM 10
 #define U_DIM 3
 #define NODE_SIZE 0.01
 
@@ -131,6 +141,7 @@ double sphere_volume;
 #define POLY_DEGREE 6
 #define DIM 2
 #define X_DIM 5
+#define Z_DIM 5
 #define U_DIM 2
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
@@ -141,6 +152,7 @@ double sphere_volume;
 #define POLY_DEGREE 4
 #define DIM 2
 #define X_DIM 4
+#define Z_DIM 4
 #define U_DIM 2
 
 #define X_COORD 0
@@ -156,6 +168,7 @@ double sphere_volume;
 #define POLY_DEGREE 2
 #define DIM 2
 #define X_DIM 2
+#define Z_DIM 2
 #define U_DIM 2
 
 #else // 1D double integrator
@@ -166,6 +179,7 @@ double sphere_volume;
 #define POLY_DEGREE 4
 #define DIM 1
 #define X_DIM 2
+#define Z_DIM 2
 #define U_DIM 1
 
 #endif
@@ -200,15 +214,22 @@ BOUNDS u_bounds;
 #endif
 #endif
 
-Eigen::Matrix<double,X_DIM,X_DIM> A;
-Eigen::Matrix<double,X_DIM,U_DIM> B;
-Eigen::Matrix<double,X_DIM,1> c;
-Eigen::Matrix<double,U_DIM,U_DIM> R;
+Eigen::Matrix<double,X_DIM,X_DIM> A = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
+Eigen::Matrix<double,X_DIM,U_DIM> B = Eigen::Matrix<double,X_DIM,U_DIM>::Zero();
+Eigen::Matrix<double,X_DIM,1> c = state::Zero();
+Eigen::Matrix<double,U_DIM,U_DIM> R = Eigen::Matrix<double,U_DIM,U_DIM>::Zero();
 Eigen::Matrix<double,X_DIM,X_DIM> BRiBt;
-Eigen::Matrix<double,X_DIM,1> x0, x1;
+Eigen::Matrix<double,X_DIM,1> x0 = state::Zero();
+Eigen::Matrix<double,X_DIM,1> x1 = state::Zero();
 Eigen::Matrix<double,2*X_DIM,2*X_DIM> Alpha;
 Eigen::Matrix<double,2*X_DIM,1> chi;
 Eigen::Matrix<double,2*X_DIM,1> c0;
+Eigen::Matrix<double,X_DIM,X_DIM> M = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
+Eigen::Matrix<double,X_DIM,1> v = Eigen::Matrix<double,X_DIM,1>::Zero();
+Eigen::Matrix<double,Z_DIM,X_DIM> C = Eigen::Matrix<double,Z_DIM,X_DIM>::Zero();
+Eigen::Matrix<double,Z_DIM,1> d = Eigen::Matrix<double,Z_DIM,1>::Zero();
+Eigen::Matrix<double,Z_DIM,Z_DIM> N = Eigen::Matrix<double,Z_DIM,Z_DIM>::Zero();
+Eigen::Matrix<double,Z_DIM,1> w = Eigen::Matrix<double,Z_DIM,1>::Zero();
 
 struct Node {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;

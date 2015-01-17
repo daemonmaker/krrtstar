@@ -37,8 +37,6 @@ void setupParameters(void) {
 	u_bounds[1] = std::make_pair(-3.62, 3.62);
 	u_bounds[2] = std::make_pair(-3.62, 3.62);
 
-	//A.reset();
-	A = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
 	A.block<3,3>(0,3) = Eigen::Matrix<double,3,3>::Identity();
 	A.block<2,2>(6,8) = Eigen::Matrix<double,2,2>::Identity();
 	A(3,7) = gravity;
@@ -48,17 +46,12 @@ void setupParameters(void) {
 	B(8,1) = length/inertia;
 	B(9,2) = length/inertia;
 
-	c = state::Zero();
-
-	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 	R(0,0) = 0.25*control_penalty;
 	R(1,1) = R(2,2) = 0.5*control_penalty;
 
-	//x0 = state::Zero();
 	//x0[0] = 1;
 	//x0[2] = 4;
 
-	//x1 = state::Zero();
 	//x1[0] = 4;
 	//x1[2] = 1;
 #elif (DYNAMICS == NONHOLONOMIC)
@@ -70,19 +63,15 @@ void setupParameters(void) {
 	u_bounds[0] = std::make_pair(-DBL_MAX,DBL_MAX);
 	u_bounds[1] = std::make_pair(-DBL_MAX,DBL_MAX);
 
-	B = Eigen::Matrix<double,X_DIM,U_DIM>::Zero();
 	B(3,0) = 1;
 	B(4,1) = 1;
 
-	R = Eigen::Matrix<double,U_DIM,U_DIM>::Zero();
 	R(0,0) = control_penalty;
 	R(1,1) = control_penalty1;
 
-	x0 = state::Zero();
 	x0[2] = -M_PI/2;		
 	x0[3] = 1;
 	
-	x1 = state::Zero();
 	x1[2] = -M_PI/2;
 	x1[3] = 1;
 
@@ -95,17 +84,13 @@ void setupParameters(void) {
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
-	A = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
 	A(0,2) = 1;
 	A(1,3) = 1;
 
-	B = Eigen::Matrix<double,X_DIM,U_DIM>::Zero();
 	B(2,0) = 1;
 	B(3,1) = 1;
 
 	c = state::Zero();
-
-	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
 	robot = new Puck();
@@ -113,33 +98,22 @@ void setupParameters(void) {
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
-	A = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
-
-	B = Eigen::Matrix<double,X_DIM,U_DIM>::Zero();
 	B(0,1) = 1;
 	B(1,1) = 1;
 
 	c = state::Zero();
-
-	R = Eigen::Matrix<double,U_DIM,U_DIM>::Identity();
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
 	robot = new Puck();
 
 	u_bounds[0] = std::make_pair(-10, 10);
 
-	A = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
 	A(0,1) = 1;
 
-	B = Eigen::Matrix<double,X_DIM,U_DIM>::Zero();
 	B(1,0) = 1;
-
-	c = state::Zero();
 
 	R = Eigen::Matrix<double,U_DIM,U_DIM>::Zero();
 
-	x0 = state::Zero();
-	x1 = state::Zero();
 	x1[0] = 100;
 
 #else
@@ -304,6 +278,16 @@ void buildEnvironment() {
 #define WORLD EmptyWorld
 	world = new WORLD();
 	world->setBound(1, make_pair(-10.0, 10.0));
+
+	M(0,0) = 0.25*0.0001 + 0.0000000000001;
+	M(1,1) = 0.25*0.0001 + 0.0000000000001;
+	M(2,2) = 1.0*0.0001 + 0.0000000000001;
+	M(3,3) = 1.0*0.0001 + 0.0000000000001;
+	M(2,0) = 0.5*0.0001;
+	M(3,1) = 0.5*0.0001;
+
+	N(0,0) = 0.000001;
+	N(1,1) = 0.000001;
 #endif
 
 	boost::function<void (state&)> position_generator(boost::bind(&WORLD::randPosition, (WORLD*)world, _1));
