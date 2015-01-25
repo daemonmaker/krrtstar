@@ -35,6 +35,7 @@ TODO
 
 //#include "matrix.h"
 #include "callisto.h"
+#include "callistoTypes.h"
 //#define _POLY_DEBUG
 #include "polynomial.h"
 #include "rpoly.h"
@@ -66,7 +67,7 @@ TODO
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS DOUBLE_INTEGRATOR_1D
+#define DYNAMICS DOUBLE_INTEGRATOR_2D
 
 #define POSITION_DIM 2
 

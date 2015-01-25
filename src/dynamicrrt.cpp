@@ -12,6 +12,8 @@ World * world = NULL;
 StateSpace * state_space = NULL;
 Robot * robot = NULL;
 
+#include "visualization.hpp"
+
 void dynamicsError() {
 	cout << "Invalid dynamics (" << DYNAMICS << ")" << endl;
 	_getchar();
@@ -19,13 +21,13 @@ void dynamicsError() {
 }
 
 void setupParameters(void) {
-	CAL_Initialisation(true, true, true);
+	vis::initVisulization();
 
 	//x_bounds.resize(X_DIM);
 	u_bounds.resize(U_DIM);
 
 #if (DYNAMICS == QUADROTOR)
-	robot = new Quadrotor();
+	robot = new Quadrotor(vis::cal_rotate);
 
 	control_penalty = 0.1;
 
@@ -55,7 +57,7 @@ void setupParameters(void) {
 	//x1[0] = 4;
 	//x1[2] = 1;
 #elif (DYNAMICS == NONHOLONOMIC)
-	robot = new Nonholonomic();
+	robot = new Nonholonomic(vis::cal_rotate);
 
 	control_penalty = 1;
 	control_penalty1 = 50;
@@ -77,7 +79,7 @@ void setupParameters(void) {
 
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-	robot = new Puck();
+	robot = new Puck(vis::cal_rotate);
 
 	control_penalty = 0.25;
 
@@ -93,7 +95,7 @@ void setupParameters(void) {
 	c = state::Zero();
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
-	robot = new Puck();
+	robot = new Puck(vis::cal_rotate);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -104,7 +106,7 @@ void setupParameters(void) {
 	c = state::Zero();
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
-	robot = new Puck();
+	robot = new Puck(vis::cal_rotate);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 
@@ -129,11 +131,11 @@ void setupParameters(void) {
 #endif
 }
 
-void buildEnvironment() {
+void buildEnvironment(int base_group) {
 #if (DYNAMICS == QUADROTOR)
 #define STATE_SPACE QuadrotorStateSpace
 #define WORLD TwoWalls
-	world = new WORLD();
+	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -155,7 +157,7 @@ void buildEnvironment() {
 #if (DYNAMICS == NONHOLONOMIC)
 #define STATE_SPACE NonholonomicStateSpace
 #define WORLD SymmetricRaceTrackMaze
-	world = new WORLD();
+	world = new WORLD(base_group);
 	world->setBound(2, make_pair(-M_PI,M_PI));
 	world->setBound(3, make_pair(0.01,10));
 	world->setBound(4, make_pair(-0.25,0.25));
@@ -167,9 +169,19 @@ void buildEnvironment() {
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
 #define STATE_SPACE StateSpace
 #define WORLD TwoPathMaze
-	world = new WORLD();
+	world = new WORLD(base_group);
 	world->setBound(2, make_pair(-10.0, 10.0));
 	world->setBound(3, make_pair(-10.0, 10.0));
+
+	M(0,0) = 0.25*0.0001 + 0.0000000000001;
+	M(1,1) = 0.25*0.0001 + 0.0000000000001;
+	M(2,2) = 1.0*0.0001 + 0.0000000000001;
+	M(3,3) = 1.0*0.0001 + 0.0000000000001;
+	M(2,0) = 0.5*0.0001;
+	M(3,1) = 0.5*0.0001;
+
+	N(0,0) = 0.000001;
+	N(1,1) = 0.000001;
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -178,7 +190,7 @@ void buildEnvironment() {
 #else
 #define STATE_SPACE StateSpace
 #define WORLD TwoPathMaze
-	world = new WORLD();
+	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -187,7 +199,7 @@ void buildEnvironment() {
 #endif
 #elif USE_OBSTACLES == 5
 #define WORLD SimpleRaceTrack
-	world = new SimpleRaceTrack();
+	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -204,7 +216,7 @@ void buildEnvironment() {
 #endif
 #elif USE_OBSTACLES == 4
 #define WORLD HardSMaze
-	world = new WORLD();
+	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -222,7 +234,7 @@ void buildEnvironment() {
 #elif USE_OBSTACLES == 3
 	x1[0] = x1[1] = 100;
 
-	world = new EasySMaze();
+	world = new EasySMaze(vis::cal_rotate);
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -240,7 +252,7 @@ void buildEnvironment() {
 
 #elif USE_OBSTACLES == 2
 #define WORLD FourRooms
-	world = new WORLD();
+	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -257,7 +269,7 @@ void buildEnvironment() {
 #endif
 #elif USE_OBSTACLES == 1
 #define WORLD Cylinders
-	world = new WORLD();
+	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -276,18 +288,8 @@ void buildEnvironment() {
 #else
 #define STATE_SPACE StateSpace
 #define WORLD EmptyWorld
-	world = new WORLD();
+	world = new WORLD(base_group);
 	world->setBound(1, make_pair(-10.0, 10.0));
-
-	M(0,0) = 0.25*0.0001 + 0.0000000000001;
-	M(1,1) = 0.25*0.0001 + 0.0000000000001;
-	M(2,2) = 1.0*0.0001 + 0.0000000000001;
-	M(3,3) = 1.0*0.0001 + 0.0000000000001;
-	M(2,0) = 0.5*0.0001;
-	M(3,1) = 0.5*0.0001;
-
-	N(0,0) = 0.000001;
-	N(1,1) = 0.000001;
 #endif
 
 	boost::function<void (state&)> position_generator(boost::bind(&WORLD::randPosition, (WORLD*)world, _1));
@@ -295,8 +297,6 @@ void buildEnvironment() {
 
 	world->buildEnvironment();
 }
-
-#include "visualization.hpp"
 
 template <size_t _numRows>
 struct lyapunov {
@@ -3612,7 +3612,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	setupParameters();
 	init();
 
-	vis::setupVisualization(x0, x1);
+	vis::setupVisualization(x0, x1, buildEnvironment);
 
 	sphere_volume = volume();
 	TWO_TO_X_DIM = pow(2.0, X_DIM);

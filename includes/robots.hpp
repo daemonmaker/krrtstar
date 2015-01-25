@@ -1,6 +1,7 @@
 #include "utils.hpp"
 #include "state.hpp"
 
+
 #include <iostream>
 
 #ifndef __ROBOTS_HPP__
@@ -19,11 +20,20 @@ typedef Eigen::Matrix<double,U_DIM,1> control;
 
 class Robot
 {
+protected:
+	int base_group;
+	int robot_model;
+	int robot_group;
+	int robot_collision_object;
+	int robot_model_object;
+
 public:
-	Robot(bool show_robot = false) {
+	Robot(int base_group, bool show_robot = false)
+		: base_group(base_group)
+	{
 		int temp;
-		CAL_CreateGroup(&(this->robot_model), 0, false, "Robot Model");
-		CAL_CreateGroup(&(this->robot_group), 0, true, "Robot Group");
+		CAL_CreateGroup(&(this->robot_model), this->base_group, false, "Robot Model");
+		CAL_CreateGroup(&(this->robot_group), this->base_group, true, "Robot Group");
 
 		CAL_SetGroupColor(this->robot_group, 0, 0, 0);
 
@@ -73,6 +83,19 @@ public:
 		return CAL_CheckGroupCollision(this->robot_group, obstacle_group, false, collisions);
 	}
 
+	double computeStdDev(const int obstacle_group, const state& s) {
+		this->position(s);
+
+		int num_pairs;
+		CAL_GetClosestPairs(this->robot_group, obstacle_group, &num_pairs);
+		SCALResult* results = new SCALResult[num_pairs];
+		CAL_GetResults(results);
+		double distance = results[0].distance;
+		delete[] results;
+
+		return distance;
+	}
+
 	virtual void addGroupKeyState(const double& t, const state& s) {
 		SET_ROBOT_POSITION(s)
 		SET_ROBOT_ORIENTATION(s)
@@ -107,10 +130,6 @@ public:
 	}
 
 protected:
-	int robot_model;
-	int robot_group;
-	int robot_object;
-
 	void _rotate(const Eigen::Quaternion<double>& q, bool model = false) {
 		int result = CAL_SetGroupQuaternion(this->robot_group,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
 		if (CAL_SUCCESS != result) {
@@ -118,7 +137,7 @@ protected:
 			_getchar();
 			exit(1);
 		}
-		if (false) {
+		if (model) {
 			int result = CAL_SetGroupQuaternion(this->robot_model,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
 			if (CAL_SUCCESS != result) {
 				std::cout << "CAL_SetGroupQuaternion failed (" << result << ")" << std::endl;
@@ -133,22 +152,23 @@ class Puck
 	: public Robot
 {
 public:
-	Puck() : Robot()
+	Puck(int base_group) : Robot(base_group)
 	{
-		CAL_CreateCylinder(this->robot_group, 5, 3, 0, 0, 0, &robot_object);
-		CAL_CreateCylinder(this->robot_model, 5, 3, 0, 0, 0);
+		CAL_CreateCylinder(this->robot_group, 5, 3, 0, 0, 0, &(this->robot_collision_object));
+		CAL_CreateCylinder(this->robot_model, 5, 3, 0, 0, 0, &(this->robot_model_object));
 		CAL_SetGroupColor(this->robot_model, 0.05, 0.05, 0.05);
-		CAL_SetObjectOrientation(this->robot_object, M_PI/2.0, 0, 0);
-		CAL_SetObjectOrientation(this->robot_model, M_PI/2.0, 0, 0);
 	}
 
-	virtual void rotate(const state& s, bool model = false) {}
+	virtual void rotate(const state& s, bool model = false) {
+		CAL_SetObjectOrientation(this->robot_collision_object, M_PI/2.0, 0, 0);
+		CAL_SetObjectOrientation(this->robot_model_object, M_PI/2.0, 0, 0);
+	}
 };
 
 class Quadrotor : public Robot
 {
 public:
-	Quadrotor() : Robot()
+	Quadrotor(int base_group) : Robot(base_group)
 	{
 		int obj;
 
@@ -166,7 +186,7 @@ public:
 		double flagLength    = 0.0508; // m
 		double tileSize      = 1;  // m
 
-		CAL_CreateCylinder(this->robot_group, length+rotorRadius, length/2.0, 0, 0, 0, &this->robot_object);
+		CAL_CreateCylinder(this->robot_group, length+rotorRadius, length/2.0, 0, 0, 0, &this->robot_collision_object);
 		CAL_SetGroupOrientation(this->robot_group, M_PI/2.0, 0, 0);
 
 		// Quadrotor
@@ -286,18 +306,18 @@ public:
 class Nonholonomic : public Robot
 {
 public:
-	Nonholonomic() : Robot()
+	Nonholonomic(int base_group) : Robot(base_group)
 	{
-		CAL_CreateBox(this->robot_group, 5, 3, 2.5, 2.5, 1.5, 0);
-
-		CAL_CreateBox(this->robot_model, 5, 3, 2.5, 2.5, 1.5, 0);
+		CAL_CreateBox(this->robot_group, 5, 3, 2.5, 2.5, 1.5, 0, &(this->robot_collision_object));
+		CAL_CreateBox(this->robot_model, 5, 3, 2.5, 2.5, 1.5, 0, &(this->robot_model_object));
 		CAL_SetGroupColor(this->robot_model, 0.05, 0.05, 0.05);
 	}
 
 	virtual void rotate(const state& s, bool model = false)
 	{
-		double rot = s[2] - 0.5*M_PI;
+		double rot = s[2];// - 0.5*M_PI;
 		while (rot < 0) rot += 2*M_PI;
+		while (rot > 2*M_PI) rot -= 2*M_PI;
 
 		int result = CAL_SetGroupOrientation(this->robot_group, 0, 0, rot);
 		if (result != CAL_SUCCESS) {
@@ -318,8 +338,9 @@ public:
 
 	virtual void getRotation(const state& s, float ** o, bool * isQuat) {
 		*isQuat = false;
-		double rot = s[2] - 0.5*M_PI;
+		double rot = s[2];// - 0.5*M_PI;
 		while (rot < 0) rot += 2*M_PI;
+		while (rot > 2*M_PI) rot -= 2*M_PI;
 		*o = new float[3];
 		(*o)[0] = 0;
 		(*o)[1] = 0;

@@ -7,6 +7,7 @@
 #ifndef __WORLDS_HPP__
 #define __WORLDS_HPP__
 
+/*
 int obstacle_group;
 
 void makeWall(float x, float y, float z, int length, double height, bool vertical, bool reverse) {
@@ -42,16 +43,19 @@ void makeWall(float x, float y, float z, int length, double height, bool vertica
 
 	CAL_CreateBox(obstacle_group, xw, yw, zw, x_pos, y_pos, z_pos);
 }
-
+*/
 class World {
 protected:
-	int border_group, obstacle_group;
+	int base_group, border_group, obstacle_group;
 	BOUNDS x_bounds;
 	Eigen::Matrix<double,X_DIM,1> x0, x1;
 
 public:
-	World()
+	World(int base_group)
+		: base_group(base_group)
 	{
+		CAL_CreateGroup(&(this->obstacle_group), base_group, true, "Obstacle");
+
 		this->x0[0] = 0;
 		this->x0[1] = 0;
 		this->x1[0] = 100;
@@ -86,16 +90,28 @@ public:
 		return this->x_bounds;
 	}
 
-	const Eigen::Matrix<double,X_DIM,1> getStartState() {
+	const Eigen::Matrix<double,X_DIM,1> getStartState() const {
 		return x0;
 	}
 
-	const Eigen::Matrix<double,X_DIM,1> getFinalState() {
+	const Eigen::Matrix<double,X_DIM,1> getFinalState() const {
 		return x1;
 	}
 
+	const void show_obstacles() const {
+		CAL_SetGroupVisibility(this->obstacle_group, 0, true, true);
+	}
+
+	const void hide_obstacles() const {
+		CAL_SetGroupVisibility(this->obstacle_group, 0, false, true);
+	}
+
+	const void set_obstacle_color(float r, float g, float b, float a=1) {
+		CAL_SetGroupColor(obstacle_group, r, g, b, a);
+	}
+
 	virtual void buildEnvironment() {
-		CAL_CreateGroup(&(this->obstacle_group), 0, true, "Obstacle");
+		CAL_CreateGroup(&(this->obstacle_group), this->base_group, true, "Obstacle");
 
 #if (USE_OBSTACLES > 0)
 		CAL_SetGroupVisibility(obstacle_group, 0, true, true);
@@ -228,8 +244,8 @@ class EmptyWorld
 	: public World
 {
 public:
-	EmptyWorld()
-		: World()
+	EmptyWorld(int base_group)
+		: World(base_group)
 	{}
 
 protected:
@@ -239,8 +255,8 @@ class TwoPathMaze
 	: public World
 {
 public:
-	TwoPathMaze()
-		: World()
+	TwoPathMaze(int base_group)
+		: World(base_group)
 	{
 		this->x_bounds[0] = std::make_pair(0, 200);
 
@@ -286,8 +302,8 @@ class SymmetricRaceTrackMaze
 	: public World
 {
 public:
-	SymmetricRaceTrackMaze()
-		: World()
+	SymmetricRaceTrackMaze(int base_group)
+		: World(base_group)
 	{
 		this->x_bounds[0] = std::make_pair(0, 200);
 
@@ -308,7 +324,7 @@ protected:
 		CAL_CreateBox(this->obstacle_group, 50, 50, 20, 50, 50, 10);
 
 		int temp;
-		CAL_CreateGroup(&temp, 0, false, "Faux hole");
+		CAL_CreateGroup(&temp, this->base_group, false, "Faux hole");
 		CAL_SetGroupColor(temp, 1, 1, 1);
 		CAL_SetGroupVisibility(temp, 0, true, true);
 		CAL_CreateBox(temp, 49.25, 49.25, 22, 50, 50, 10);
@@ -329,8 +345,8 @@ class SimpleRaceTrack
 	: public World
 {
 public:
-	SimpleRaceTrack()
-		: World()
+	SimpleRaceTrack(int base_group)
+		: World(base_group)
 	{
 		this->x_bounds[0] = std::make_pair(0, 200);
 		this->x_bounds[1] = std::make_pair(0, 100);
@@ -365,8 +381,8 @@ class HardSMaze
 	: public World
 {
 public:
-	HardSMaze()
-		: World()
+	HardSMaze(int base_group)
+		: World(base_group)
 	{}
 
 protected:
@@ -386,8 +402,8 @@ class EasySMaze
 	: public World
 {
 public:
-	EasySMaze()
-		: World()
+	EasySMaze(int base_group)
+		: World(base_group)
 	{}
 
 protected:
@@ -407,8 +423,8 @@ class FourRooms
 	: public World
 {
 public:
-	FourRooms()
-		: World()
+	FourRooms(int base_group)
+		: World(base_group)
 	{
 		this->x0[0] = 0;
 		this->x0[1] = 0;
@@ -435,8 +451,8 @@ class Cylinders
 	: public World
 {
 public:
-	Cylinders()
-		: World()
+	Cylinders(int base_group)
+		: World(base_group)
 	{}
 
 protected:
@@ -470,8 +486,8 @@ public:
 	BOUNDS x_bounds_window_1;
 	BOUNDS x_bounds_window_2;
 
-	TwoWalls()
-		: World()
+	TwoWalls(int base_group)
+		: World(base_group)
 	{
 		this->x_bounds[0] = std::make_pair(-4, 4);
 		this->x_bounds[1] = std::make_pair(-4, 4);
@@ -532,7 +548,7 @@ public:
 	}
 protected:
 	virtual void _buildEnvironment() {
-		CAL_CreateGroup(&border_group, 0, false, "Borders");
+		CAL_CreateGroup(&border_group, this->base_group, false, "Borders");
 		CAL_SetGroupColor(border_group, 0.25, 0.25, 0.25);
 
 		int nl = 1;

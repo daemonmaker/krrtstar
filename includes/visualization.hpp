@@ -3,9 +3,10 @@
 
 namespace vis
 {
-int axis_group, collision_hit_group, collision_free_group, robot_group, robot_object
+int cal_scale, cal_rotate, axis_group, collision_hit_group, collision_free_group
 	, start_node_group, goal_node_group, node_group, edge_group, velocity_group, solution_group
-	, solution_marker_group, robot_model;
+	, solution_marker_group;
+int robot_group, robot_collision_object, robot_model, robot_model_object;
 
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
 	bool isQuat = true;
@@ -121,7 +122,13 @@ void renderAxis() {
 	CAL_SetObjectColor(z_point_id, 0, 0, 1);
 }
 
-void setupVisualization(const state& x0, const state& x1) {
+void initVisulization() {
+	CAL_Initialisation(true, true, true);
+	CAL_CreateGroup(&cal_scale, 0, false, "Global Scale Group");
+	CAL_CreateGroup(&cal_rotate, cal_scale, false, "Global Rotation Group");
+}
+
+void setupVisualization(const state& x0, const state& x1, void (*buildEnvironment)(int)) {
 	// visualization
 	//CAL_Initialisation(true, true, true);
 
@@ -132,16 +139,15 @@ void setupVisualization(const state& x0, const state& x1) {
 #if defined(EXPERIMENT)
 	CAL_SuspendVisualisation();
 #endif
-	CAL_CreateGroup(&axis_group, 0, false, "Axis group");
+	CAL_CreateGroup(&axis_group, cal_rotate, false, "Axis group");
 
-	CAL_CreateGroup(&collision_hit_group, 0, false, "Collision hit");
-	CAL_CreateGroup(&collision_free_group, 0, false, "Collision free");
-	CAL_CreateGroup(&obstacle_group, 0, true, "Obstacle");
-	CAL_CreateGroup(&solution_group, 0, false, "Solution");
-	CAL_CreateGroup(&solution_marker_group, 0, false, "Solution Way Points");
-	CAL_CreateGroup(&node_group, 0, false, "Nodes");
-	CAL_CreateGroup(&edge_group, 0, false, "Edges");
-	CAL_CreateGroup(&velocity_group, 0, false, "Velocities");
+	CAL_CreateGroup(&collision_hit_group, cal_rotate, false, "Collision hit");
+	CAL_CreateGroup(&collision_free_group, cal_rotate, false, "Collision free");
+	CAL_CreateGroup(&solution_group, cal_rotate, false, "Solution");
+	CAL_CreateGroup(&solution_marker_group, cal_rotate, false, "Solution Way Points");
+	CAL_CreateGroup(&node_group, cal_rotate, false, "Nodes");
+	CAL_CreateGroup(&edge_group, cal_rotate, false, "Edges");
+	CAL_CreateGroup(&velocity_group, cal_rotate, false, "Velocities");
 
 	CAL_SetGroupVisibility(axis_group, 0, SHOW_AXIS, true);
 	
@@ -149,11 +155,6 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_SetGroupVisibility(edge_group, 0, SHOW_TREE, true);
 	CAL_SetGroupVisibility(velocity_group, 0, SHOW_TREE, true);
 	CAL_SetGroupVisibility(solution_group, 0, true, true);
-#if (USE_OBSTACLES > 0)
-	CAL_SetGroupVisibility(obstacle_group, 0, true, true);
-#else
-	CAL_SetGroupVisibility(obstacle_group, 0, false, true);
-#endif
 
 #if defined(SHOW_COLLISIONS)
 	CAL_SetGroupVisibility(collision_hit_group, 0, true, true);
@@ -169,11 +170,6 @@ void setupVisualization(const state& x0, const state& x1) {
 	CAL_SetGroupColor(collision_hit_group, 1, 0, 0);
 	CAL_SetGroupColor(collision_free_group, 0, 1, 0);
 	//CAL_SetGroupColor(robot_group, 0, 0, 0);
-#if defined(MAKE_STILLS) && (DYNAMICS != QUADROTOR)
-	CAL_SetGroupColor(obstacle_group, 0.1, 0.1, 0.1, 1);
-#else
-	CAL_SetGroupColor(obstacle_group, 0.1, 0.1, 0.1, 0.1);
-#endif
 	CAL_SetGroupColor(solution_group, 0, 0, 1);
 	CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
 	CAL_SetGroupColor(velocity_group, 0, 0, 1);
@@ -182,8 +178,21 @@ void setupVisualization(const state& x0, const state& x1) {
 	renderAxis();
 
 	// TODO select the world appropriately
-	buildEnvironment();
+	buildEnvironment(cal_rotate);
 	//setupRobot();
+
+#if defined(MAKE_STILLS) && (DYNAMICS != QUADROTOR)
+	world->set_obstacle_color(0.1, 0.1, 0.1, 1);
+#else
+	world->set_obstacle_color(0.1, 0.1, 0.1, 0.1);
+#endif
+
+#if (USE_OBSTACLES > 0)
+	world->show_obstacles();
+#else
+	world->hide_obstacles();
+#endif
+
 
 	// Position the camera based on the state bounds
 	double eye_x = 0.0, eye_y = 0.0, eye_z = 0.0;
@@ -221,8 +230,8 @@ void setupVisualization(const state& x0, const state& x1) {
 
 #ifdef SHOW_PATHS
 	// Setup the start and goal nodes
-	CAL_CreateGroup(&start_node_group, 0, false, "Start");
-	CAL_CreateGroup(&goal_node_group, 0, false, "Goal");
+	CAL_CreateGroup(&start_node_group, cal_rotate, false, "Start");
+	CAL_CreateGroup(&goal_node_group, cal_rotate, false, "Goal");
 	CAL_SetGroupColor(start_node_group, 1, 0, 0);
 	CAL_SetGroupColor(goal_node_group, 0, 1, 0);
 	CAL_CreateSphere(start_node_group, 5*NODE_SIZE, start_x, start_y, start_z);
@@ -484,7 +493,7 @@ void visualizeLog() {
 void makeStills(int path) {
 	path_log = fopen("path_log.txt", "rb");
 
-	CAL_CreateGroup(&stills_group, 0, false, "Stills Parent Group");
+	CAL_CreateGroup(&stills_group, cal_rotate, false, "Stills Parent Group");
 
 	double t = 0.0, t2;
 	state x;
@@ -595,11 +604,11 @@ void graphPath() {
 //	x1[4] = x1[5] = 2;
 //	
 #elif (DYNAMICS == NONHOLONOMIC)
-	x_bounds[0].first = -DBL_MAX;
-	x_bounds[0].second = DBL_MAX;
+	//x_bounds[0].first = -DBL_MAX;
+	//x_bounds[0].second = DBL_MAX;
 
-	x_bounds[1].first = -DBL_MAX;
-	x_bounds[1].second = DBL_MAX;
+	//x_bounds[1].first = -DBL_MAX;
+	//x_bounds[1].second = DBL_MAX;
 
 	//x0.reset();
 	x0 = Eigen::Matrix<double,X_DIM,1>::Zero();
@@ -656,6 +665,14 @@ void graphPath() {
 
 	exit(0);
 }
+
+template <size_t _dim>
+void TransformEnvironment(int cal_scale, int cal_rotate, const Eigen::Matrix<double,_dim,_dim>& R) {
+	Eigen::JacobiSVD< Eigen::Matrix<double,_dim,_dim> > svd(R);
+	Eigen::Quaternion<double> q(svd.matrixU());
+	CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
+	CAL_SetGroupScaling(cal_scale, 1.0/svd.singularValues()[0], 1.0/svd.singularValues()[1], 1.0);
 }
 
+}
 #endif // __VISUALIZATION_HPP__
