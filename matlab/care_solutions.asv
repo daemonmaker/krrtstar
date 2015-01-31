@@ -75,7 +75,5 @@ Q = G*transpose(G)
 Sigma = lyap(F, Q)
 
 %%
-X = [eye(X_DIM, X_DIM) zeros(X_DIM, X_DIM)]
-U = [zeros(U_DIM, X_DIM) -L]
-x_sigma = X*Sigma*transpose(X)
-u_sigma = U*Sigma*transpose(U)
+X = [eye(X_DIM, X_DIM) zero(X_DIM, X_DIM)];
+U = [zero(
