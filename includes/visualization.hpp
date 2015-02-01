@@ -3,7 +3,7 @@
 
 namespace vis
 {
-int cal_scale, cal_rotate, axis_group, collision_hit_group, collision_free_group
+int cal_scale, cal_rotate, axis_group, collision_hit_group, collision_free_group, threshold_hit_group, threshold_free_group
 	, start_node_group, goal_node_group, node_group, edge_group, velocity_group, solution_group
 	, solution_marker_group;
 int robot_group, robot_collision_object, robot_model, robot_model_object;
@@ -143,6 +143,8 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 
 	CAL_CreateGroup(&collision_hit_group, cal_rotate, false, "Collision hit");
 	CAL_CreateGroup(&collision_free_group, cal_rotate, false, "Collision free");
+	CAL_CreateGroup(&threshold_hit_group, cal_rotate, false, "Collision hit");
+	CAL_CreateGroup(&threshold_free_group, cal_rotate, false, "Collision free");
 	CAL_CreateGroup(&solution_group, cal_rotate, false, "Solution");
 	CAL_CreateGroup(&solution_marker_group, cal_rotate, false, "Solution Way Points");
 	CAL_CreateGroup(&node_group, cal_rotate, false, "Nodes");
@@ -156,19 +158,15 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	CAL_SetGroupVisibility(velocity_group, 0, SHOW_TREE, true);
 	CAL_SetGroupVisibility(solution_group, 0, true, true);
 
-#if defined(SHOW_COLLISIONS)
 	CAL_SetGroupVisibility(collision_hit_group, 0, true, true);
-#else
-	CAL_SetGroupVisibility(collision_hit_group, 0, false, true);
-#endif
-#if defined(SHOW_COLLISION_CHECKS)
 	CAL_SetGroupVisibility(collision_free_group, 0, true, true);
-#else
-	CAL_SetGroupVisibility(collision_free_group, 0, false, true);
-#endif
+	CAL_SetGroupVisibility(threshold_hit_group, 0, true, true);
+	CAL_SetGroupVisibility(threshold_free_group, 0, true, true);
 
 	CAL_SetGroupColor(collision_hit_group, 1, 0, 0);
 	CAL_SetGroupColor(collision_free_group, 0, 1, 0);
+	CAL_SetGroupColor(threshold_hit_group, 1, 0, 1);
+	CAL_SetGroupColor(threshold_free_group, 0.5, 0.5, 0.5);
 	//CAL_SetGroupColor(robot_group, 0, 0, 0);
 	CAL_SetGroupColor(solution_group, 0, 0, 1);
 	CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
@@ -198,6 +196,15 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	double eye_x = 0.0, eye_y = 0.0, eye_z = 0.0;
 	double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
 	double up_x = 1.0, up_y = 0.0, up_z = 0.0;
+
+	CAL_SetGroupScaling(cal_scale, 1.0, 1.0, 10.0);
+	Eigen::Matrix<double,3,3> test = Eigen::Matrix<double,3,3>::Zero();
+	test(0, 1) = -1;
+	test(1, 0) = 1;
+	test(2, 2) = 1;
+	Eigen::Quaternion<double> q(test);
+	//CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
+
 
 	world->positionCamera();
 

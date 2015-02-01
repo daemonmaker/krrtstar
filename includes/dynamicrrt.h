@@ -73,9 +73,11 @@ TODO
 
 // Flags to control various features of the program
 //#define EXPERIMENT
+#define USE_THRESHOLDS true
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
+//#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
 //#define SHOW_ROBOT // Determines whether the robot collision checker should be displayed
 #define SHOW_COLLISION_SLEEP_TIME 100
 #define USE_OBSTACLES 6 // Determines whether to create obstacles

@@ -79,3 +79,12 @@ X = [eye(X_DIM, X_DIM) zeros(X_DIM, X_DIM)]
 U = [zeros(U_DIM, X_DIM) -L]
 x_sigma = X*Sigma*transpose(X)
 u_sigma = U*Sigma*transpose(U)
+
+%%
+R = ones(U_DIM, U_DIM) % kRRT* penalty matrix
+
+k = 1 + trace(R*u_sigma)
+
+R_tilde = R/k
+
+final = chol(x_sigma, 'lower')

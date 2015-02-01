@@ -156,6 +156,11 @@ public:
 		return CAL_CheckGroupCollision(robot_group, this->obstacle_group, false, collisions);
 	}
 */
+	virtual bool checkDistance(Robot * robot, const state& s, float threshold) {
+		if (robot->computeStdDev(this->obstacle_group, s) < 1)
+			return true;
+		return false;
+	}
 
 	virtual void checkCollisions(Robot * robot, int * collisions) {
 		int result = robot->checkCollision(this->obstacle_group, collisions);
@@ -180,13 +185,9 @@ public:
 		double z_pos = 0;
 #endif
 		if (collision) {
-#ifdef SHOW_COLLISIONS
 			CAL_CreateSphere(collision_hit_group, 3*NODE_SIZE, x_pos, y_pos, z_pos);
-#endif
 		} else {
-#ifdef SHOW_COLLISION_CHECKS
 			CAL_CreateSphere(collision_free_group, 3*NODE_SIZE, x_pos, y_pos, z_pos);
-#endif
 		}
 	}
 

@@ -92,6 +92,9 @@ void setupParameters(void) {
 	B(2,0) = 1;
 	B(3,1) = 1;
 
+	//R(0,0) = control_penalty;
+	//R(1,1) = control_penalty;
+
 	c = state::Zero();
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
@@ -392,6 +395,15 @@ inline bool collision_free(const state& x) {
 
 	robot->rotate(x);
 	robot->position(x);
+
+#ifdef USE_THRESHOLDS
+	bool below_threshold = world->checkDistance(robot, x, 2.5);
+#if defined(SHOW_THRESHOLD_CHECKS)
+	world->showCollisionCheck(x, below_threshold, vis::threshold_hit_group, vis::threshold_free_group);
+#endif
+	return !below_threshold;
+#endif
+
 	world->checkCollisions(robot, &collisions);
 
 #if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS)
@@ -3208,7 +3220,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 	// Create n nodes -- counter variable only incremented when a valid new node is found
 	for (int i = 1; i <= n;) {
-#if defined(SHOW_COLLISION_CHECKS) or defined(SHOW_COLLISIONS)
+#if defined(SHOW_COLLISION_CHECKS) or defined(SHOW_COLLISIONS) or defined(SHOW_THRESHOLD_CHECKS)
 		Sleep(SHOW_COLLISION_SLEEP_TIME);
 #endif
 #ifndef EXPERIMENT
