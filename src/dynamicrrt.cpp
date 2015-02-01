@@ -397,12 +397,12 @@ inline bool collision_free(const state& x) {
 	robot->position(x);
 
 #ifdef USE_THRESHOLDS
-	bool below_threshold = world->checkDistance(robot, x, 2.5);
+	bool below_threshold = world->checkDistance(robot, 2.49);
 #if defined(SHOW_THRESHOLD_CHECKS)
 	world->showCollisionCheck(x, below_threshold, vis::threshold_hit_group, vis::threshold_free_group);
 #endif
 	return !below_threshold;
-#endif
+#else
 
 	world->checkCollisions(robot, &collisions);
 
@@ -411,6 +411,7 @@ inline bool collision_free(const state& x) {
 #endif
 
 	return (collisions == 0 ? true : false);
+#endif
 #else
 	return true;
 #endif

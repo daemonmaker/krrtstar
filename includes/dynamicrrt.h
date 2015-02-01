@@ -148,7 +148,7 @@ double sphere_volume;
 #define U_DIM 2
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
-#define TARGET_NODES 10000 // Determines how many nodes the tree should have
+#define TARGET_NODES 250 // Determines how many nodes the tree should have
 #define START_RADIUS 1000000 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 

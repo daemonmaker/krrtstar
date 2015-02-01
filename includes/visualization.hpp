@@ -197,7 +197,7 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
 	double up_x = 1.0, up_y = 0.0, up_z = 0.0;
 
-	CAL_SetGroupScaling(cal_scale, 1.0, 1.0, 10.0);
+	//CAL_SetGroupScaling(cal_scale, 1.0, 1.0, 10.0);
 	Eigen::Matrix<double,3,3> test = Eigen::Matrix<double,3,3>::Zero();
 	test(0, 1) = -1;
 	test(1, 0) = 1;

@@ -87,4 +87,4 @@ k = 1 + trace(R*u_sigma)
 
 R_tilde = R/k
 
-final = chol(x_sigma, 'lower')
+final = inv(chol(x_sigma, 'lower'))

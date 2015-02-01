@@ -26,11 +26,15 @@ protected:
 	int robot_group;
 	int robot_collision_object;
 	int robot_model_object;
+	int close_pairs_num_pairs;
+	SCALResult* close_pairs_results;
 
 public:
 	Robot(int base_group, bool show_robot = false)
-		: base_group(base_group)
+		: base_group(base_group), close_pairs_num_pairs(1000), close_pairs_results(NULL)
 	{
+		this->close_pairs_results = new SCALResult[this->close_pairs_num_pairs];
+
 		int temp;
 		CAL_CreateGroup(&(this->robot_model), this->base_group, false, "Robot Model");
 		CAL_CreateGroup(&(this->robot_group), this->base_group, true, "Robot Group");
@@ -39,6 +43,11 @@ public:
 
 		this->show_model();
 		this->hide_collision_checker();
+	}
+
+	~Robot() {
+		if (this->close_pairs_results != NULL)
+			delete[] this->close_pairs_results;
 	}
 
 	void show_model() {
@@ -83,17 +92,11 @@ public:
 		return CAL_CheckGroupCollision(this->robot_group, obstacle_group, false, collisions);
 	}
 
-	double computeStdDev(const int obstacle_group, const state& s) {
-		this->position(s);
-
+	inline const double computeStdDev(const int obstacle_group) const {
 		int num_pairs;
 		CAL_GetClosestPairs(this->robot_group, obstacle_group, &num_pairs);
-		SCALResult* results = new SCALResult[num_pairs];
-		CAL_GetResults(results);
-		double distance = results[0].distance;
-		delete[] results;
-
-		return distance;
+		CAL_GetResults(close_pairs_results);
+		return close_pairs_results[0].distance;
 	}
 
 	virtual void addGroupKeyState(const double& t, const state& s) {
