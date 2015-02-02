@@ -17,20 +17,20 @@ if strcmp(system, 'snglint2d')
     % Single integrator
     X_DIM = 2
     U_DIM = 1
-    Z_DIM = 2
+    Z_DIM = 1
 elseif strcmp(system, 'dblint1d')
     % Double integrator 1D
     X_DIM = 2
     U_DIM = 1
-    Z_DIM = 2
+    Z_DIM = 1
 end
 
 % Setup space for system
 A = zeros(X_DIM, X_DIM);
 B = zeros(X_DIM, U_DIM);
-C = eye(X_DIM, X_DIM);
+C = zeros(Z_DIM, X_DIM);
 M = eye(X_DIM, X_DIM);
-N = eye(X_DIM, X_DIM);
+N = eye(Z_DIM, Z_DIM);
 
 %% Setup system
 if strcmp(system, 'snglint2d')
@@ -38,10 +38,12 @@ if strcmp(system, 'snglint2d')
 elseif strcmp(system, 'dblint1d')
     A(1, 2) = 1
     B(2, 1) = 1
+    C(1, 1) = 1
+    C(2, 2) = 1
 end
 
 %% Solve CARE
-[P, L, G] = care(A, transpose(C)/inv(transpose(N)), M*transpose(M));
+[P, L, G] = care(A, transpose(C)/transpose(N), M*transpose(M));
 P
 
 %% Calculate K
