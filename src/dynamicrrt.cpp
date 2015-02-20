@@ -3891,6 +3891,14 @@ x1[5] = 0;
 	std::cout << "Load file? ";
 	if (response_affirmative()) {
 		read_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), &tree);
+		std::cout << "Number of nodes: " << tree.size() << std::endl;
+		std::cout << "Solution found? ";
+		if (tree[0].cost_from_start < DBL_MAX) {
+			std::cout << "Yes\tCost to goal: " << tree[0].cost_from_start;
+		} else {
+			std::cout << "No";
+		}
+		std::cout << std::endl;
 
 	} else {
 		open_logs();
@@ -3910,6 +3918,18 @@ x1[5] = 0;
 		os.clear();
 		os.str("");
 		os << "Runtime: " << runtime << std::endl;
+		fputs(os.str().c_str(), experiment_log);
+
+		os.clear();
+		os.str("");
+		os << "Solution found? ";
+		if (tree[0].cost_from_start < DBL_MAX) {
+			os << "Yes" << std::endl << "Cost to goal: " << tree[0].cost_from_start;
+		} else {
+			os << "No";
+		}
+		std::cout << std::endl;
+		os << "Solution found: " << (tree[0].cost_from_start < DBL_MAX ? "Yes" : "No") << std::endl;
 		fputs(os.str().c_str(), experiment_log);
 
 		std::cout << "Saving tree...";
