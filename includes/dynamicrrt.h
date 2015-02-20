@@ -14,6 +14,7 @@ TODO
 #include <SDKDDKVer.h>
 #include <stdio.h>
 #include <tchar.h>
+#include <string>
 #include <time.h>
 //#include <utility>
 #include <vector>
@@ -61,29 +62,63 @@ TODO
 #undef CLOSED_FORM_BACKWARD
 #endif
 
+#define EXPERIMENT_NAME "test"
+
 // Manages which dynamics are used
 #define SINGLE_INTEGRATOR_2D 1  // KD tree is not defined for this -- more specifically calc_forward_reachable_set is not defined.
 #define DOUBLE_INTEGRATOR_1D 2
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS DOUBLE_INTEGRATOR_2D
+#define DYNAMICS SINGLE_INTEGRATOR_2D
+
+std::string dynamics_type_to_name(const int id) {
+	std::string name = "UNKNOWN";
+
+	switch(id) {
+	case SINGLE_INTEGRATOR_2D:
+		name = "SINGLE_INTEGRATOR_2D";
+		break;
+	case DOUBLE_INTEGRATOR_1D:
+		name = "DOUBLE_INTEGRATOR_1D";
+		break;
+	case DOUBLE_INTEGRATOR_2D:
+		name = "DOUBLE_INTEGRATOR_2D";
+		break;
+	case QUADROTOR:
+		name = "QUADROTOR";
+		break;
+	case NONHOLONOMIC:
+		name = "NONHOLONOMIC";
+		break;
+	}
+
+	return name;
+}
 
 #define POSITION_DIM 2
 
 // Flags to control various features of the program
 //#define EXPERIMENT
-#define USE_THRESHOLDS true
+#define USE_THRESHOLDS 1
+#define DISTANCE_THRESHOLD 0
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
 //#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
-//#define SHOW_ROBOT // Determines whether the robot collision checker should be displayed
-#define SHOW_COLLISION_SLEEP_TIME 100
+//#define RUN_COLLISION_TESTER // Runs a utility to allow for manual checking of collision functionality
+#define SHOW_ROBOT 0 // Determines whether the robot model should be shown
+#define SHOW_ROBOT_COLLISION_CHECKER 0 // Determines whether the robot collision checker should be displayed
+#define SHOW_COLLISION_SLEEP_TIME 10
 #define USE_OBSTACLES 6 // Determines whether to create obstacles
-#define SHOW_TREE true // Determines whether to render the tree -- set to true or false
+#define VISUALIZE_TREE
+#define VISUALIZE_PATHS
+#define SHOW_TREE false // Determines whether to render the tree by default -- set to true or false
+#define SHOW_NODES false // Determines whether to render the nodes of the tree by default -- set to true or false
+#define SHOW_TREE_PATHS false // Determines whether to render the paths represeented by the tree by default -- set to true or false
+#define SHOW_VELOCITIES false // Determines whether to render the velocities at each state in the tree by default -- set to true or false
 #define USE_HEURISTICS // Determines whether heuristics should be used in evaluating sample points
-#define NODE_SIZE 0.1 // Determines the base size of noedes use for displaying things like the path, milestones, etc.
+#define NODE_SIZE 0.25 // Determines the base size of noedes use for displaying things like the path, milestones, etc.
 //#define ALLOW_ORPHANS // Determines whether orphans are permitted
 #define SHOW_PATHS // Determines whether the paths should be displayed
 //#define VISUALIZE_LOG // Determines whether paths from the log should be played back
@@ -92,6 +127,9 @@ TODO
 #define HUE_SHIFT
 //#define GRAPH_PATH
 //#define PLOT_PATH // Displays just a single spline
+#define EPSILON 0.1 // Probabitlity of checking the goal for a connection
+#define TIMING_FREQUENCY 0.1 // How often to record the time taken to expand nodes
+//#define WORLD EmptyWorld // Which world to use
 
 #if (defined(REDUCE_RADIUS) && DYNAMICS == SINGLE_INTEGRATOR_2D)
 #undef REDUCE_RADIUS
@@ -108,7 +146,7 @@ TODO
 
 #if MAKE_STILLS > -1
 #undef SHOW_PATHS
-#undef SHOW_ROBOT
+#define SHOW_ROBOT_COLLISION_CHECKER false
 #endif
 
 const double deltaT = 0.03125;
@@ -121,6 +159,7 @@ double control_penalty1 = 0;
 double sphere_volume;
 
 #if (DYNAMICS == QUADROTOR) // Quadrotor
+#define ROBOT Quadrotor
 #define POSITION_DIM 3
 
 #define STILL_RATE 5
@@ -137,6 +176,7 @@ double sphere_volume;
 #define NODE_SIZE 0.01
 
 #elif (DYNAMICS == NONHOLONOMIC) // Car
+#define ROBOT Nonholonomic
 #define TARGET_NODES 25000
 #define START_RADIUS 20
 #define RADIUS_MULTIPLIER 1
@@ -148,8 +188,10 @@ double sphere_volume;
 #define U_DIM 2
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
-#define TARGET_NODES 250 // Determines how many nodes the tree should have
-#define START_RADIUS 1000000 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
+#define ROBOT Puck
+#define DISTANCE_THRESHOLD 5
+#define TARGET_NODES 2000 // Determines how many nodes the tree should have
+#define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
 #define POLY_DEGREE 4
@@ -164,8 +206,10 @@ double sphere_volume;
 #define YV_COORD 4
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
-#define TARGET_NODES 1000
-#define START_RADIUS 1000000
+#define ROBOT Puck
+#define DISTANCE_THRESHOLD 10
+#define TARGET_NODES 500
+#define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1
 
 #define POLY_DEGREE 2
@@ -175,6 +219,7 @@ double sphere_volume;
 #define U_DIM 2
 
 #else // 1D double integrator
+#define ROBOT Puck
 #define TARGET_NODES 10000 // Determines how many nodes the tree should have
 #define START_RADIUS 100 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 2.5
@@ -185,6 +230,41 @@ double sphere_volume;
 #define Z_DIM 2
 #define U_DIM 1
 
+#endif
+
+#if (DYNAMICS == QUADROTOR)
+	#define STATE_SPACE QuadrotorStateSpace
+	#define WORLD TwoWalls
+#elif (DYNAMICS == SINGLE_INTEGRATOR_2D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D) || (DYNAMICS == NONHOLONOMIC)
+	#if USE_OBSTACLES == 6
+		#if (DYNAMICS == NONHOLONOMIC)
+			#define STATE_SPACE NonholonomicStateSpace
+			#define WORLD SymmetricRaceTrackMaze
+		#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+			#define STATE_SPACE StateSpace
+			//#define WORLD TwoPathMaze
+			//#define WORLD worlds::LudersBoxes
+			#define WORLD worlds::VanDenBergPassages
+		#else
+			#define STATE_SPACE StateSpace
+			//#define WORLD TwoPathMaze
+			//#define WORLD worlds::LudersBoxes
+			#define WORLD worlds::VanDenBergPassages
+		#endif
+	#elif USE_OBSTACLES == 5
+		#define WORLD SimpleRaceTrack
+	#elif USE_OBSTACLES == 4
+		#define WORLD HardSMaze
+	#elif USE_OBSTACLES == 3
+		#define WORLD EasySMaze
+	#elif USE_OBSTACLES == 2
+		#define WORLD FourRooms
+	#elif USE_OBSTACLES == 1
+		#define WORLD Cylinders
+	#endif
+#else
+	#define STATE_SPACE StateSpace
+	#define WORLD EmptyWorld
 #endif
 
 #include "bounds.hpp"
@@ -200,9 +280,12 @@ const double X_DIM_INVERSE = 1.0/X_DIM;
 FILE* time_log;
 FILE* stats_log;
 FILE* path_log;
+FILE* experiment_log;
 
 const int NO_PARENT = -1;
 typedef int node_id_t;
+typedef double cost_t;
+typedef double location_t;
 typedef std::list<node_id_t> node_list_t;
 typedef std::pair<double, node_id_t> node_cost_pair_t; // The first element is the cost to the node specified by the second element
 typedef std::pair<double, state> state_time_t;
@@ -233,23 +316,25 @@ Eigen::Matrix<double,Z_DIM,X_DIM> C = Eigen::Matrix<double,Z_DIM,X_DIM>::Zero();
 Eigen::Matrix<double,Z_DIM,1> d = Eigen::Matrix<double,Z_DIM,1>::Zero();
 Eigen::Matrix<double,Z_DIM,Z_DIM> N = Eigen::Matrix<double,Z_DIM,Z_DIM>::Zero();
 Eigen::Matrix<double,Z_DIM,1> w = Eigen::Matrix<double,Z_DIM,1>::Zero();
+Eigen::Matrix<double,3,3> Rotation = Eigen::Matrix<double,3,3>::Identity();
+Eigen::Matrix<double,3,3> Scale = Eigen::Matrix<double,3,3>::Identity();
 
 struct Node {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 	node_id_t   parent;
 	state       x;
-	double      cost_from_start;
+	cost_t      cost_from_start;
 	node_list_t children;
 };
 
 typedef std::vector<Node, Eigen::aligned_allocator<Node> > tree_t;
 
 struct KD_Node {
-	node_id_t parent_id;
-	node_id_t node_id;
-	double    location;
-	node_id_t left_id;
-	node_id_t right_id;
+	node_id_t  parent_id;
+	node_id_t  node_id;
+	location_t location;
+	node_id_t  left_id;
+	node_id_t  right_id;
 };
 
 typedef std::pair<int, node_id_t > splitting_dim_node_id_t;

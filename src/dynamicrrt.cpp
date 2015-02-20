@@ -5,20 +5,178 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <cassert>
+#include <string>
 
 using namespace std;
+
+char user_response;
 
 World * world = NULL;
 StateSpace * state_space = NULL;
 Robot * robot = NULL;
 
-#include "visualization.hpp"
-
 void dynamicsError() {
-	cout << "Invalid dynamics (" << DYNAMICS << ")" << endl;
+	cout << "Invalid dynamics \"" << dynamics_type_to_name(DYNAMICS) << "\" (" << DYNAMICS << ")" << endl;
 	_getchar();
 	exit(-1);
 }
+
+void open_logs() {
+	time_log = fopen(make_log_file_name(EXPERIMENT_NAME, "time", "txt").c_str(), "w");
+	stats_log = fopen(make_log_file_name(EXPERIMENT_NAME, "stats", "txt").c_str(), "w");
+	path_log = fopen(make_log_file_name(EXPERIMENT_NAME, "path", "path").c_str(), "wb");
+	experiment_log = fopen(make_log_file_name(EXPERIMENT_NAME, "exp", "txt").c_str(), "w");
+
+	ostringstream os;
+
+#define WRITE_HEADER(header, log_fh) \
+	os.clear();	\
+	os.str(""); \
+	os << header << endl;	\
+	fputs(os.str().c_str(), log_fh);	\
+	fflush(stats_log);
+
+	WRITE_HEADER("time\tnumber_of_nodes\ttarget_number_of_nodes\tcost_from_start\tradius\tnumber_of_orphans", stats_log);
+	WRITE_HEADER("number_of_nodes\ttime", time_log);
+
+#undef WRITE_HEADER
+}
+
+void close_log(FILE * fh) {
+	fflush(fh);
+	fclose(fh);
+}
+
+void close_logs() {
+	close_log(time_log);
+	close_log(stats_log);
+	close_log(path_log);
+	close_log(experiment_log);
+}
+
+void write_state(const state& s, FILE * fh) {
+	fwrite(s.data(), sizeof(double), (s.rows())*(s.cols()), fh);
+}
+
+void read_state(state * s, FILE * fh) {
+	double t;
+	for (size_t idx = 0; idx < X_DIM; ++idx) {
+		fread((void *)&t, sizeof(double), 1, fh);
+		(*s)[idx] = t;
+	}
+}
+
+void write_node_list(const node_list_t& nodes, FILE* fh) {
+	size_t num_nodes = nodes.size();
+	fwrite((const void*)&num_nodes, sizeof(size_t), 1, fh);
+	for (node_list_t::const_iterator nid = nodes.cbegin(); nid != nodes.cend(); ++nid) {
+		fwrite((const void*)&(*nid), sizeof(node_id_t), 1, fh);
+	}
+}
+
+void read_node_list(node_list_t * nodes, FILE * fh) {
+	size_t num_nodes = 0;
+	node_id_t nid;
+	fread((void*)&num_nodes, sizeof(size_t), 1, fh);
+	for (size_t idx = 0; idx < num_nodes; ++idx) {
+		fread((void*)&nid, sizeof(node_id_t), 1, fh);
+		nodes->push_back(nid);
+	}
+}
+
+void save_tree(const string log_file, const tree_t& tree) {
+	FILE* tree_log_fh = fopen(log_file.c_str(), "wb");
+
+	size_t num_nodes = tree.size();
+	fwrite((const void*)&num_nodes, sizeof(size_t), 1, tree_log_fh);
+	for (tree_t::const_iterator node = tree.cbegin(); node != tree.cend(); ++node) {
+		fwrite((const void *)&(node->parent), sizeof(node_id_t), 1, tree_log_fh);
+		write_state(node->x, tree_log_fh);
+		fwrite((const void *)&(node->cost_from_start), sizeof(cost_t), 1, tree_log_fh);
+		write_node_list(node->children, tree_log_fh);
+	}
+
+	fflush(tree_log_fh);
+	fclose(tree_log_fh);
+}
+
+void read_tree(const string log_file, tree_t * tree) {
+	FILE* tree_log_fh = fopen(log_file.c_str(), "rb");
+
+	size_t num_nodes = 0;
+	fread((void *)&num_nodes, sizeof(size_t), 1, tree_log_fh);
+	for (size_t idx = 0; idx < num_nodes; ++idx) {
+		Node node;
+		fread((void *)&(node.parent), sizeof(node_id_t), 1, tree_log_fh);
+		read_state(&(node.x), tree_log_fh);
+		fread((void *)&(node.cost_from_start), sizeof(cost_t), 1, tree_log_fh);
+		read_node_list(&(node.children), tree_log_fh);
+		tree->push_back(node);
+	}
+
+	fclose(tree_log_fh);
+}
+
+void save_experiment(FILE * experiment_log_fh) {
+
+	ostringstream record;
+
+#define WRITE_RECORD(label, value)	\
+	record.clear();	\
+	record.str(""); \
+	record << label << value << std::endl;	\
+	fputs(record.str().c_str(), experiment_log_fh);
+
+	WRITE_RECORD("DYNAMICS: ", dynamics_type_to_name(DYNAMICS));
+	WRITE_RECORD("ROBOT: ", typeid(ROBOT).name());
+	WRITE_RECORD("STATE_SPACE: ", typeid(STATE_SPACE).name());
+	WRITE_RECORD("WORLD: ", typeid(WORLD).name());
+	WRITE_RECORD("USE_THRESHOLDS: ", USE_THRESHOLDS);
+	WRITE_RECORD("DISTANCE_THRESHOLD: ", DISTANCE_THRESHOLD);
+	WRITE_RECORD("EPSILON: ", EPSILON);
+	WRITE_RECORD("USE_OBSTACLES: ", USE_OBSTACLES);
+	bool reduce_radius = false;
+#if defined(REDUCE_RADIUS)
+	reduce_radius = true;
+#endif
+	WRITE_RECORD("REDUCE_RADIUS: ", reduce_radius);
+	WRITE_RECORD("DISTANCE_THRESHOLD: ", DISTANCE_THRESHOLD);
+	WRITE_RECORD("TARGET_NODES: ", TARGET_NODES);
+	WRITE_RECORD("START_RADIUS: ", START_RADIUS);
+	WRITE_RECORD("RADIUS_MULTIPLIER: ", RADIUS_MULTIPLIER);
+	WRITE_RECORD("deltaT: ", deltaT);
+	WRITE_RECORD("control_penalty: ", control_penalty);
+	WRITE_RECORD("control_penalty1: ", control_penalty1);
+	WRITE_RECORD("REACHABILITY_CONSTANT: ", REACHABILITY_CONSTANT);
+	WRITE_RECORD("sphere_volume: ", sphere_volume);
+	WRITE_RECORD("statespace_volume: ", statespace_volume);
+
+	record.clear();
+	record.str("");
+	record << "Rotation: " << std::endl;
+	for (int idx = 0; idx < 3; ++idx) {
+		for (int jdx = 0; jdx < 3; ++jdx) {
+			record << Rotation(idx, jdx) << ' ';
+		}
+		record << std::endl;
+	}
+	fputs(record.str().c_str(), experiment_log_fh);
+
+	record.clear();
+	record.str("");
+	record << "Scale: " << std::endl;
+	for (int idx = 0; idx < 3; ++idx) {
+		for (int jdx = 0; jdx < 3; ++jdx) {
+			record << Scale(idx, jdx) << ' ';
+		}
+		record << std::endl;
+	}
+	fputs(record.str().c_str(), experiment_log_fh);
+
+	fflush(experiment_log_fh);
+}
+
+#include "visualization.hpp"
 
 void setupParameters(void) {
 	vis::initVisulization();
@@ -27,7 +185,7 @@ void setupParameters(void) {
 	u_bounds.resize(U_DIM);
 
 #if (DYNAMICS == QUADROTOR)
-	robot = new Quadrotor(vis::cal_rotate);
+	robot = new ROBOT(vis::cal_rotate);
 
 	control_penalty = 0.1;
 
@@ -57,7 +215,7 @@ void setupParameters(void) {
 	//x1[0] = 4;
 	//x1[2] = 1;
 #elif (DYNAMICS == NONHOLONOMIC)
-	robot = new Nonholonomic(vis::cal_rotate);
+	robot = new ROBOT(vis::cal_rotate);
 
 	control_penalty = 1;
 	control_penalty1 = 50;
@@ -79,9 +237,19 @@ void setupParameters(void) {
 
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-	robot = new Puck(vis::cal_rotate);
+	float rotation_angle = M_PI/8.0;
+	Rotation(0, 0) = cos(rotation_angle);
+	Rotation(0, 1) = -sin(rotation_angle);
+	Rotation(1, 0) = sin(rotation_angle);
+	Rotation(1, 1) = cos(rotation_angle);
 
-	control_penalty = 0.25;
+	Scale(0, 0) = 0.1;
+	Scale(1, 1) = 1;
+	Scale(2, 2) = 1;
+
+	robot = new ROBOT(vis::cal_rotate);
+
+	control_penalty = 1;
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -98,7 +266,22 @@ void setupParameters(void) {
 	c = state::Zero();
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
-	robot = new Puck(vis::cal_rotate);
+
+	/*
+	float rotation_angle = M_PI/8.0;
+	Rotation(0, 0) = cos(rotation_angle);
+	Rotation(0, 1) = -sin(rotation_angle);
+	Rotation(1, 0) = sin(rotation_angle);
+	Rotation(1, 1) = cos(rotation_angle);
+
+	Scale(0, 0) = 0.25;
+	Scale(1, 1) = 1;
+	Scale(2, 2) = 1;
+	*/
+	Scale(0, 0) = 0.1291;
+	Scale(1, 1) = 0.8165;
+
+	robot = new ROBOT(vis::cal_rotate);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -109,7 +292,7 @@ void setupParameters(void) {
 	c = state::Zero();
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
-	robot = new Puck(vis::cal_rotate);
+	robot = new ROBOT(vis::cal_rotate);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 
@@ -125,9 +308,18 @@ void setupParameters(void) {
     dynamicsError();
 #endif
 
-	robot->show_model();
+	std::cout << "Dynamics A: " << std::endl << A << std::endl;
+	std::cout << "Dynamics B: " << std::endl << B << std::endl;
+	std::cout << "Rotation: " << std::endl << Rotation << std::endl;
+	std::cout << "Scale: " << std::endl << Scale << std::endl;
 
-#if defined(SHOW_ROBOT)
+#if SHOW_ROBOT
+	robot->show_model();
+#else
+	robot->hide_model();
+#endif
+
+#if SHOW_ROBOT_COLLISION_CHECKER
 	robot->show_collision_checker();
 #else
 	robot->hide_collision_checker();
@@ -136,8 +328,8 @@ void setupParameters(void) {
 
 void buildEnvironment(int base_group) {
 #if (DYNAMICS == QUADROTOR)
-#define STATE_SPACE QuadrotorStateSpace
-#define WORLD TwoWalls
+//#define STATE_SPACE QuadrotorStateSpace
+//#define WORLD TwoWalls
 	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
@@ -158,8 +350,8 @@ void buildEnvironment(int base_group) {
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) || (DYNAMICS == DOUBLE_INTEGRATOR_2D) || (DYNAMICS == NONHOLONOMIC)
 #if USE_OBSTACLES == 6
 #if (DYNAMICS == NONHOLONOMIC)
-#define STATE_SPACE NonholonomicStateSpace
-#define WORLD SymmetricRaceTrackMaze
+//#define STATE_SPACE NonholonomicStateSpace
+//#define WORLD SymmetricRaceTrackMaze
 	world = new WORLD(base_group);
 	world->setBound(2, make_pair(-M_PI,M_PI));
 	world->setBound(3, make_pair(0.01,10));
@@ -170,8 +362,10 @@ void buildEnvironment(int base_group) {
 	x1[1] = 60;
 	x1[0] = 10;
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-#define STATE_SPACE StateSpace
-#define WORLD TwoPathMaze
+//#define STATE_SPACE StateSpace
+//#define WORLD TwoPathMaze
+//#define WORLD worlds::LudersBoxes
+//#define WORLD worlds::VanDenBergPassages
 	world = new WORLD(base_group);
 	world->setBound(2, make_pair(-10.0, 10.0));
 	world->setBound(3, make_pair(-10.0, 10.0));
@@ -191,8 +385,10 @@ void buildEnvironment(int base_group) {
 	x1[0] = world->getFinalState()[0];
 	x1[1] = world->getFinalState()[1];
 #else
-#define STATE_SPACE StateSpace
-#define WORLD TwoPathMaze
+//#define STATE_SPACE StateSpace
+//#define WORLD TwoPathMaze
+//#define WORLD worlds::LudersBoxes
+//#define WORLD worlds::VanDenBergPassages
 	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
@@ -201,7 +397,7 @@ void buildEnvironment(int base_group) {
 	x1[1] = world->getFinalState()[1];
 #endif
 #elif USE_OBSTACLES == 5
-#define WORLD SimpleRaceTrack
+//#define WORLD SimpleRaceTrack
 	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
@@ -237,7 +433,7 @@ void buildEnvironment(int base_group) {
 #elif USE_OBSTACLES == 3
 	x1[0] = x1[1] = 100;
 
-	world = new EasySMaze(vis::cal_rotate);
+	world = new WORLD(vis::cal_rotate);
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -254,7 +450,7 @@ void buildEnvironment(int base_group) {
 #endif
 
 #elif USE_OBSTACLES == 2
-#define WORLD FourRooms
+//#define WORLD FourRooms
 	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
@@ -271,7 +467,7 @@ void buildEnvironment(int base_group) {
 	world->setBound(3, make_pair(-10.0, 10.0));
 #endif
 #elif USE_OBSTACLES == 1
-#define WORLD Cylinders
+//#define WORLD Cylinders
 	world = new WORLD(base_group);
 
 	x0[0] = world->getStartState()[0];
@@ -388,18 +584,18 @@ inline double dcost(double tau, const Eigen::Matrix<double,_numRows,_numRows>& G
 	return 1 + 2*((A*x1).transpose()*d).trace() - (d.transpose()*BRiBt*d).trace();
 }
 
-inline bool collision_free(const state& x) {
+inline bool collision_free(const state& s) {
 #if (USE_OBSTACLES > 0)
 	int result = 0;
 	int collisions = 0;
 
-	robot->rotate(x);
-	robot->position(x);
+	robot->rotate(s);
+	robot->position(s);
 
-#ifdef USE_THRESHOLDS
-	bool below_threshold = world->checkDistance(robot, 2.49);
+#if USE_THRESHOLDS
+	bool below_threshold = world->checkDistance(robot, DISTANCE_THRESHOLD);
 #if defined(SHOW_THRESHOLD_CHECKS)
-	world->showCollisionCheck(x, below_threshold, vis::threshold_hit_group, vis::threshold_free_group);
+	world->showCollisionCheck(s, below_threshold, vis::threshold_hit_group, vis::threshold_free_group);
 #endif
 	return !below_threshold;
 #else
@@ -407,7 +603,7 @@ inline bool collision_free(const state& x) {
 	world->checkCollisions(robot, &collisions);
 
 #if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS)
-	world->showCollisionCheck(x, collisions > 0, vis::collision_hit_group, vis::collision_free_group);
+	world->showCollisionCheck(s, collisions > 0, vis::collision_hit_group, vis::collision_free_group);
 #endif
 
 	return (collisions == 0 ? true : false);
@@ -3221,7 +3417,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 	// Create n nodes -- counter variable only incremented when a valid new node is found
 	for (int i = 1; i <= n;) {
-#if defined(SHOW_COLLISION_CHECKS) or defined(SHOW_COLLISIONS) or defined(SHOW_THRESHOLD_CHECKS)
+#if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
 		Sleep(SHOW_COLLISION_SLEEP_TIME);
 #endif
 #ifndef EXPERIMENT
@@ -3245,7 +3441,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		if (!collision_free(x_rand)) {
 			continue;
 		}
-
+		
 		// Re-linearize about the sample
 #if (DYNAMICS == NONHOLONOMIC)
 		double cth = cos(x_rand[4]);
@@ -3363,7 +3559,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			tree.push_back(x_rand_node);
 			k_d_tree.add(x_rand_node_id);
 
-			if ((i % 1000) == 0) {
+			if ((i % int(TIMING_FREQUENCY*TARGET_NODES)) == 0) {
 				os.str("");
 				os << i << "\t" << time_diff << endl;
 				fputs(os.str().c_str(), time_log);
@@ -3510,7 +3706,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 #ifndef EXPERIMENT
 		if (draw_path) {
-			vis::visualize(tree);
+			vis::visualizePath(tree);
 		}
 #endif
 
@@ -3678,51 +3874,73 @@ x1[5] = 0;
 	makeStills(MAKE_STILLS);
 #endif
 
-	time_log = fopen("time_log.txt", "w");
-	stats_log = fopen("stats_log.txt", "w");
-	path_log = fopen("path_log.txt", "wb");
-
-	ostringstream os;
-	os << "time\tnumber_of_nodes\ttarget_number_of_nodes\tcost_from_start\tradius\tnumber_of_orphans" << endl;
-	fputs(os.str().c_str(), stats_log);
-	fflush(stats_log);
-
-	os.str("");
-	os << "number_of_nodes\ttime" << endl;
-	fputs(os.str().c_str(), time_log);
-	fflush(time_log);
-
 #ifdef GRAPH_PATH
 	vis::graphPath();
 #endif
 
-	start_time = clock();
+#ifdef RUN_COLLISION_TESTER
+	vis::testCollisions(world, robot);
+	
+	_getchar();
+
+	return 0;
+#endif
+
 	tree_t tree;
 
-	//KD_Tree::testKDTree(tree);
-	
-	rrtstar(x0, x1, TARGET_NODES, radius, tree, true, 0.0);
-	end_time = clock();
+	std::cout << "Load file? ";
+	if (response_affirmative()) {
+		read_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), &tree);
 
-	cout << "Runtime: " << (double)(end_time - start_time)/(double)CLOCKS_PER_SEC << endl;
-
-	if (tree[0].cost_from_start < DBL_MAX) {
-		cout << setw(10) << 0 << " " << setw(11) << TARGET_NODES << "/" << TARGET_NODES << " cost: " << tree[0].cost_from_start << endl;
 	} else {
-		cout << endl << "No path found" << endl;
-		vis::drawTree(tree);
-		_getchar();
-		exit(0);
+		open_logs();
+		save_experiment(experiment_log);
+
+		start_time = clock();
+
+		//KD_Tree::testKDTree(tree);
+	
+		rrtstar(x0, x1, TARGET_NODES, radius, tree, true, EPSILON);
+		end_time = clock();
+
+		double runtime = (double)(end_time - start_time)/(double)CLOCKS_PER_SEC;
+		cout << "Runtime: " << runtime << endl;
+
+		ostringstream os;
+		os.clear();
+		os.str("");
+		os << "Runtime: " << runtime << std::endl;
+		fputs(os.str().c_str(), experiment_log);
+
+		std::cout << "Saving tree...";
+		save_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), tree);
+		std::cout << " done." << std::endl;
+
+		close_logs();
 	}
 
-	// Build a visualization of the final path
-	vis::visualize(tree);
+	std::cout << "Restore environment? ";
+	if (response_affirmative()) {
+		vis::RestoreEnvironment<3>();
+		world->positionCamera();
+	}
 
-	// Draw the tree
-	vis::drawTree(tree);
+	std::cout << "Visualize tree? ";
+	if (response_affirmative()) {
+		vis::drawTree(tree);
+	}
 
-	CAL_ResumeVisualisation();
+	std::cout << "Visualize paths? ";
+	if (response_affirmative()) {
+		vis::visualizeTree(tree);
+	}
 
+	std::cout << "Visualize solution? ";
+	if (response_affirmative()) {
+		vis::visualizeFinalPath(tree, true, false);
+	}
+
+	std::cout << "Done. Press any key. ";
 	_getchar();
 
 	return 0;

@@ -111,37 +111,43 @@ public:
 	}
 
 	virtual void buildEnvironment() {
-		CAL_CreateGroup(&(this->obstacle_group), this->base_group, true, "Obstacle");
+		//CAL_CreateGroup(&(this->obstacle_group), this->base_group, true, "Obstacle");
 
 #if (USE_OBSTACLES > 0)
-		CAL_SetGroupVisibility(obstacle_group, 0, true, true);
+		CAL_SetGroupVisibility(this->obstacle_group, 0, true, true);
 #else
-		CAL_SetGroupVisibility(obstacle_group, 0, false, true);
+		CAL_SetGroupVisibility(this->obstacle_group, 0, false, true);
 #endif
 
 #if defined(MAKE_STILLS) && (DYNAMICS != QUADROTOR)
-		CAL_SetGroupColor(obstacle_group, 0.1, 0.1, 0.1, 1);
+		CAL_SetGroupColor(this->obstacle_group, 0.1, 0.1, 0.1, 1);
 #else
-		CAL_SetGroupColor(obstacle_group, 0.1, 0.1, 0.1, 0.1);
+		CAL_SetGroupColor(this->obstacle_group, 0.1, 0.1, 0.1, 0.1);
 #endif
 
 		this->_buildEnvironment();
 	}
 
-	virtual void positionCamera() {
-		double eye_x = 0.0, eye_y = 0.0, eye_z = 0.0;
-		double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
-		double up_x = 1.0, up_y = 0.0, up_z = 0.0;
+	virtual void positionCamera(const Eigen::Matrix<double,3,3>& R = Eigen::Matrix<double,3,3>::Identity(), const Eigen::Matrix<double,3,3>& S = Eigen::Matrix<double,3,3>::Identity()) {
+		Eigen::Matrix<double,3,1> eye = Eigen::Matrix<double,3,1>::Zero();
+		Eigen::Matrix<double,3,1> camera = Eigen::Matrix<double,3,1>::Zero();
+		Eigen::Matrix<double,3,1> up = Eigen::Matrix<double,3,1>::Zero();
 
-		camera_x = eye_x = this->x_bounds[0].second/2.0;
-		camera_y = eye_y = this->x_bounds[1].second/2.0;
-		eye_z = 150;
+		camera[0] = eye[0] = (this->x_bounds[0].second - this->x_bounds[0].first)/2.0;
+		camera[1] = eye[1] = (this->x_bounds[1].second - this->x_bounds[1].first)/2.0;
+		eye[2] = 150;
 
-		up_x = 0.0;
-		up_y = 1.0;
-		up_z = 0.0;
+		up[1] = 1;
+		
+		CAL_SetViewParams(0, eye[0], eye[1], eye[2], camera[0], camera[1], camera[2], up[0], up[1], up[2]);
 
-		CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
+		//CAL_ShowView(1);
+
+		camera = S*R*camera;
+		eye = S*R*eye;
+		up = S*R*up;
+		
+		CAL_SetViewParams(1, eye[0], eye[1], eye[2], camera[0], camera[1], camera[2], up[0], up[1], up[2]);
 	}
 
 	virtual void randPosition(state& s) {
@@ -156,19 +162,20 @@ public:
 		return CAL_CheckGroupCollision(robot_group, this->obstacle_group, false, collisions);
 	}
 */
-	inline const virtual bool checkDistance(Robot * robot, float threshold) const {
-		if (robot->computeStdDev(this->obstacle_group) < 1)
+	inline const virtual bool checkDistance(Robot * robot, float threshold, bool visualize = false) const {
+		if (robot->computeStdDev(this->obstacle_group, visualize) < threshold)
 			return true;
 		return false;
 	}
 
-	virtual void checkCollisions(Robot * robot, int * collisions) {
-		int result = robot->checkCollision(this->obstacle_group, collisions);
+	virtual int checkCollisions(Robot * robot, int * collisions, bool visualize = false) {
+		int result = robot->checkCollision(this->obstacle_group, collisions, visualize);
 		if (result != CAL_SUCCESS) {
 			std::cout << "CAL_CheckGroupCollision failed (" << result << ")." << std::endl;
 			_getchar();
 			exit(1);
 		}
+		return result;
 	}
 
 	template<typename vec>
@@ -479,6 +486,105 @@ protected:
 	}
 };
 
+namespace worlds {
+class LudersBoxes
+	: public World
+{
+private:
+	float scaler;
+
+public:
+	LudersBoxes(int base_group)
+		: World(base_group), scaler(1.5)
+	{
+		this->x0[0] = 0;
+		this->x0[1] = -35*(this->scaler);
+		this->x1[0] = 0;
+		this->x1[1] = 37.5*(this->scaler);
+
+		this->x_bounds.resize(X_DIM);
+		for (BOUNDS::iterator p = this->x_bounds.begin(); p != this->x_bounds.end(); ++p) {
+			p->first = 0.0;
+			p->second = 0.0;
+		}
+
+		this->x_bounds[0] = std::make_pair(-50*(this->scaler), 50*(this->scaler));
+		this->x_bounds[1] = std::make_pair(-50*(this->scaler), 50*(this->scaler));
+	}
+
+protected:
+	virtual void _buildEnvironment() {
+		int box_id = 0;
+
+		// Make outer walls
+		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 0*(this->scaler), -52.5*(this->scaler), 0*(this->scaler)); // Bottom
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 10*(this->scaler), -52.5*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 10*(this->scaler), 52.5*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Right
+		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 0*(this->scaler), 52.5*(this->scaler), 0*(this->scaler)); // Top
+
+		// Make small boxes
+		CAL_CreateBox(this->obstacle_group, 10*(this->scaler), 10*(this->scaler), 10*(this->scaler), -10*(this->scaler), -15*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 10*(this->scaler), 10*(this->scaler), 10*(this->scaler), 10*(this->scaler), -15*(this->scaler), 0*(this->scaler)); // Right
+
+		// Make large boxes
+		CAL_CreateBox(this->obstacle_group, 12.5*(this->scaler), 20*(this->scaler), 10*(this->scaler), -15*(this->scaler), 15*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 12.5*(this->scaler), 20*(this->scaler), 10*(this->scaler), 15*(this->scaler), 15*(this->scaler), 0*(this->scaler)); // Right
+	}
+
+	virtual void positionCamera() {
+		CAL_SetViewParams(0, 0, 0, 101*(this->scaler), 0, 0, 0, 0, 1, 0);
+	}
+};
+
+class VanDenBergPassages
+	: public World
+{
+private:
+	float scaler;
+
+public:
+	VanDenBergPassages(int base_group)
+		: World(base_group), scaler(2)
+	{
+		this->x0[0] = 7.5*(this->scaler);
+		this->x0[1] = 7.5*(this->scaler);
+		this->x1[0] = 75*(this->scaler);
+		this->x1[1] = 75*(this->scaler);
+
+		this->x_bounds.resize(X_DIM);
+		for (BOUNDS::iterator p = this->x_bounds.begin(); p != this->x_bounds.end(); ++p) {
+			p->first = 0.0;
+			p->second = 0.0;
+		}
+
+		this->x_bounds[0] = std::make_pair(0*(this->scaler), 100*(this->scaler));
+		this->x_bounds[1] = std::make_pair(0*(this->scaler), 100*(this->scaler));
+	}
+
+protected:
+	virtual void _buildEnvironment() {
+		int box_id = 0;
+
+		// Make outer walls
+		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 50*(this->scaler), -2.5*(this->scaler), 0*(this->scaler)); // Bottom
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 10*(this->scaler), -2.5*(this->scaler), 50*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 10*(this->scaler), 102.5*(this->scaler), 50*(this->scaler), 0*(this->scaler)); // Right
+		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 50*(this->scaler), 102.5*(this->scaler), 0*(this->scaler)); // Top
+
+		// Make boxes
+		CAL_CreateBox(this->obstacle_group, 2*(this->scaler), 30*(this->scaler), 10*(this->scaler), 1*(this->scaler), 27*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 30*(this->scaler), 2*(this->scaler), 10*(this->scaler), 27*(this->scaler), 1*(this->scaler), 0*(this->scaler)); // Right
+
+		// Make large boxes
+		CAL_CreateBox(this->obstacle_group, 30*(this->scaler), 30*(this->scaler), 10*(this->scaler), 27.5*(this->scaler), 27.5*(this->scaler), 0*(this->scaler)); // Left
+		//CAL_CreateBox(this->obstacle_group, 12.5*(this->scaler), 20*(this->scaler), 10*(this->scaler), 15*(this->scaler), 15*(this->scaler), 0*(this->scaler)); // Right
+	}
+
+	virtual void positionCamera() {
+		CAL_SetViewParams(0, 50*(this->scaler), 50*(this->scaler), 101*(this->scaler), 50*(this->scaler), 50*(this->scaler), 0, 0, 1, 0);
+	}
+};
+}
 
 class TwoWalls
 	: public World
@@ -503,34 +609,34 @@ public:
 	}
 
 	virtual void positionCamera() {
-	double eye_x = 0.0, eye_y = 0.0, eye_z = 0.0;
-	double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
-	double up_x = 1.0, up_y = 0.0, up_z = 0.0;
+		Eigen::Matrix<double,3,1> eye = Eigen::Matrix<double,3,1>::Zero();
+		Eigen::Matrix<double,3,1> camera = Eigen::Matrix<double,3,1>::Zero();
+		Eigen::Matrix<double,3,1> up = Eigen::Matrix<double,3,1>::Zero();
 
-		up_x = 0.0;
-		up_z = 1.0;
+		Eigen::Matrix<double,3,1> bounds = Eigen::Matrix<double,3,1>::Zero();
+		bounds[0] = x_bounds[0].second;
+		bounds[1] = x_bounds[1].second;
+		bounds[2] = x_bounds[2].second;
 
+		up[2] = 1;
 
-//* isometric
-	eye_x = -x_bounds[0].second;
-	eye_y = 2*x_bounds[1].second;
-	eye_z = 2*x_bounds[2].second;
-	camera_x = x_bounds[0].second/2.0;
-	camera_y = x_bounds[1].first/2.0;
+		//* isometric
+		eye[0] = -x_bounds[0].second;
+		eye[1] = 2*x_bounds[1].second;
+		eye[2] = 2*x_bounds[2].second;
+		camera[0] = x_bounds[1].first/2.0;
+		camera[1] = x_bounds[1].first/2.0;
 
+		//* side
+		//eye[1] = 3*x_bounds[1].second;
+		//eye[2] = x_bounds[2].second/2.0;
+		//camera[2] = x_bounds[2].second/2.0;
 
-//* side
-//	eye_y = 3*x_bounds[1].second;
-//	eye_z = x_bounds[2].second/2.0;
-//	camera_z = x_bounds[2].second/2.0;
+		//* above
+		//eye[2] = 3*x_bounds[2].second;
+		//up[1] = 1;
 
-
-//* above 
-//		eye_z = 3*x_bounds[2].second;
-//		up_y = 1;
-//		up_x = 0;
-
-		CAL_SetViewParams(0, eye_x, eye_y, eye_z, camera_x, camera_y, camera_z, up_x, up_y, up_z);
+		CAL_SetViewParams(0, eye[0], eye[1], eye[2], camera[0], camera[1], camera[2], up[0], up[1], up[2]);
 	}
 
 	virtual void randPosition(state& s) {
