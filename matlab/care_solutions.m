@@ -10,14 +10,14 @@
 
 %% Select system and setup basic variables
 clear
-system = 'dblint1d'
+system = 'snglint2d'
 
 % Set dimensionality information for system
 if strcmp(system, 'snglint2d')
     % Single integrator
     X_DIM = 2
-    U_DIM = 1
-    Z_DIM = 1
+    U_DIM = 2
+    Z_DIM = 2
 elseif strcmp(system, 'dblint1d')
     % Double integrator 1D
     X_DIM = 2
@@ -34,7 +34,12 @@ N = eye(Z_DIM, Z_DIM);
 
 %% Setup system
 if strcmp(system, 'snglint2d')
-    error('System not setup')
+    B(1, 1) = 1;
+    B(2, 2) = 1;
+    C(1, 1) = 1;
+    C(2, 2) = 1;
+    
+    M(1, 1) = 10;
 elseif strcmp(system, 'dblint1d')
     A(1, 2) = 1
     B(2, 1) = 1
@@ -90,3 +95,8 @@ k = 1 + trace(R*u_sigma)
 R_tilde = R/k
 
 final = inv(chol(x_sigma, 'lower'))
+
+%% 
+[U, S, V] = svd(final)
+det(U)
+det(V)

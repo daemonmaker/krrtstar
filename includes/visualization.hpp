@@ -4,42 +4,14 @@
 namespace vis
 {
 int cal_scale, cal_rotate, axis_group, collision_hit_group, collision_free_group, threshold_hit_group, threshold_free_group
-	, start_node_group, goal_node_group, node_group, edge_group, velocity_group, solution_group
+	, start_node_group, goal_node_group, node_group, edge_group, paths_group, velocity_group, solution_group
 	, solution_marker_group;
-int robot_group, robot_collision_object, robot_model, robot_model_object;
+int robot_base, robot_group, robot_collision_object, robot_model, robot_model_object;
 
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
 	bool isQuat = true;
 	double x_rot, y_rot;
 	double x_pos = 0.0, y_pos = 0.0, z_pos = 0.0;
-
-//#if (DYNAMICS == QUADROTOR)
-//	x_pos = x[0];
-//	y_pos = x[1];
-//	z_pos = x[2];
-//#else
-//	x_pos = x[0];
-//	y_pos = x[1];
-//#endif
-//
-//#if (DYNAMICS == QUADROTOR)
-//	Eigen::Matrix<double,3,3> rot = Eigen::Matrix<double,3,3>::Zero();
-//	rot(0,2) = x[7];
-//	rot(1,2) = -x[6];
-//	rot(2,0) = -x[7];
-//	rot(2,1) = x[6];
-//
-//	Eigen::Matrix<double,3,3> R = rot.exp();
-//	Eigen::Quaternion<double> q(R);
-//	float o[4] = {(float)q.x(), (float)q.y(), (float)q.z(), (float)q.w()};
-//#elif (DYNAMICS == NONHOLONOMIC)
-//	isQuat = false;
-//	double rot = x[2] - 0.5*M_PI;
-//	while (rot < 0) rot += 2*M_PI;
-//	float o[3] = {0, 0, rot};
-//#else
-//	float *o = CAL_NULL;
-//#endif
 
 	robot->getPosition(x, &x_pos, &y_pos, &z_pos);
 	float * o;
@@ -97,9 +69,7 @@ void buildKeyframe(const double& t, const state& x, bool still = false, double a
 		//}
 	}
 
-#ifdef SHOW_PATHS
-	CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_pos, y_pos, z_pos);
-#endif
+	//CAL_CreateSphere(solution_group, NODE_SIZE, x_pos, y_pos, z_pos);
 }
 
 void renderAxis() {
@@ -126,12 +96,61 @@ void initVisulization() {
 	CAL_Initialisation(true, true, true);
 	CAL_CreateGroup(&cal_scale, 0, false, "Global Scale Group");
 	CAL_CreateGroup(&cal_rotate, cal_scale, false, "Global Rotation Group");
+	CAL_CreateGroup(&robot_base, 0, false, "Robot Base Group");
+}
+
+template <size_t _dim>
+void WarpEnvironment(const Eigen::Matrix<double,_dim,_dim>& V, const Eigen::Matrix<double,_dim,_dim>& S) {
+	//std::cout << R << std::endl;
+	//Eigen::JacobiSVD< Eigen::Matrix<double,_dim,_dim> > svd(R);
+	//const Eigen::JacobiSVD< Eigen::Matrix<double,_dim,_dim> >::MatrixUType& U = svd.matrixU();
+	//const Eigen::JacobiSVD< Eigen::Matrix<double,_dim,_dim> >::SingularValuesType& S = svd.singularValues();
+	int result;
+
+	Eigen::Quaternion<double> q(V);
+	result = CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
+	if (result != CAL_SUCCESS) {
+		std::cout << "CAL_SetGroupQuaternion failed (" << result << ")." << std::endl;
+		_getchar();
+		exit(1);
+	}
+
+	result = CAL_SetGroupScaling(cal_scale, 1.0/(S(0, 0)), 1.0/(S(1, 1)), 1.0/(S(2, 2)));
+	if (result != CAL_SUCCESS) {
+		std::cout << "CAL_SetGroupScaling failed (" << result << ")." << std::endl;
+		_getchar();
+		exit(1);
+	}
+
+	q = Eigen::Quaternion<double>(V.transpose());
+	result = CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
+	if (result != CAL_SUCCESS) {
+		std::cout << "CAL_SetGroupQuaternion failed (" << result << ")." << std::endl;
+		_getchar();
+		exit(1);
+	}
+}
+
+template <size_t _dim>
+void RestoreEnvironment() {
+	int result;
+
+	result = CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)0, (CAL_scalar)0, (CAL_scalar)0, (CAL_scalar)1);
+	if (result != CAL_SUCCESS) {
+		std::cout << "CAL_SetGroupQuaternion failed (" << result << ")." << std::endl;
+		_getchar();
+		exit(1);
+	}
+
+	result = CAL_SetGroupScaling(cal_scale, 1, 1, 1);
+	if (result != CAL_SUCCESS) {
+		std::cout << "CAL_SetGroupScaling failed (" << result << ")." << std::endl;
+		_getchar();
+		exit(1);
+	}
 }
 
 void setupVisualization(const state& x0, const state& x1, void (*buildEnvironment)(int)) {
-	// visualization
-	//CAL_Initialisation(true, true, true);
-
 #if (DYNAMICS != QUADROTOR)
 	CAL_SetViewOptions(0, CAL_ORTHOPROJ);
 #endif
@@ -140,24 +159,25 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	CAL_SuspendVisualisation();
 #endif
 	CAL_CreateGroup(&axis_group, cal_rotate, false, "Axis group");
-
-	CAL_CreateGroup(&collision_hit_group, cal_rotate, false, "Collision hit");
-	CAL_CreateGroup(&collision_free_group, cal_rotate, false, "Collision free");
-	CAL_CreateGroup(&threshold_hit_group, cal_rotate, false, "Collision hit");
-	CAL_CreateGroup(&threshold_free_group, cal_rotate, false, "Collision free");
-	CAL_CreateGroup(&solution_group, cal_rotate, false, "Solution");
-	CAL_CreateGroup(&solution_marker_group, cal_rotate, false, "Solution Way Points");
-	CAL_CreateGroup(&node_group, cal_rotate, false, "Nodes");
-	CAL_CreateGroup(&edge_group, cal_rotate, false, "Edges");
-	CAL_CreateGroup(&velocity_group, cal_rotate, false, "Velocities");
+	CAL_CreateGroup(&collision_hit_group, 0, false, "Collision hit");
+	CAL_CreateGroup(&collision_free_group, 0, false, "Collision free");
+	CAL_CreateGroup(&threshold_hit_group, 0, false, "Collision hit");
+	CAL_CreateGroup(&threshold_free_group, 0, false, "Collision free");
+	CAL_CreateGroup(&solution_group, 0, false, "Solution");
+	CAL_CreateGroup(&solution_marker_group, 0, false, "Solution Way Points");
+	CAL_CreateGroup(&node_group, 0, false, "Nodes");
+	CAL_CreateGroup(&edge_group, 0, false, "Edges");
+	CAL_CreateGroup(&paths_group, 0, false, "Paths");
+	CAL_CreateGroup(&velocity_group, 0, false, "Velocities");
+	CAL_CreateGroup(&start_node_group, cal_rotate, false, "Start");
+	CAL_CreateGroup(&goal_node_group, cal_rotate, false, "Goal");
 
 	CAL_SetGroupVisibility(axis_group, 0, SHOW_AXIS, true);
-	
-	CAL_SetGroupVisibility(node_group, 0, false, true);
+	CAL_SetGroupVisibility(node_group, 0, SHOW_NODES, true);
 	CAL_SetGroupVisibility(edge_group, 0, SHOW_TREE, true);
-	CAL_SetGroupVisibility(velocity_group, 0, SHOW_TREE, true);
+	CAL_SetGroupVisibility(paths_group, 0, SHOW_TREE_PATHS, true);
+	CAL_SetGroupVisibility(velocity_group, 0, SHOW_VELOCITIES, true);
 	CAL_SetGroupVisibility(solution_group, 0, true, true);
-
 	CAL_SetGroupVisibility(collision_hit_group, 0, true, true);
 	CAL_SetGroupVisibility(collision_free_group, 0, true, true);
 	CAL_SetGroupVisibility(threshold_hit_group, 0, true, true);
@@ -172,6 +192,8 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
 	CAL_SetGroupColor(velocity_group, 0, 0, 1);
 	CAL_SetGroupColor(edge_group, 0.65, 0.16, 0.16);
+	CAL_SetGroupColor(start_node_group, 1, 0, 0);
+	CAL_SetGroupColor(goal_node_group, 0, 1, 0);
 
 	renderAxis();
 
@@ -191,66 +213,57 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	world->hide_obstacles();
 #endif
 
+	/*
+	Eigen::Matrix<double,3,3> V = Eigen::Matrix<double,3,3>::Zero();
+	V(0, 1) = 1;
+	V(1, 0) = -1;
+	V(2, 2) = 1;
 
-	// Position the camera based on the state bounds
-	double eye_x = 0.0, eye_y = 0.0, eye_z = 0.0;
-	double camera_x = 0.0, camera_y = 0.0, camera_z = 0.0;
-	double up_x = 1.0, up_y = 0.0, up_z = 0.0;
+	Eigen::Matrix<double,3,3> S = Eigen::Matrix<double,3,3>::Zero();
+	S(0, 0) = 0.5;
+	S(1, 1) = 1;
+	S(2, 2) = 1;
+	*/
+	world->positionCamera(Rotation, Scale.inverse());
 
-	//CAL_SetGroupScaling(cal_scale, 1.0, 1.0, 10.0);
-	Eigen::Matrix<double,3,3> test = Eigen::Matrix<double,3,3>::Zero();
-	test(0, 1) = -1;
-	test(1, 0) = 1;
-	test(2, 2) = 1;
-	Eigen::Quaternion<double> q(test);
+	//CAL_SetGroupScaling(cal_scale, 1.0/(S(0, 0)), 1.0/(S(1, 1)), 1.0);
+	//Eigen::Quaternion<double> q(V);
 	//CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
 
-
-	world->positionCamera();
-
-	double start_x = 0.0, start_y = 0.0, start_z = 0.0;
-	double goal_x = 0.0, goal_y = 0.0, goal_z = 0.0;
-
-#if (DYNAMICS == QUADROTOR)
-	start_x = x0[0]; goal_x = x1[0];
-	start_y = x0[1]; goal_y = x1[1];
-	start_z = x0[2]; goal_z = x1[2];
-
-#else
-	start_x = x0[0]; goal_x = x1[0];
-	start_y = x0[1]; goal_y = x1[1];
-#endif 
-
-//	// Position the robot
-//	CAL_SetGroupPosition(robot_model, start_x, start_y, start_z);
-//
-//#if (DYNAMICS == NONHOLONOMIC)
-//	double rot = x0[2] - 0.5*M_PI;
-//	while (rot < 0) rot += 2*M_PI;
-//
-//	CAL_SetGroupOrientation(robot_model, 0, 0, rot);
-//	CAL_SetGroupOrientation(robot_group, 0, 0, rot);
-//#endif
+	/*
+	V(0, 1) = -1;
+	V(1, 0) = 1;
+	q = Eigen::Quaternion<double>(V);
+	//CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
+	CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)0, (CAL_scalar)0, (CAL_scalar)0, (CAL_scalar)1);
+	*/
 
 	robot->position(x0, true);
 	robot->rotate(x0, true);
 
-#ifdef SHOW_PATHS
 	// Setup the start and goal nodes
-	CAL_CreateGroup(&start_node_group, cal_rotate, false, "Start");
-	CAL_CreateGroup(&goal_node_group, cal_rotate, false, "Goal");
-	CAL_SetGroupColor(start_node_group, 1, 0, 0);
-	CAL_SetGroupColor(goal_node_group, 0, 1, 0);
+	double start_x = x0[0]; double goal_x = x1[0];
+	double start_y = x0[1]; double goal_y = x1[1];
+#if POSITION_DIM == 3
+	double start_z = x0[2]; double goal_z = x1[2];
+#else
+	double start_z = 0; double goal_z = 0;
+#endif
 	CAL_CreateSphere(start_node_group, 5*NODE_SIZE, start_x, start_y, start_z);
 	CAL_CreateSphere(goal_node_group, 5*NODE_SIZE, goal_x, goal_y, goal_z);
-#endif
+
+	WarpEnvironment<3>(Rotation, Scale);
 }
 
 bool state_order(const state_time_t& a, const state_time_t& b) {
 	return (a.first < b.first);
 }
 
-void visualize(const tree_t& tree) {
+void visualizePath(const tree_t& tree, bool thick_line=false, bool log = true) {
+	int numpoints[1] = {2};
+	float points[6] = {0, 0, 0, 0, 0, 0};
+	float x_pos, y_pos, z_pos;
+
 	CAL_EmptyGroup(solution_group);
 	CAL_EmptyGroup(solution_marker_group);
 	CAL_SetGroupColor(solution_group, 0, 0, 1);
@@ -286,20 +299,47 @@ void visualize(const tree_t& tree) {
 		for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
 			current_time = (q->first) + max_tau;
 			buildKeyframe(current_time, q->second);
-			fwrite((const void *)&current_time, sizeof(double), 1, path_log);
-			double *current_elements = (q->second.data());
-			//fwrite((const void *)current_elements, sizeof(double), X_DIM, path_log);
-			for (int i = 0; i < X_DIM; i++) {
-				current_time = current_elements[i];
+			if (thick_line) {
+				x_pos = q->second[0];
+				y_pos = q->second[1];
+#if POSITION_DIM == 3
+				z_pos = q->second[2];
+#else
+				z_pos = 0;
+#endif
+				CAL_CreateSphere(solution_group, NODE_SIZE, x_pos, y_pos, z_pos);
+			} else if ((q+1) != segment.end()) {
+				points[0] = q->second[0];
+				points[1] = q->second[1];
+#if POSITION_DIM == 3
+				points[2] = q->second[2];
+#endif
+				points[3] = (q+1)->second[0];
+				points[4] = (q+1)->second[1];
+#if POSITION_DIM == 3
+				points[5] = (q+1)->second[2];
+#endif
+				CAL_CreatePolyline(solution_group, 1, numpoints, points);
+			}
+			if (log) {
 				fwrite((const void *)&current_time, sizeof(double), 1, path_log);
+				double *current_elements = (q->second.data());
+				//fwrite((const void *)current_elements, sizeof(double), X_DIM, path_log);
+				for (int i = 0; i < X_DIM; i++) {
+					current_time = current_elements[i];
+					fwrite((const void *)&current_time, sizeof(double), 1, path_log);
+				}
 			}
 		}
 		max_tau += tau;
 	}
 
 	double sentinel = -1;
-	fwrite((const void *)&sentinel, sizeof(double), 1, path_log);
-	fflush(path_log);
+
+	if (log) {
+		fwrite((const void *)&sentinel, sizeof(double), 1, path_log);
+		fflush(path_log);
+	}
 }
 
 void plotPath(const state& x0, const state& x1, const double radius) {
@@ -326,7 +366,82 @@ void createSphere(CAL_scalar r, CAL_scalar x, CAL_scalar y, CAL_scalar z) {
 	CAL_CreateSphere(solution_group, r, x, y, z);
 }
 
+/**
+Draws the tree as a set of curves representing the real paths between nodes.
+*/
+void visualizeTree(const tree_t& tree, bool prune = false) {
+	CAL_SuspendVisualisation();
+
+	CAL_SetGroupVisibility(paths_group, 0, true, true);
+
+	int np[1] = {2};
+	float p[6] = {0, 0, 0, 0, 0, 0};
+
+	CAL_EmptyGroup(solution_group);
+	CAL_EmptyGroup(solution_marker_group);
+	CAL_SetGroupColor(solution_group, 0, 0, 1);
+	CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
+
+	//CAL_ClearGroupKeyStates(robot_model, true);
+	robot->clearGroupKeyStates(true);
+	
+	std::queue<int> dfs;
+	dfs.push(1);
+
+	cout << "Rendering paths...";
+	double cost, tau;
+	state_time_list_t segment;
+	double max_tau = 0.0;
+	double current_time = 0.0;
+	int node_counter = 0, nodes_skipped = 0;
+	for (tree_t::const_iterator parent = tree.begin(); parent != tree.end(); ++parent) {
+		for (node_list_t::const_iterator child = parent->children.begin(); child != parent->children.end(); ++child) {
+			std::cout << ++node_counter << '\r';
+			/*
+			if (tree[*child].cost_from_start >= tree[0].cost_from_start) {
+				++nodes_skipped;
+				continue;
+			}
+			*/
+			segment.clear();
+			connect(parent->x, tree[*child].x, DBL_MAX, cost, tau, &segment);
+
+			sort(segment.begin(), segment.end(), state_order);
+			for(state_time_list_t::iterator q = segment.begin(); (q+1) != segment.end(); q++) {
+				current_time = (q->first) + max_tau;
+
+				p[0] = q->second[0];
+				p[1] = q->second[1];
+#if POSITION_DIM == 3
+				p[2] = q->second[2];
+#endif
+				p[3] = (q+1)->second[0];
+				p[4] = (q+1)->second[1];
+#if POSITION_DIM == 3
+				p[5] = (q+1)->second[2];
+#endif
+
+				CAL_CreatePolyline(paths_group, 1, np, p);
+
+			}
+			max_tau += tau;
+		}
+	}
+
+	std::cout << " done. " << std::endl << nodes_skipped << " nodes skipped because they had a cost greater than the cost to the goal." << std::endl;
+
+	CAL_ResumeVisualisation();
+}
+
+/**
+Draws the tree as a set of straight lines.
+*/
 void drawTree(const tree_t& tree) {
+	CAL_SuspendVisualisation();
+
+	CAL_SetGroupVisibility(edge_group, 0, true, true);
+	CAL_SetGroupVisibility(node_group, 0, true, true);
+
 	int np[1] = {2};
 	float p[6] = {0, 0, 0, 0, 0, 0};
 
@@ -447,6 +562,8 @@ void drawTree(const tree_t& tree) {
 			CAL_CreatePolyline(edge_group, 1, np, p);
 		}
 	}
+
+	CAL_ResumeVisualisation();
 }
 
 void visualizeLog() {
@@ -496,6 +613,18 @@ void visualizeLog() {
 	exit(0);
 }
 
+void visualizeFinalPath(const tree_t& tree, bool thick_line=false, bool log = true) {
+	CAL_SuspendVisualisation();
+	if (tree[0].cost_from_start < DBL_MAX) {
+		cout << setw(10) << 0 << " " << setw(11) << TARGET_NODES << "/" << TARGET_NODES << " cost: " << tree[0].cost_from_start << endl;
+
+		// Build a visualization of the final path
+		vis::visualizePath(tree, thick_line, log);
+	} else {
+		cout << endl << "No path found" << endl;
+	}
+	CAL_ResumeVisualisation();
+}
 
 void makeStills(int path) {
 	path_log = fopen("path_log.txt", "rb");
@@ -657,7 +786,7 @@ void graphPath() {
 		start.children.push_back(0);
 		tree.push_back(start);
 
-		visualize(tree);
+		visualizePath(tree);
 	}
 
 	else {
@@ -673,12 +802,79 @@ void graphPath() {
 	exit(0);
 }
 
-template <size_t _dim>
-void TransformEnvironment(int cal_scale, int cal_rotate, const Eigen::Matrix<double,_dim,_dim>& R) {
-	Eigen::JacobiSVD< Eigen::Matrix<double,_dim,_dim> > svd(R);
-	Eigen::Quaternion<double> q(svd.matrixU());
-	CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
-	CAL_SetGroupScaling(cal_scale, 1.0/svd.singularValues()[0], 1.0/svd.singularValues()[1], 1.0);
+bool testCollisions_loop = true;
+float testCollisions_x_delta = 0;
+float testCollisions_y_delta = 0;
+bool testCollisions_use_thresholds = USE_THRESHOLDS;
+void testCollisionsKeypressCallback(char key, bool pressed) {
+	if (pressed && key == '?') {
+		std::cout << "u - up" << std::endl;
+		std::cout << "j - down" << std::endl;
+		std::cout << "h - left" << std::endl;
+		std::cout << "k - right" << std::endl;
+		std::cout << "c - switch collision check method" << std::endl;
+		std::cout << "q - quit" << std::endl;
+	}
+	if (key == 'u') {
+		if (pressed == 1)
+			testCollisions_y_delta = 1;
+		else
+			testCollisions_y_delta = 0;
+	}
+	if (key == 'j') {
+		if (pressed == 1)
+			testCollisions_y_delta -= 1;
+		else
+			testCollisions_y_delta = 0;
+	}
+	if (key == 'h') {
+		if (pressed == 1)
+			testCollisions_x_delta = -1;
+		else
+			testCollisions_x_delta = 0;
+	}
+	if (key == 'k') {
+		if (pressed == 1)
+			testCollisions_x_delta = 1;
+		else
+			testCollisions_x_delta = 0;
+	}
+	if (key == 'q') {
+		testCollisions_loop = false;
+	}
+	if (pressed && key == 'c') {
+		if (testCollisions_use_thresholds == 1) {
+			testCollisions_use_thresholds = 0;
+		} else {
+			testCollisions_use_thresholds = 1;
+		}
+		std::cout << "Set testCollisions_use_thresholds to " << testCollisions_use_thresholds << std::endl;
+	}
+}
+
+void testCollisions(World * world, Robot * robot) {
+	int collisions;
+	bool collision;
+
+	robot->hide_model();
+	robot->show_collision_checker();
+	state s = world->getStartState();
+
+	CAL_SetKeypressCallback(testCollisionsKeypressCallback);
+
+	while (testCollisions_loop) {
+		s[0] += testCollisions_x_delta;
+		s[1] += testCollisions_y_delta;
+		robot->position(s);
+		if (testCollisions_use_thresholds) {
+			collision = world->checkDistance(robot, DISTANCE_THRESHOLD, true);
+			std::cout << "Colliding? " << collision << std::endl;
+		} else {
+			world->checkCollisions(robot, &collisions, true);
+			std::cout << "Collisions? " << collisions << std::endl;
+		}
+		Sleep(20);
+	}
 }
 
 }

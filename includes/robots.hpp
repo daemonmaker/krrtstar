@@ -42,7 +42,8 @@ public:
 		CAL_SetGroupColor(this->robot_group, 0, 0, 0);
 
 		this->show_model();
-		this->hide_collision_checker();
+		//this->hide_collision_checker();
+		this->show_collision_checker();
 	}
 
 	~Robot() {
@@ -88,15 +89,31 @@ public:
 		}
 	}
 
-	virtual int checkCollision(const int obstacle_group, int * collisions) {
-		return CAL_CheckGroupCollision(this->robot_group, obstacle_group, false, collisions);
+	virtual int checkCollision(const int obstacle_group, int * collisions, bool visualize = SHOW_ROBOT_COLLISION_CHECKER) {
+		int result = CAL_CheckGroupCollision(this->robot_group, obstacle_group, false, collisions);
+		if (visualize) {
+			if ((*collisions) > 0) {
+				CAL_SetGroupColor(this->robot_group, 1, 0, 0);
+			} else {
+				CAL_SetGroupColor(this->robot_group, 0, 0, 0);
+			}
+		}
+		return result;
 	}
 
-	inline const double computeStdDev(const int obstacle_group) const {
+	inline const double computeStdDev(const int obstacle_group, bool visualize = SHOW_ROBOT_COLLISION_CHECKER) const {
 		int num_pairs;
 		CAL_GetClosestPairs(this->robot_group, obstacle_group, &num_pairs);
 		CAL_GetResults(close_pairs_results);
-		return close_pairs_results[0].distance;
+		double closest = close_pairs_results[0].distance;
+		if (visualize) {
+			if (closest < DISTANCE_THRESHOLD) {
+				CAL_SetGroupColor(this->robot_group, 1, 0, 0);
+			} else {
+				CAL_SetGroupColor(this->robot_group, 0, 0, 0);
+			}
+		}
+		return closest;
 	}
 
 	virtual void addGroupKeyState(const double& t, const state& s) {
