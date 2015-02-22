@@ -6,6 +6,7 @@
 #include <boost/function.hpp>
 #include <cassert>
 #include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -246,7 +247,7 @@ void setupParameters(void) {
 	Scale(0, 0) = 0.1;
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
-
+	
 	robot = new ROBOT(vis::cal_rotate);
 
 	control_penalty = 1;
@@ -3816,6 +3817,86 @@ void testReduceRadius() {
 	exit(0);
 }
 
+void extractPath(const tree_t &tree, path_t * path) {
+	// Walk the tree backwards from the goal and store indices of the nodes traversed.
+	node_id_t current_idx = 0;
+	while (current_idx != NO_PARENT) {
+		path->push_back(current_idx);
+		current_idx = tree[current_idx].parent;
+	}
+
+	// The above yields a path that is backwards so reverse it.
+	reverse(path->begin(), path->end());
+}
+
+/*
+class Simulator {
+private:
+	World &world;
+	Robot &robot;
+	const dynamics_t &dynamics;
+	state actual;
+	motion_noise_covariance_t L_of_M;
+	observation_noise_covariance_t L_of_N;
+
+public:
+	Simulator(World &world, Robot &robot, const dynamics_t &dynamics, state x0)
+		: world(world), robot(robot), dynamics(dynamics), actual(x0), L_of_M(NULL), L_of_N(NULL)
+	{
+		this->L_of_M = Eigen::LLT<natural_dynamics_t>(dynamics.M).matrixL();
+		this->L_of_N = Eigen::LLT<natural_dynamics_t>(dynamics.N).matrixL();
+	}
+
+	void step(const control_t &u) {
+		//motion_noise_t motion_noise = this->L_of_M*
+		//actual = dynamics.A*actual + dynamics.B*u + dynamics.c + motion_noise;
+
+	}
+
+	void observe(state * s) const {
+		//observation_noise_t observation_noise = dynamics.N*
+		//(*s) = dynamics.C*actual + observation_noise;
+	}
+};
+
+bool simulate(const dynamics_t &dynamics, const tree_t &tree) {
+	// Simulate the trajectory
+	path_t path;
+	extractPath(tree, &path);
+
+	state observation = state::Zero();
+	const state& desired = tree[path[0]].x;
+	control_t u = control_t::Zero();
+	Simulator sim(*world, *robot, dynamics, tree[path[0]].x);
+
+	for (int current_step = 0; current_step < path.size(); ++current_step) {
+		// Observe state
+		sim.observe(&observation);
+
+		// Estimate state -- Apply Kalman filter
+
+		// Calculate control -- Apply LQR control
+
+		// Apply control
+		sim.step(u);
+	}
+
+	return true;
+}
+
+int testSolution(const tree_t & tree, int num_sims) {
+	// Attempt to follow the trajectory the specified number of times.
+	int good_runs = 0;
+	for (int count = 0; count < num_sims; ++count) {
+		if (simulate) {
+			++good_runs;
+		}
+	}
+
+	// Return the count of successful runs.
+	return good_runs;
+}
+*/
 int _tmain(int argc, _TCHAR* argv[])
 {
 	setupParameters();
@@ -3900,6 +3981,50 @@ x1[5] = 0;
 		}
 		std::cout << std::endl;
 
+		vis::RestoreEnvironment<3>();
+		world->positionCamera();
+
+		path_t path;
+		extractPath(tree, &path);
+
+		double cost, tau;
+		state_time_list_t segment;
+		size_t path_size = path.size();
+		size_t max_segment_size = 1000;
+		size_t current_segment_size = 0;
+		CAL_scalar * points = new CAL_scalar[3*max_segment_size];
+		for (int idx = 0; idx < path_size - 1; ++idx) {
+			segment.clear();
+			connect(tree[path[idx]].x, tree[path[idx+1]].x, DBL_MAX, cost, tau, &segment);
+
+			current_segment_size = segment.size() - 1;
+			if (current_segment_size > max_segment_size) {
+				std::cout << "REALLOCATING" << std::endl;
+				delete[] points;
+				max_segment_size = current_segment_size;
+				points = new CAL_scalar[3*max_segment_size];
+			}
+
+			for (int jdx = 0; jdx < current_segment_size - 2; ++jdx) {
+				points[3*jdx] = segment[jdx+1].second[0];
+				points[3*jdx+1] = segment[jdx+1].second[1];
+#if POSITION_DIM == 3
+				points[3*jdx+2] = segment[jdx+1].second[2];
+#else
+				points[3*jdx+2] = 0;
+#endif
+			}
+			points[3*(current_segment_size - 1)] = segment[current_segment_size-1].second[0];
+			points[3*(current_segment_size - 1)+1] = segment[current_segment_size-1].second[1];
+#if POSITION_DIM == 3
+			points[3*(current_segment_size - 1)+2] = segment[current_segment_size-1].second[2];
+#else
+			points[3*(current_segment_size - 1)+2] = 0;
+#endif
+
+			CAL_CreatePolyline(vis::solution_group, 1, (int*)&current_segment_size, points);
+		}
+
 	} else {
 		open_logs();
 		save_experiment(experiment_log);
@@ -3936,15 +4061,29 @@ x1[5] = 0;
 		save_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), tree);
 		std::cout << " done." << std::endl;
 
+		std::cout << "Restore environment? ";
+		if (response_affirmative()) {
+			vis::RestoreEnvironment<3>();
+			world->positionCamera();
+		}
+
 		close_logs();
 	}
-
-	std::cout << "Restore environment? ";
+	/*
+	std::cout << "Simulate? ";
 	if (response_affirmative()) {
-		vis::RestoreEnvironment<3>();
-		world->positionCamera();
-	}
+		dynamics_t dynamics;
+		dynamics.A = A;
+		dynamics.B = B;
+		dynamics.c = c;
+		dynamics.M = M;
+		dynamics.C = C;
+		dynamics.N = N;
+		dynamics.d = d;
 
+		simulate(dynamics, tree);
+	}
+	*/
 	std::cout << "Visualize tree? ";
 	if (response_affirmative()) {
 		vis::drawTree(tree);

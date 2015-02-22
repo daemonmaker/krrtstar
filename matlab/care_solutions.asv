@@ -96,9 +96,7 @@ R_tilde = R/k
 
 %% Calculate final covariance matrix and decompose into rotation and scale
 % matrices. It's important that the determinant of the rotation matrix be
-% 1. If this is not the case then the order of any two columns can be
-% swapped to make it the case. However doing so requires that the
-% associated rows of the scale matrix be swapped too.
+% 1.
 final = inv(chol(x_sigma, 'lower'))
 
 [U, S, V] = svd(final)

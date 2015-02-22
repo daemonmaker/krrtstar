@@ -290,6 +290,7 @@ typedef std::list<node_id_t> node_list_t;
 typedef std::pair<double, node_id_t> node_cost_pair_t; // The first element is the cost to the node specified by the second element
 typedef std::pair<double, state> state_time_t;
 typedef std::vector< state_time_t, Eigen::aligned_allocator<state_time_t> > state_time_list_t;
+typedef std::vector< node_id_t > path_t;
 
 //BOUNDS x_bounds;
 BOUNDS u_bounds;
@@ -300,24 +301,47 @@ BOUNDS u_bounds;
 #endif
 #endif
 
-Eigen::Matrix<double,X_DIM,X_DIM> A = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
-Eigen::Matrix<double,X_DIM,U_DIM> B = Eigen::Matrix<double,X_DIM,U_DIM>::Zero();
-Eigen::Matrix<double,X_DIM,1> c = state::Zero();
-Eigen::Matrix<double,U_DIM,U_DIM> R = Eigen::Matrix<double,U_DIM,U_DIM>::Zero();
+typedef Eigen::Matrix<double,U_DIM,1> control_t;
+typedef Eigen::Matrix<double,3,3> generic_3d_matrix_t;
+typedef Eigen::Matrix<double,X_DIM,X_DIM> natural_dynamics_t;
+typedef Eigen::Matrix<double,X_DIM,U_DIM> control_dynamics_t;
+typedef Eigen::Matrix<double,X_DIM,X_DIM> motion_noise_covariance_t;
+typedef Eigen::Matrix<double,Z_DIM,X_DIM> observation_t;
+typedef Eigen::Matrix<double,Z_DIM,Z_DIM> observation_noise_covariance_t;
+typedef Eigen::Matrix<double,Z_DIM,1> observation_noise_t;
+typedef state motion_noise_t;
+typedef state motion_bias_t;
+typedef Eigen::Matrix<double,Z_DIM,1> observation_bias_t;
+typedef Eigen::Matrix<double,U_DIM,U_DIM> control_penalty_t;
+
+natural_dynamics_t A = natural_dynamics_t::Zero();
+control_dynamics_t B = control_dynamics_t::Zero();
+motion_bias_t c = motion_bias_t::Zero();
+control_penalty_t R = control_penalty_t::Zero();
 Eigen::Matrix<double,X_DIM,X_DIM> BRiBt;
-Eigen::Matrix<double,X_DIM,1> x0 = state::Zero();
-Eigen::Matrix<double,X_DIM,1> x1 = state::Zero();
+state x0 = state::Zero();
+state x1 = state::Zero();
 Eigen::Matrix<double,2*X_DIM,2*X_DIM> Alpha;
 Eigen::Matrix<double,2*X_DIM,1> chi;
 Eigen::Matrix<double,2*X_DIM,1> c0;
-Eigen::Matrix<double,X_DIM,X_DIM> M = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
-Eigen::Matrix<double,X_DIM,1> v = Eigen::Matrix<double,X_DIM,1>::Zero();
-Eigen::Matrix<double,Z_DIM,X_DIM> C = Eigen::Matrix<double,Z_DIM,X_DIM>::Zero();
-Eigen::Matrix<double,Z_DIM,1> d = Eigen::Matrix<double,Z_DIM,1>::Zero();
-Eigen::Matrix<double,Z_DIM,Z_DIM> N = Eigen::Matrix<double,Z_DIM,Z_DIM>::Zero();
+motion_noise_covariance_t M = motion_noise_covariance_t::Zero();
+state v = state::Zero();
+observation_t C = observation_t::Zero();
+observation_bias_t d = Eigen::Matrix<double,Z_DIM,1>::Zero();
+observation_noise_covariance_t N = observation_noise_covariance_t::Zero();
 Eigen::Matrix<double,Z_DIM,1> w = Eigen::Matrix<double,Z_DIM,1>::Zero();
-Eigen::Matrix<double,3,3> Rotation = Eigen::Matrix<double,3,3>::Identity();
-Eigen::Matrix<double,3,3> Scale = Eigen::Matrix<double,3,3>::Identity();
+generic_3d_matrix_t Rotation = generic_3d_matrix_t::Identity();
+generic_3d_matrix_t Scale = generic_3d_matrix_t::Identity();
+
+struct dynamics_t {
+	natural_dynamics_t A;
+	control_dynamics_t B;
+	motion_bias_t c;
+	motion_noise_covariance_t M;
+	observation_t C;
+	observation_noise_covariance_t N;
+	observation_bias_t d;
+};
 
 struct Node {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
