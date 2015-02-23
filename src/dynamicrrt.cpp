@@ -238,6 +238,18 @@ void setupParameters(void) {
 
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
+	K(0,0) = 1;
+	K(1,1) = 1;
+	L(0,0) = 1;
+	L(1,1) = 1;
+	C(0,0) = 1;
+	C(1,1) = 1;
+	/*
+	M(0,0) = 0.1;
+	M(1,1) = 0.5;
+	N(0,0) = 0.5;
+	N(1,1) = 0.1;
+	*/
 	float rotation_angle = M_PI/8.0;
 	Rotation(0, 0) = cos(rotation_angle);
 	Rotation(0, 1) = -sin(rotation_angle);
@@ -279,19 +291,18 @@ void setupParameters(void) {
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
 	*/
-	//Scale(0, 0) = 0.1291;
-	//Scale(1, 1) = 0.8165;
+	Scale(0, 0) = 0.1291;
+	Scale(1, 1) = 0.8165;
 	K(0,0) = 1;
 	K(1,1) = 1;
 	L(0,0) = 1;
 	L(1,1) = 1;
 	C(0,0) = 1;
 	C(1,1) = 1;
-	M(0,0) = 0.1;
-	M(1,1) = 0.5;
-	N(0,0) = 0.5;
-	N(1,1) = 0.1;
-
+	M(0,0) = 0.01;
+	M(1,1) = 0.01;
+	N(0,0) = 0.01;
+	N(1,1) = 0.01;
 
 	robot = new ROBOT(vis::cal_rotate);
 
@@ -3898,8 +3909,8 @@ public:
 	}
 
 	bool step(const control_t &u) {
-		std::cout << "Step? ";
-		_getchar();
+		//std::cout << "Step? ";
+		//_getchar();
 
 		this->actual += (*(dynamics.A))*actual + (*(dynamics.B))*u;
 
@@ -3910,6 +3921,7 @@ public:
 		}
 
 		std::cout << "Actual: " << this->actual << std::endl;
+
 		double x_pos = this->actual[0];
 		double y_pos = this->actual[1];
 #if POSITION_DIM == 3
@@ -3935,23 +3947,33 @@ public:
 
 bool simulate(const dynamics_t &dynamics, tree_t &tree) {
 	// Simulate the trajectory
-	path_t path;
-	extractPath(tree, &path);
+	path_t key_points;
+	extractPath(tree, &key_points);
+
+	double cost, tau;
+	state_time_list_t path;
+	state_time_list_t segment;
+	for (int idx = 0; idx < key_points.size() - 1; ++idx) {
+		segment.clear();
+		connect(tree[key_points[idx]].x, tree[key_points[idx+1]].x, DBL_MAX, cost, tau, &segment);
+		sort(segment.begin(), segment.end(), state_order);
+		path.insert(path.end(), segment.begin(), segment.end());
+	}
 
 	state observation = state::Zero();
 
 	double x_pos = 0, y_pos = 0, z_pos = 0;
-	state state_belief = tree[path[0]].x;
+	state state_belief = path[0].second;
 	state state_update = state::Zero();
 	control_t control = control_t::Zero();
-	Simulator sim(dynamics, tree[path[0]].x, NOISE_FREE);
+	Simulator sim(dynamics, path[0].second, NOISE_FREE);
 	bool free_path = true;
 	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
 		// Observe state
 		sim.observe(&observation);
 
 		// Calculate control -- Apply LQR control
-		control = (*(dynamics.L))*(tree[path[current_step + 1]].x - state_belief);
+		control = (*(dynamics.L))*(path[current_step + 1].second - state_belief);
 
 		// Estimate state -- Apply Kalman filter
 		state_update = (*(dynamics.A))*state_belief + (*(dynamics.B))*control;

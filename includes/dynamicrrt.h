@@ -106,7 +106,7 @@ std::string dynamics_type_to_name(const int id) {
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
-#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
+//#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
 //#define RUN_COLLISION_TESTER // Runs a utility to allow for manual checking of collision functionality
 #define SHOW_ROBOT 0 // Determines whether the robot model should be shown
 #define SHOW_ROBOT_COLLISION_CHECKER 0 // Determines whether the robot collision checker should be displayed
@@ -390,6 +390,10 @@ int paths; // Counts the number of paths
 
 double start_time, current_time, end_time;
 #define TimeToInt(t) ((t.wHour*3600 + t.wMinute*60 + t.wSecond)*1000 + t.wMilliseconds)
+
+bool state_order(const state_time_t& a, const state_time_t& b) {
+	return (a.first < b.first);
+}
 
 bool (*computeCost)(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau) = NULL;
 bool __cdecl computeCostClosedForm(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);

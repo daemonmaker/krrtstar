@@ -261,10 +261,6 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	WarpEnvironment<3>(Rotation, Scale);
 }
 
-bool state_order(const state_time_t& a, const state_time_t& b) {
-	return (a.first < b.first);
-}
-
 void visualizePath(const tree_t& tree, bool thick_line=false, bool log = true) {
 	int numpoints[1] = {2};
 	float points[6] = {0, 0, 0, 0, 0, 0};
@@ -374,11 +370,11 @@ void createSphere(CAL_scalar r, CAL_scalar x, CAL_scalar y, CAL_scalar z, int gr
 }
 
 void markBelief(CAL_scalar x, CAL_scalar y, CAL_scalar z) {
-	createSphere(3*NODE_SIZE, x, y, z, simulation_belief_group);
+	createSphere(1.5*NODE_SIZE, x, y, z, simulation_belief_group);
 }
 
 void markActual(CAL_scalar x, CAL_scalar y, CAL_scalar z) {
-	createSphere(3*NODE_SIZE, x, y, z, simulation_actual_group);
+	createSphere(2*NODE_SIZE, x, y, z, simulation_actual_group);
 }
 
 /**
