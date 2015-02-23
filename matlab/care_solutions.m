@@ -39,7 +39,9 @@ if strcmp(system, 'snglint2d')
     C(1, 1) = 1;
     C(2, 2) = 1;
     
-    M(1, 1) = 10;
+    %M(1, 1) = 10;
+    M(0, 0) = 0;
+    M(1, 1) = 0;
 elseif strcmp(system, 'dblint1d')
     A(1, 2) = 1
     B(2, 1) = 1

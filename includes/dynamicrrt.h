@@ -102,10 +102,11 @@ std::string dynamics_type_to_name(const int id) {
 //#define EXPERIMENT
 #define USE_THRESHOLDS 1
 #define DISTANCE_THRESHOLD 0
+#define NOISE_FREE false
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
-//#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
+#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
 //#define RUN_COLLISION_TESTER // Runs a utility to allow for manual checking of collision functionality
 #define SHOW_ROBOT 0 // Determines whether the robot model should be shown
 #define SHOW_ROBOT_COLLISION_CHECKER 0 // Determines whether the robot collision checker should be displayed
@@ -306,19 +307,22 @@ typedef Eigen::Matrix<double,3,3> generic_3d_matrix_t;
 typedef Eigen::Matrix<double,X_DIM,X_DIM> natural_dynamics_t;
 typedef Eigen::Matrix<double,X_DIM,U_DIM> control_dynamics_t;
 typedef Eigen::Matrix<double,X_DIM,X_DIM> motion_noise_covariance_t;
+typedef state motion_noise_t;
+typedef state motion_bias_t;
 typedef Eigen::Matrix<double,Z_DIM,X_DIM> observation_t;
 typedef Eigen::Matrix<double,Z_DIM,Z_DIM> observation_noise_covariance_t;
 typedef Eigen::Matrix<double,Z_DIM,1> observation_noise_t;
-typedef state motion_noise_t;
-typedef state motion_bias_t;
 typedef Eigen::Matrix<double,Z_DIM,1> observation_bias_t;
+typedef Eigen::Matrix<double,Z_DIM,1> observation_noise_t;
 typedef Eigen::Matrix<double,U_DIM,U_DIM> control_penalty_t;
+typedef Eigen::Matrix<double,X_DIM,Z_DIM> kalman_gain_t;
+typedef Eigen::Matrix<double,U_DIM,X_DIM> lqr_gain_t;
 
 natural_dynamics_t A = natural_dynamics_t::Zero();
 control_dynamics_t B = control_dynamics_t::Zero();
 motion_bias_t c = motion_bias_t::Zero();
 control_penalty_t R = control_penalty_t::Zero();
-Eigen::Matrix<double,X_DIM,X_DIM> BRiBt;
+Eigen::Matrix<double,X_DIM,X_DIM> BRiBt = Eigen::Matrix<double,X_DIM,X_DIM>::Zero();
 state x0 = state::Zero();
 state x1 = state::Zero();
 Eigen::Matrix<double,2*X_DIM,2*X_DIM> Alpha;
@@ -329,18 +333,22 @@ state v = state::Zero();
 observation_t C = observation_t::Zero();
 observation_bias_t d = Eigen::Matrix<double,Z_DIM,1>::Zero();
 observation_noise_covariance_t N = observation_noise_covariance_t::Zero();
-Eigen::Matrix<double,Z_DIM,1> w = Eigen::Matrix<double,Z_DIM,1>::Zero();
+//Eigen::Matrix<double,Z_DIM,1> w = Eigen::Matrix<double,Z_DIM,1>::Zero();
 generic_3d_matrix_t Rotation = generic_3d_matrix_t::Identity();
 generic_3d_matrix_t Scale = generic_3d_matrix_t::Identity();
+kalman_gain_t K = kalman_gain_t::Zero();
+lqr_gain_t L = lqr_gain_t::Zero();
 
 struct dynamics_t {
-	natural_dynamics_t A;
-	control_dynamics_t B;
-	motion_bias_t c;
-	motion_noise_covariance_t M;
-	observation_t C;
-	observation_noise_covariance_t N;
-	observation_bias_t d;
+	natural_dynamics_t * A;
+	control_dynamics_t * B;
+	motion_bias_t * c;
+	motion_noise_covariance_t * M;
+	observation_t * C;
+	observation_noise_covariance_t * N;
+	observation_bias_t * d;
+	kalman_gain_t * K;
+	lqr_gain_t * L;
 };
 
 struct Node {

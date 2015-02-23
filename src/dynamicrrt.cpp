@@ -279,15 +279,26 @@ void setupParameters(void) {
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
 	*/
-	Scale(0, 0) = 0.1291;
-	Scale(1, 1) = 0.8165;
+	//Scale(0, 0) = 0.1291;
+	//Scale(1, 1) = 0.8165;
+	K(0,0) = 1;
+	K(1,1) = 1;
+	L(0,0) = 1;
+	L(1,1) = 1;
+	C(0,0) = 1;
+	C(1,1) = 1;
+	M(0,0) = 0.1;
+	M(1,1) = 0.5;
+	N(0,0) = 0.5;
+	N(1,1) = 0.1;
+
 
 	robot = new ROBOT(vis::cal_rotate);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
 
-	B(0,1) = 1;
+	B(0,0) = 1;
 	B(1,1) = 1;
 
 	c = state::Zero();
@@ -585,7 +596,7 @@ inline double dcost(double tau, const Eigen::Matrix<double,_numRows,_numRows>& G
 	return 1 + 2*((A*x1).transpose()*d).trace() - (d.transpose()*BRiBt*d).trace();
 }
 
-inline bool collision_free(const state& s) {
+inline bool collision_free(const state& s, bool distance_check = USE_THRESHOLDS) {
 #if (USE_OBSTACLES > 0)
 	int result = 0;
 	int collisions = 0;
@@ -593,13 +604,14 @@ inline bool collision_free(const state& s) {
 	robot->rotate(s);
 	robot->position(s);
 
-#if USE_THRESHOLDS
-	bool below_threshold = world->checkDistance(robot, DISTANCE_THRESHOLD);
+	// Sloppy! Refactor this to properly handle the two different types of possible collision checks
+	if (distance_check) {
+		bool below_threshold = world->checkDistance(robot, DISTANCE_THRESHOLD);
 #if defined(SHOW_THRESHOLD_CHECKS)
-	world->showCollisionCheck(s, below_threshold, vis::threshold_hit_group, vis::threshold_free_group);
+		world->showCollisionCheck(s, below_threshold, vis::threshold_hit_group, vis::threshold_free_group);
 #endif
-	return !below_threshold;
-#else
+		return !below_threshold;
+	}
 
 	world->checkCollisions(robot, &collisions);
 
@@ -608,7 +620,7 @@ inline bool collision_free(const state& s) {
 #endif
 
 	return (collisions == 0 ? true : false);
-#endif
+
 #else
 	return true;
 #endif
@@ -3829,59 +3841,139 @@ void extractPath(const tree_t &tree, path_t * path) {
 	reverse(path->begin(), path->end());
 }
 
-/*
+template<class T>
+void rand_gaussian_vector(T& v) {
+	size_t v_size = v.size();
+	double u1, u2, r, t;
+	for (int idx = 0; idx < v_size; idx += 2) {
+		u1 = rand_value(0, 1);
+		u2 = rand_value(0, 1);
+		r = sqrt(-2*log(u1));
+		t = 2*M_PI*u2;
+		v[idx] = r*cos(t);
+		v[idx+1] = r*sin(t);
+	}
+	if (v_size % 2 != 0) {
+		u1 = rand_value(0, 1);
+		u2 = rand_value(0, 1);
+		r = sqrt(-2*log(u1));
+		t = 2*M_PI*u2;
+		v[v_size - 1] = r*cos(t);
+	}
+}
+
 class Simulator {
 private:
-	World &world;
-	Robot &robot;
+	World * world;
+	Robot * robot;
 	const dynamics_t &dynamics;
 	state actual;
 	motion_noise_covariance_t L_of_M;
+	motion_noise_t motion_noise;
 	observation_noise_covariance_t L_of_N;
+	observation_noise_t observation_noise;
+	bool noise_free;
 
 public:
-	Simulator(World &world, Robot &robot, const dynamics_t &dynamics, state x0)
-		: world(world), robot(robot), dynamics(dynamics), actual(x0), L_of_M(NULL), L_of_N(NULL)
+	Simulator(const dynamics_t &dynamics, state &x0, bool noise_free = false)
+		: dynamics(dynamics), actual(x0), noise_free(noise_free)
 	{
-		this->L_of_M = Eigen::LLT<natural_dynamics_t>(dynamics.M).matrixL();
-		this->L_of_N = Eigen::LLT<natural_dynamics_t>(dynamics.N).matrixL();
+		if (!(this->noise_free)) {
+			Eigen::LLT<natural_dynamics_t> LLT_of_M(*(dynamics.M));
+			if (LLT_of_M.info() == Eigen::Success) {
+				this->L_of_M = LLT_of_M.matrixL();
+			} else {
+				std::cout << "Motion Noise Covariance is not positive semi-definite. Cannot perform a Cholesky decompotions, try an Eigen decomposition instead." << std::endl;
+				exit(-1);
+			}
+
+			Eigen::LLT<observation_noise_covariance_t> LLT_of_N(*(dynamics.N));
+			if (LLT_of_N.info() == Eigen::Success) {
+				this->L_of_N = LLT_of_N.matrixL();
+			} else {
+				std::cout << "Observation Noise Covariance is not positive semi-definite. Cannot perform a Cholesky decompotions, try an Eigen decomposition instead." << std::endl;
+				exit(-1);
+			}
+		}
 	}
 
-	void step(const control_t &u) {
-		//motion_noise_t motion_noise = this->L_of_M*
-		//actual = dynamics.A*actual + dynamics.B*u + dynamics.c + motion_noise;
+	bool step(const control_t &u) {
+		std::cout << "Step? ";
+		_getchar();
 
+		this->actual += (*(dynamics.A))*actual + (*(dynamics.B))*u;
+
+		if (!(this->noise_free)) {
+			rand_gaussian_vector<motion_noise_t>(this->motion_noise); // Motion noise is actually noise = Mv, this assumes M = I.
+			this->motion_noise = this->L_of_M*this->motion_noise;
+			this->actual += (*(dynamics.c)) + motion_noise;
+		}
+
+		std::cout << "Actual: " << this->actual << std::endl;
+		double x_pos = this->actual[0];
+		double y_pos = this->actual[1];
+#if POSITION_DIM == 3
+		double z_pos = this->actual[2];
+#else
+		double z_pos = 0;
+#endif
+		vis::markActual(x_pos, y_pos, z_pos);
+
+		return collision_free(this->actual, false);
 	}
 
-	void observe(state * s) const {
-		//observation_noise_t observation_noise = dynamics.N*
-		//(*s) = dynamics.C*actual + observation_noise;
+	void observe(state * s) {
+		(*s) = (*(dynamics.C))*actual;
+
+		if (!(this->noise_free)) {
+			rand_gaussian_vector<observation_noise_t>(this->observation_noise); // Observation noise is actually noise = Nw, this assumes N = I.
+			this->observation_noise = this->L_of_N*this->observation_noise;
+			(*s) += observation_noise;
+		}
 	}
 };
 
-bool simulate(const dynamics_t &dynamics, const tree_t &tree) {
+bool simulate(const dynamics_t &dynamics, tree_t &tree) {
 	// Simulate the trajectory
 	path_t path;
 	extractPath(tree, &path);
 
 	state observation = state::Zero();
-	const state& desired = tree[path[0]].x;
-	control_t u = control_t::Zero();
-	Simulator sim(*world, *robot, dynamics, tree[path[0]].x);
 
-	for (int current_step = 0; current_step < path.size(); ++current_step) {
+	double x_pos = 0, y_pos = 0, z_pos = 0;
+	state state_belief = tree[path[0]].x;
+	state state_update = state::Zero();
+	control_t control = control_t::Zero();
+	Simulator sim(dynamics, tree[path[0]].x, NOISE_FREE);
+	bool free_path = true;
+	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
 		// Observe state
 		sim.observe(&observation);
 
-		// Estimate state -- Apply Kalman filter
-
 		// Calculate control -- Apply LQR control
+		control = (*(dynamics.L))*(tree[path[current_step + 1]].x - state_belief);
+
+		// Estimate state -- Apply Kalman filter
+		state_update = (*(dynamics.A))*state_belief + (*(dynamics.B))*control;
+		state_belief += state_update + (*(dynamics.K))*(observation - (*(dynamics.C))*state_belief);
+
+		std::cout << "Belief: " << state_belief << std::endl;
+
+		x_pos = state_belief[0];
+		y_pos = state_belief[1];
+#if POSITION_DIM == 3
+		z_pos = state_belief[2];
+#endif
+		vis::markBelief(x_pos, y_pos, z_pos);
 
 		// Apply control
-		sim.step(u);
+		if (!sim.step(control)) {
+			free_path = false;
+			break;
+		}
 	}
 
-	return true;
+	return free_path;
 }
 
 int testSolution(const tree_t & tree, int num_sims) {
@@ -3896,7 +3988,7 @@ int testSolution(const tree_t & tree, int num_sims) {
 	// Return the count of successful runs.
 	return good_runs;
 }
-*/
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	setupParameters();
@@ -3984,6 +4076,8 @@ x1[5] = 0;
 		vis::RestoreEnvironment<3>();
 		world->positionCamera();
 
+		vis::visualizeFinalPath(tree, false, false);
+		/*
 		path_t path;
 		extractPath(tree, &path);
 
@@ -4024,7 +4118,7 @@ x1[5] = 0;
 
 			CAL_CreatePolyline(vis::solution_group, 1, (int*)&current_segment_size, points);
 		}
-
+		*/
 	} else {
 		open_logs();
 		save_experiment(experiment_log);
@@ -4069,21 +4163,7 @@ x1[5] = 0;
 
 		close_logs();
 	}
-	/*
-	std::cout << "Simulate? ";
-	if (response_affirmative()) {
-		dynamics_t dynamics;
-		dynamics.A = A;
-		dynamics.B = B;
-		dynamics.c = c;
-		dynamics.M = M;
-		dynamics.C = C;
-		dynamics.N = N;
-		dynamics.d = d;
 
-		simulate(dynamics, tree);
-	}
-	*/
 	std::cout << "Visualize tree? ";
 	if (response_affirmative()) {
 		vis::drawTree(tree);
@@ -4092,6 +4172,22 @@ x1[5] = 0;
 	std::cout << "Visualize paths? ";
 	if (response_affirmative()) {
 		vis::visualizeTree(tree);
+	}
+
+	std::cout << "Simulate? ";
+	if (response_affirmative()) {
+		dynamics_t dynamics;
+		dynamics.A = &A;
+		dynamics.B = &B;
+		dynamics.c = &c;
+		dynamics.M = &M;
+		dynamics.C = &C;
+		dynamics.N = &N;
+		dynamics.d = &d;
+		dynamics.K = &K;
+		dynamics.L = &L;
+
+		simulate(dynamics, tree);
 	}
 
 	std::cout << "Visualize solution? ";

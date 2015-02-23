@@ -5,7 +5,7 @@ namespace vis
 {
 int cal_scale, cal_rotate, axis_group, collision_hit_group, collision_free_group, threshold_hit_group, threshold_free_group
 	, start_node_group, goal_node_group, node_group, edge_group, paths_group, velocity_group, solution_group
-	, solution_marker_group;
+	, solution_marker_group, simulation_belief_group, simulation_actual_group;
 int robot_base, robot_group, robot_collision_object, robot_model, robot_model_object;
 
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
@@ -171,6 +171,8 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	CAL_CreateGroup(&velocity_group, 0, false, "Velocities");
 	CAL_CreateGroup(&start_node_group, cal_rotate, false, "Start");
 	CAL_CreateGroup(&goal_node_group, cal_rotate, false, "Goal");
+	CAL_CreateGroup(&simulation_belief_group, 0, false, "Beliefs");
+	CAL_CreateGroup(&simulation_actual_group, 0, false, "Beliefs");
 
 	CAL_SetGroupVisibility(axis_group, 0, SHOW_AXIS, true);
 	CAL_SetGroupVisibility(node_group, 0, SHOW_NODES, true);
@@ -182,6 +184,8 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	CAL_SetGroupVisibility(collision_free_group, 0, true, true);
 	CAL_SetGroupVisibility(threshold_hit_group, 0, true, true);
 	CAL_SetGroupVisibility(threshold_free_group, 0, true, true);
+	CAL_SetGroupVisibility(simulation_belief_group, 0, true, true);
+	CAL_SetGroupVisibility(simulation_actual_group, 0, true, true);
 
 	CAL_SetGroupColor(collision_hit_group, 1, 0, 0);
 	CAL_SetGroupColor(collision_free_group, 0, 1, 0);
@@ -194,6 +198,8 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	CAL_SetGroupColor(edge_group, 0.65, 0.16, 0.16);
 	CAL_SetGroupColor(start_node_group, 1, 0, 0);
 	CAL_SetGroupColor(goal_node_group, 0, 1, 0);
+	CAL_SetGroupColor(simulation_belief_group, 1, 0, 0);
+	CAL_SetGroupColor(simulation_actual_group, 0, 0, 1);
 
 	renderAxis();
 
@@ -361,9 +367,18 @@ void plotPath(const state& x0, const state& x1, const double radius) {
 	}
 }
 
-void createSphere(CAL_scalar r, CAL_scalar x, CAL_scalar y, CAL_scalar z) {
+// The next two functions could be better generalized
+void createSphere(CAL_scalar r, CAL_scalar x, CAL_scalar y, CAL_scalar z, int group = solution_group) {
 	// TODO this needs error checking
-	CAL_CreateSphere(solution_group, r, x, y, z);
+	CAL_CreateSphere(group, r, x, y, z);
+}
+
+void markBelief(CAL_scalar x, CAL_scalar y, CAL_scalar z) {
+	createSphere(3*NODE_SIZE, x, y, z, simulation_belief_group);
+}
+
+void markActual(CAL_scalar x, CAL_scalar y, CAL_scalar z) {
+	createSphere(3*NODE_SIZE, x, y, z, simulation_actual_group);
 }
 
 /**
