@@ -412,7 +412,9 @@ char _getchar();
 bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, double * actual_deltaT, state_time_list_t* vis, control_time_list_t* con);
 
 void convertTreeToPoints(const tree_t& tree, double *points);
-	
+
+inline bool collision_free(const state& s, bool distance_check, bool model);
+
 template<typename vec, typename bounds>
 inline void rand_vec(vec& v, const bounds& b);
 
@@ -426,6 +428,7 @@ inline Eigen::Matrix<double,numRows1+numRows2, numCols1+numCols2> block(const Ei
 	return m;
 }
 
+void extractPath(const tree_t &tree, path_t * path);
 void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, control_time_list_t * controls);
 
 /**
