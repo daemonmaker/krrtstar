@@ -16,31 +16,47 @@ World * world = NULL;
 StateSpace * state_space = NULL;
 Robot * robot = NULL;
 
-void dynamicsError() {
-	cout << "Invalid dynamics \"" << dynamics_type_to_name(DYNAMICS) << "\" (" << DYNAMICS << ")" << endl;
-	_getchar();
-	exit(-1);
-}
-
-void open_logs() {
-	time_log = fopen(make_log_file_name(EXPERIMENT_NAME, "time", "txt").c_str(), "w");
-	stats_log = fopen(make_log_file_name(EXPERIMENT_NAME, "stats", "txt").c_str(), "w");
-	path_log = fopen(make_log_file_name(EXPERIMENT_NAME, "path", "path").c_str(), "wb");
-	experiment_log = fopen(make_log_file_name(EXPERIMENT_NAME, "exp", "txt").c_str(), "w");
-
-	ostringstream os;
-
-#define WRITE_HEADER(header, log_fh) \
+#define WRITE_HEADER(os, header, log_fh) \
 	os.clear();	\
 	os.str(""); \
 	os << header << endl;	\
 	fputs(os.str().c_str(), log_fh);	\
 	fflush(stats_log);
 
-	WRITE_HEADER("time\tnumber_of_nodes\ttarget_number_of_nodes\tcost_from_start\tradius\tnumber_of_orphans", stats_log);
-	WRITE_HEADER("number_of_nodes\ttime", time_log);
+#define WRITE_RECORD(label, value)	\
+	record.clear();	\
+	record.str(""); \
+	record << label << value << std::endl;	\
+	fputs(record.str().c_str(), experiment_log_fh);
 
-#undef WRITE_HEADER
+#define WRITE_MATRIX(label, matrix)	\
+	record.clear(); \
+	record.str(""); \
+	record << label << ": " << std::endl; \
+	for (int idx = 0; idx < matrix.rows(); ++idx) { \
+		for (int jdx = 0; jdx < matrix.cols(); ++jdx) { \
+			record << matrix(idx, jdx) << ' '; \
+		} \
+		record << std::endl; \
+	} \
+	fputs(record.str().c_str(), experiment_log_fh);
+
+void dynamicsError() {
+	cout << "Invalid dynamics \"" << dynamics_type_to_name(DYNAMICS) << "\" (" << DYNAMICS << ")" << endl;
+	_getchar();
+	exit(-1);
+}
+
+void open_logs(const string &experiment_name) {
+	time_log = fopen(make_log_file_name(experiment_name, "time", "txt").c_str(), "w");
+	stats_log = fopen(make_log_file_name(experiment_name, "stats", "txt").c_str(), "w");
+	path_log = fopen(make_log_file_name(experiment_name, "path", "path").c_str(), "wb");
+	experiment_log = fopen(make_log_file_name(experiment_name, "exp", "txt").c_str(), "w");
+
+	ostringstream os;
+
+	WRITE_HEADER(os, "time\tnumber_of_nodes\ttarget_number_of_nodes\tcost_from_start\tradius\tnumber_of_orphans", stats_log);
+	WRITE_HEADER(os, "number_of_nodes\ttime", time_log);
 }
 
 void close_log(FILE * fh) {
@@ -119,21 +135,14 @@ void read_tree(const string log_file, tree_t * tree) {
 }
 
 void save_experiment(FILE * experiment_log_fh) {
-
 	ostringstream record;
-
-#define WRITE_RECORD(label, value)	\
-	record.clear();	\
-	record.str(""); \
-	record << label << value << std::endl;	\
-	fputs(record.str().c_str(), experiment_log_fh);
 
 	WRITE_RECORD("DYNAMICS: ", dynamics_type_to_name(DYNAMICS));
 	WRITE_RECORD("ROBOT: ", typeid(ROBOT).name());
 	WRITE_RECORD("STATE_SPACE: ", typeid(STATE_SPACE).name());
 	WRITE_RECORD("WORLD: ", typeid(WORLD).name());
 	WRITE_RECORD("USE_THRESHOLDS: ", USE_THRESHOLDS);
-	WRITE_RECORD("DISTANCE_THRESHOLD: ", DISTANCE_THRESHOLD);
+	WRITE_RECORD("distance_threshold: ", world->getDistanceThreshold());
 	WRITE_RECORD("EPSILON: ", EPSILON);
 	WRITE_RECORD("USE_OBSTACLES: ", USE_OBSTACLES);
 	bool reduce_radius = false;
@@ -141,7 +150,6 @@ void save_experiment(FILE * experiment_log_fh) {
 	reduce_radius = true;
 #endif
 	WRITE_RECORD("REDUCE_RADIUS: ", reduce_radius);
-	WRITE_RECORD("DISTANCE_THRESHOLD: ", DISTANCE_THRESHOLD);
 	WRITE_RECORD("TARGET_NODES: ", TARGET_NODES);
 	WRITE_RECORD("START_RADIUS: ", START_RADIUS);
 	WRITE_RECORD("RADIUS_MULTIPLIER: ", RADIUS_MULTIPLIER);
@@ -152,18 +160,6 @@ void save_experiment(FILE * experiment_log_fh) {
 	WRITE_RECORD("sphere_volume: ", sphere_volume);
 	WRITE_RECORD("statespace_volume: ", statespace_volume);
 	WRITE_RECORD("NOISE_FREE: ", NOISE_FREE);
-
-#define WRITE_MATRIX(label, matrix)	\
-	record.clear(); \
-	record.str(""); \
-	record << label << ": " << std::endl; \
-	for (int idx = 0; idx < matrix.rows(); ++idx) { \
-		for (int jdx = 0; jdx < matrix.cols(); ++jdx) { \
-			record << matrix(idx, jdx) << ' '; \
-		} \
-		record << std::endl; \
-	} \
-	fputs(record.str().c_str(), experiment_log_fh);
 
 	WRITE_MATRIX("A", A);
 	WRITE_MATRIX("B", B);
@@ -264,11 +260,11 @@ void setupParameters(void) {
 	Rotation(0, 1) = -sin(rotation_angle);
 	Rotation(1, 0) = sin(rotation_angle);
 	Rotation(1, 1) = cos(rotation_angle);
+	*/
 
 	Scale(0, 0) = 0.1;
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
-	*/
 
 	/*
 	Rotation(0, 0) = -0.1701;
@@ -551,6 +547,7 @@ void buildEnvironment(int base_group) {
 	state_space = new STATE_SPACE(position_generator, world->getBounds());
 
 	world->buildEnvironment();
+	world->setDistanceThreshold(distance_thresholds[0]);
 }
 
 template <size_t _numRows>
@@ -651,7 +648,7 @@ inline bool collision_free(const state& s, bool distance_check = USE_THRESHOLDS,
 
 	// Sloppy! Refactor this to properly handle the two different types of possible collision checks
 	if (distance_check) {
-		bool below_threshold = world->checkDistance(robot, DISTANCE_THRESHOLD);
+		bool below_threshold = world->checkDistance(robot);
 #if defined(SHOW_THRESHOLD_CHECKS)
 		world->showCollisionCheck(s, below_threshold, vis::threshold_hit_group, vis::threshold_free_group);
 #endif
@@ -3914,9 +3911,60 @@ void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, cont
 	*/
 }
 
-int testSolution(const dynamics_t &dynamics, tree_t & tree, int num_sims, bool visualize_simulation = VISUALIZE_SIMULATION) {
+bool planTrajectory(const string &experiment_name, tree_t & tree, double radius) {
+	tree.clear();
+
+	//vis::WarpEnvironment<3>(Rotation, Scale);
+	//world->positionCamera(Rotation, Scale.inverse());
+
+	open_logs(experiment_name);
+	save_experiment(experiment_log);
+
+	start_time = clock();
+
+	//KD_Tree::testKDTree(tree);
+	
+	rrtstar(x0, x1, TARGET_NODES, radius, tree, true, EPSILON);
+	end_time = clock();
+
+	double runtime = (double)(end_time - start_time)/(double)CLOCKS_PER_SEC;
+	cout << "Runtime: " << runtime << endl;
+
+	ostringstream os;
+	os.clear();
+	os.str("");
+	os << "Runtime: " << runtime << std::endl;
+	fputs(os.str().c_str(), experiment_log);
+
+	bool result = false;
+	os.clear();
+	os.str("");
+	os << "Solution found: ";
+	if (tree[0].cost_from_start < DBL_MAX) {
+		result = true;
+		os << "Yes" << std::endl << "Cost to goal: " << tree[0].cost_from_start;
+	} else {
+		result = false;
+		os << "No";
+	}
+	std::cout << os.str() << std::endl;
+	fputs(os.str().c_str(), experiment_log);
+
+	std::cout << "Saving tree...";
+	save_tree(make_log_file_name(experiment_name, "tree", "rrt"), tree);
+	std::cout << " done." << std::endl;
+
+	vis::RestoreEnvironment<3>();
+	world->positionCamera();
+
+	close_logs();
+
+	return result;
+}
+
+size_t testSolution(const dynamics_t &dynamics, tree_t & tree, int num_sims, bool visualize_simulation = VISUALIZE_SIMULATION) {
 	// Attempt to follow the trajectory the specified number of times.
-	int good_runs = 0;
+	size_t good_runs = 0;
 	for (int count = 1; count <= num_sims; ++count) {
 		if (simulate(dynamics, tree, visualize_simulation)) {
 			++good_runs;
@@ -4014,6 +4062,7 @@ x1[5] = 0;
 
 	char key;
 	bool tree_loaded = false;
+	string experiment_name = EXPERIMENT_NAME;
 	do {
 		std::cout << ">> ";
 		key = _getchar();
@@ -4025,52 +4074,11 @@ x1[5] = 0;
 			std::cout << "v - Visualize" << std::endl;
 			std::cout << "c - Clear visualization" << std::endl;
 			std::cout << "t - Test solution." << std::endl;
+			std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
 		}
 
 		if (key == 'r') {
-			tree.clear();
-
-			//vis::WarpEnvironment<3>(Rotation, Scale);
-			//world->positionCamera(Rotation, Scale.inverse());
-
-			open_logs();
-			save_experiment(experiment_log);
-
-			start_time = clock();
-
-			//KD_Tree::testKDTree(tree);
-	
-			rrtstar(x0, x1, TARGET_NODES, radius, tree, true, EPSILON);
-			end_time = clock();
-
-			double runtime = (double)(end_time - start_time)/(double)CLOCKS_PER_SEC;
-			cout << "Runtime: " << runtime << endl;
-
-			ostringstream os;
-			os.clear();
-			os.str("");
-			os << "Runtime: " << runtime << std::endl;
-			fputs(os.str().c_str(), experiment_log);
-
-			os.clear();
-			os.str("");
-			os << "Solution found: ";
-			if (tree[0].cost_from_start < DBL_MAX) {
-				os << "Yes" << std::endl << "Cost to goal: " << tree[0].cost_from_start;
-			} else {
-				os << "No";
-			}
-			std::cout << os.str() << std::endl;
-			fputs(os.str().c_str(), experiment_log);
-
-			std::cout << "Saving tree...";
-			save_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), tree);
-			std::cout << " done." << std::endl;
-
-			vis::RestoreEnvironment<3>();
-			world->positionCamera();
-
-			close_logs();
+			planTrajectory(experiment_name, tree, radius);
 		}
 
 		if (key == 'l') {
@@ -4127,6 +4135,62 @@ x1[5] = 0;
 
 		if (key == 't') {
 			testSolution(dynamics, tree, 100, false);
+		}
+
+		if (key == 'e') {
+			experiment_name = "experiment";
+
+			ostringstream experiment_base_name;
+			ostringstream current_experiment_name;
+			ostringstream simulation_record;
+
+			// Plan multiple trajectories
+			for (size_t trajectory_count = 0; trajectory_count < TRAJECTORY_COUNT; ++trajectory_count) {
+				experiment_base_name.clear();
+				experiment_base_name.str("");
+				experiment_base_name << experiment_name << "_trajectory_" << trajectory_count;
+
+				FILE * simulation_log = fopen(make_log_file_name(experiment_base_name.str(), "simulations", "txt").c_str(), "w");
+				WRITE_HEADER(simulation_record, "experiment\tsimulations\tsuccessful", simulation_log);
+
+				// Iterate over thresholds
+				for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
+					vis::WarpEnvironment<3>(Rotation, Scale);
+
+					world->setDistanceThreshold(distance_thresholds[threshold_idx]);
+
+					paths = 0;
+
+					vis::clearPaths();
+					vis::clearSimulation();
+
+					current_experiment_name.clear();
+					current_experiment_name.str("");
+					current_experiment_name << experiment_base_name.str() << "_threshold_" << world->getDistanceThreshold();
+
+					std::cout << "Planning for " << current_experiment_name.str() << "... ";
+
+					if (planTrajectory(current_experiment_name.str(), tree, radius)) {
+						std::cout << "success." << std::endl << "Simulating... " << std::endl;
+
+						vis::RestoreEnvironment<3>();
+
+						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, false);
+
+						simulation_record.clear();
+						simulation_record.str("");
+						simulation_record << current_experiment_name.str() << '\t' << NUM_SIMS << '\t' << good_runs << std::endl;
+						fputs(simulation_record.str().c_str(), simulation_log);
+						fflush(simulation_log);
+					} else {
+						std::cout << "failed" << std::endl;
+
+						vis::RestoreEnvironment<3>();
+					}
+				}
+
+				fclose(simulation_log);
+			}
 		}
 	} while (key != 'q');
 

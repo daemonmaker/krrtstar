@@ -49,10 +49,11 @@ protected:
 	int base_group, border_group, obstacle_group;
 	BOUNDS x_bounds;
 	Eigen::Matrix<double,X_DIM,1> x0, x1;
+	double distance_threshold;
 
 public:
 	World(int base_group)
-		: base_group(base_group)
+		: base_group(base_group), distance_threshold(0.0)
 	{
 		CAL_CreateGroup(&(this->obstacle_group), base_group, true, "Obstacle");
 
@@ -81,6 +82,14 @@ public:
 		}
 	}
 	*/
+
+	void setDistanceThreshold(double distance_threshold) {
+		this->distance_threshold = distance_threshold;
+	}
+
+	double getDistanceThreshold() const {
+		return this->distance_threshold;
+	}
 
 	void setBound(int idx, const BOUND& bound) {
 		this->x_bounds[idx] = bound;
@@ -162,8 +171,8 @@ public:
 		return CAL_CheckGroupCollision(robot_group, this->obstacle_group, false, collisions);
 	}
 */
-	inline const virtual bool checkDistance(Robot * robot, float threshold, bool visualize = false) const {
-		if (robot->computeStdDev(this->obstacle_group, visualize) < threshold)
+	inline const virtual bool checkDistance(Robot * robot, bool visualize = false) const {
+		if (robot->computeStdDev(this->obstacle_group, visualize) < this->distance_threshold)
 			return true;
 		return false;
 	}

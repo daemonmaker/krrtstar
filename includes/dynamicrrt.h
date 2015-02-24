@@ -62,8 +62,6 @@ TODO
 #undef CLOSED_FORM_BACKWARD
 #endif
 
-#define EXPERIMENT_NAME "test"
-
 // Manages which dynamics are used
 #define SINGLE_INTEGRATOR_2D 1  // KD tree is not defined for this -- more specifically calc_forward_reachable_set is not defined.
 #define DOUBLE_INTEGRATOR_1D 2
@@ -99,10 +97,12 @@ std::string dynamics_type_to_name(const int id) {
 #define POSITION_DIM 2
 
 // Flags to control various features of the program
+#define EXPERIMENT_NAME "test"
 //#define EXPERIMENT
-#define USE_THRESHOLDS 1
-#define DISTANCE_THRESHOLD 0
-#define NOISE_FREE false
+#define TRAJECTORY_COUNT 30 // Number of paths to plan duing experiments
+#define NUM_SIMS 100 // Number of times to simulate paths duing experiments
+#define USE_THRESHOLDS 1 // Whether to use distance thresholds instead of collisions checks during trajectory planning.
+#define NOISE_FREE false // Whether the simulation(s) should be noise free.
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
@@ -192,6 +192,8 @@ double sphere_volume;
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
 #define ROBOT Puck
 #define DISTANCE_THRESHOLD 5
+const size_t distance_threshold_count = 5;
+double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0};
 #define TARGET_NODES 200 // Determines how many nodes the tree should have
 #define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
@@ -210,6 +212,8 @@ double sphere_volume;
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
 #define DISTANCE_THRESHOLD 1
+const size_t distance_threshold_count = 5;
+double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0};
 #define TARGET_NODES 250
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1
@@ -279,10 +283,10 @@ unsigned int TWO_TO_X_DIM;
 double statespace_volume;
 const double X_DIM_INVERSE = 1.0/X_DIM;
 
-FILE* time_log;
-FILE* stats_log;
-FILE* path_log;
-FILE* experiment_log;
+FILE * time_log;
+FILE * stats_log;
+FILE * path_log;
+FILE * experiment_log;
 
 const int NO_PARENT = -1;
 const int START_NODE_ID = 1;

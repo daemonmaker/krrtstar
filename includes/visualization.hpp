@@ -8,15 +8,39 @@ int cal_scale, cal_rotate, axis_group, collision_hit_group, collision_free_group
 	, solution_marker_group, simulation_belief_group, simulation_actual_group;
 int robot_base, robot_group, robot_collision_object, robot_model, robot_model_object;
 
-void clearAll() {
+void clearSolution() {
 	CAL_EmptyGroup(solution_group);
 	CAL_EmptyGroup(solution_marker_group);
+}
+
+void clearEdges() {
 	CAL_EmptyGroup(edge_group);
+}
+
+void clearNodes() {
 	CAL_EmptyGroup(node_group);
+}
+
+void clearPaths() {
 	CAL_EmptyGroup(paths_group);
+}
+
+void clearVelocities() {
 	CAL_EmptyGroup(velocity_group);
+}
+
+void clearSimulation() {
 	CAL_EmptyGroup(simulation_belief_group);
 	CAL_EmptyGroup(simulation_actual_group);
+}
+
+void clearAll() {
+	clearSolution();
+	clearEdges();
+	clearNodes();
+	clearPaths();
+	clearVelocities();
+	clearSimulation();
 }
 
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
@@ -268,8 +292,6 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 #endif
 	CAL_CreateSphere(start_node_group, 5*NODE_SIZE, start_x, start_y, start_z);
 	CAL_CreateSphere(goal_node_group, 5*NODE_SIZE, goal_x, goal_y, goal_z);
-
-	WarpEnvironment<3>(Rotation, Scale);
 }
 
 void visualizePath(const tree_t& tree, bool thick_line=false, bool log = true, bool build_keyframe = true) {
@@ -858,7 +880,7 @@ void testCollisions(World * world, Robot * robot) {
 		s[1] += testCollisions_y_delta;
 		robot->position(s);
 		if (testCollisions_use_thresholds) {
-			collision = world->checkDistance(robot, DISTANCE_THRESHOLD, true);
+			collision = world->checkDistance(robot, true);
 			std::cout << "Colliding? " << collision << std::endl;
 		} else {
 			world->checkCollisions(robot, &collisions, true);
