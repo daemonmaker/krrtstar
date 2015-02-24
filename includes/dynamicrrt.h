@@ -395,7 +395,8 @@ int paths; // Counts the number of paths
 double start_time, current_time, end_time;
 #define TimeToInt(t) ((t.wHour*3600 + t.wMinute*60 + t.wSecond)*1000 + t.wMilliseconds)
 
-bool state_order(const state_time_t& a, const state_time_t& b) {
+template<class T>
+bool temporal_order(const T& a, const T& b) {
 	return (a.first < b.first);
 }
 

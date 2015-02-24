@@ -68,7 +68,7 @@ public:
 
 		// Ad noise
 		if (!(this->noise_free)) {
-			rand_gaussian_vector(this->motion_noise); // Motion noise is actually noise = Mv, this assumes M = I.
+			rand_gaussian_vector(this->motion_noise);
 			this->motion_noise = this->L_of_M*this->motion_noise;
 			this->deviation += motion_noise*deltaT*deltaT;
 		}
@@ -80,7 +80,7 @@ public:
 
 		// Add noise
 		if (!(this->noise_free)) {
-			rand_gaussian_vector(this->observation_noise); // Observation noise is actually noise = Nw, this assumes N = I.
+			rand_gaussian_vector(this->observation_noise);
 			this->observation_noise = this->L_of_N*this->observation_noise;
 			(*s) += observation_noise;
 		}

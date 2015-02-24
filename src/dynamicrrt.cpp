@@ -287,6 +287,15 @@ void setupParameters(void) {
 	//Scale(2, 2) = 4662000;
 	//Scale(2, 2) = 4662000;
 	*/
+	MotionNoiseCovariance(0,0) = 0.001;
+	MotionNoiseCovariance(1,1) = 0.001;
+	MotionNoiseCovariance(2,2) = 0.001;
+	MotionNoiseCovariance(3,3) = 0.001;
+	ObservationNoiseCovariance(0,0) = 0.0001;
+	ObservationNoiseCovariance(1,1) = 0.0001;
+	ObservationNoiseCovariance(2,2) = 0.0001;
+	ObservationNoiseCovariance(3,3) = 0.0001;
+
 	robot = new ROBOT(vis::cal_rotate);
 
 	control_penalty = 1;
@@ -3877,8 +3886,8 @@ void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, cont
 		if (idx > 0) {
 			max_tau += actual_deltaT;
 		}
-		sort(segment_states.begin(), segment_states.end(), state_order);
-		sort(segment_controls.begin(), segment_controls.end(), state_order);
+		sort(segment_states.begin(), segment_states.end(), temporal_order<state_time_t>);
+		sort(segment_controls.begin(), segment_controls.end(), temporal_order<control_time_t>);
 		segment_length = segment_states.size();
 		for (size_t jdx = 0; jdx < segment_length; ++jdx) {
 			segment_states[jdx].first += max_tau;

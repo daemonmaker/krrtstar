@@ -339,7 +339,7 @@ void plotPath(const state& x0, const state& x1, const double radius) {
 
 	connect(x0, x1, radius, cost, max_tau, &actual_deltaT, &segment, NULL);
 
-	sort(segment.begin(), segment.end(), state_order);
+	sort(segment.begin(), segment.end(), temporal_order<state_time_t>);
 	for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
 		current_time = (q->first) + max_tau;
 		buildKeyframe(current_time, q->second);
@@ -397,7 +397,7 @@ void visualizeTree(const tree_t& tree, bool prune = false) {
 
 			segment.clear();
 			connect(parent->x, tree[*child].x, DBL_MAX, cost, tau, &actual_deltaT, &segment, NULL);
-			sort(segment.begin(), segment.end(), state_order);
+			sort(segment.begin(), segment.end(), temporal_order<state_time_t>);
 
 			segment_length = segment.size();
 			if (segment_length > max_length) {
