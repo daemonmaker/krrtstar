@@ -1317,16 +1317,17 @@ void recordTrajectory(double t, const state &x, const control &u, state_time_lis
 	}
 }
 
-bool checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t* vis, control_time_list_t* con) {
+bool checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, double * actual_deltaT, state_time_list_t* vis, control_time_list_t* con) {
 	double t;
 	double bound = deltaT;
-	int numPoints = ceil(tau / bound);
-	int step = 1;
+	size_t numPoints = ceil(tau / bound);
+	size_t step = 1;
 	while (step < numPoints) step *= 2;
+	(*actual_deltaT) = tau/numPoints;
 
 	for ( ; step > 1; step /= 2) {
 		for (int i = step / 2; i < numPoints; i += step) {
-			t = (tau*i)/numPoints;
+			t = (*actual_deltaT)*i;
 
 			state x;
 			control u;
@@ -1353,7 +1354,9 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 	return true;
 }
 
-bool checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t* vis, control_time_list_t* con) {
+bool checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, double * actual_deltaT, state_time_list_t* vis, control_time_list_t* con) {
+	(*actual_deltaT) = deltaT;
+
 	Alpha = block<X_DIM,X_DIM,X_DIM,X_DIM>(A, -BRiBt, Eigen::Matrix<double,X_DIM,X_DIM>::Zero(), -A.transpose());
 
 	chi.block<X_DIM,1>(0,0) = x1;
@@ -1402,9 +1405,8 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 	return true;
 }
 
-inline bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis, control_time_list_t * cons) {
+inline bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, double * actual_deltaT, state_time_list_t* vis, control_time_list_t * cons) {
 	state d_tau;
-
 	state xend = x1;
 #if (DYNAMICS == NONHOLONOMIC)
 	double theta_diff = x1[2] - x0[2];
@@ -1423,7 +1425,7 @@ inline bool connect(const state& x0, const state& x1, const double radius, doubl
 #endif
 
 	if (computeCost(x0, xend, radius, cost, tau, d_tau)) {
-		if (checkPath(x0, xend, tau, d_tau, vis, cons)) {
+		if (checkPath(x0, xend, tau, d_tau, actual_deltaT, vis, cons)) {
 			return true;
 		} else {
 			//cout << "Failed checkPath" << endl;
@@ -1608,8 +1610,8 @@ inline void setRadius(const double& num_states, double& radius) {
 //				s.pop();
 //				for (node_list_t::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ) {
 //					// If we can get to a node via the new node faster than via it's existing parent then change the parent
-//					double junk;
-//					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
+//					double junk, junk2;
+//					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, &junk2, NULL, NULL)) {
 //						tree[*p].parent = x_rand_node_id;
 //						tree[x_rand_node_id].children.push_back(*p);
 //						s.push(make_pair(*p, tree[*p].cost_from_start - (x_rand_node.cost_from_start + cost)));
@@ -1644,8 +1646,8 @@ inline void setRadius(const double& num_states, double& radius) {
 //
 //			// check orphans
 //			for (size_t j = 0; j < orphans.size(); ) {
-//				double junk;
-//				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
+//				double junk, junk2;
+//				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, &junk2, NULL, NULL)) {
 //					tree[orphans[j]].cost_from_start = x_rand_node.cost_from_start + cost;
 //					tree[orphans[j]].parent = x_rand_node_id;
 //					tree[x_rand_node_id].children.push_back(orphans[j]);
@@ -3494,6 +3496,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		node_id_t x_near_id = NO_PARENT;
 		double cost;
 		double tau;
+		double actual_deltaT;
 
 		priority_queue<node_cost_pair_t, vector<node_cost_pair_t >, greater<node_cost_pair_t > > Q;
 
@@ -3514,7 +3517,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			node_id_t j = Q.top().second;
 			Q.pop();
 
-			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL)) {
+			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, &actual_deltaT, NULL, NULL)) {
 				min_dist = tree[j].cost_from_start + cost;
 				x_near_id = j;
 			}
@@ -3526,7 +3529,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			node_id_t j = Q.top().second;
 			Q.pop();
 
-			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL, NULL)) {
+			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, &actual_deltaT, NULL, NULL)) {
 				min_dist = tree[j].cost_from_start + cost;
 				x_near_id = j;
 			}
@@ -3660,8 +3663,8 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 				s.pop();
 				for (node_list_t::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ) {
 					// If we can get to a node via the new node faster than via it's existing parent then change the parent
-					double junk;
-					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL, NULL)) {
+					double junk, junk2;
+					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, &junk2, NULL, NULL)) {
 						tree[*p].parent = x_rand_node_id;
 						tree[x_rand_node_id].children.push_back(*p);
 						s.push(make_pair(*p, tree[*p].cost_from_start - (x_rand_node.cost_from_start + cost)));
@@ -3703,8 +3706,8 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		// check orphans
 		if (x_near_id != NO_PARENT) {
 			for (size_t j = 0; j < orphans.size(); ) {
-				double junk;
-				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL, NULL)) {
+				double junk, junk2;
+				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, &junk2, NULL, NULL)) {
 					tree[orphans[j]].cost_from_start = x_rand_node.cost_from_start + cost;
 					tree[orphans[j]].parent = x_rand_node_id;
 					tree[x_rand_node_id].children.push_back(orphans[j]);
@@ -3731,7 +3734,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 #ifndef EXPERIMENT
 		if (draw_path) {
-			vis::visualizePath(tree);
+			vis::visualizePath(tree, false, true, false);
 		}
 #endif
 
@@ -3853,18 +3856,33 @@ void extractPath(const tree_t &tree, path_t * path) {
 	reverse(path->begin(), path->end());
 }
 
-void createNominalTrajectory(const tree_t & tree, const path_t &key_points, state_time_list_t * path, control_time_list_t * controls) {
+void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, control_time_list_t * controls) {
+	path_t key_points;
+	extractPath(tree, &key_points);
+
 	double cost, tau;
+	double actual_deltaT = 0, max_tau = 0;
+	size_t segment_length = 0;
+	size_t numPoints = 0;
 	state_time_list_t segment_states;
 	control_time_list_t segment_controls;
-	for (int idx = 0; idx < key_points.size() - 1; ++idx) {
+	for (size_t idx = 0; idx < key_points.size() - 1; ++idx) {
 		segment_states.clear();
 		segment_controls.clear();
-		connect(tree[key_points[idx]].x, tree[key_points[idx+1]].x, DBL_MAX, cost, tau, &segment_states, &segment_controls);
+		connect(tree[key_points[idx]].x, tree[key_points[idx+1]].x, DBL_MAX, cost, tau, &actual_deltaT, &segment_states, &segment_controls);
+		if (idx > 0) {
+			max_tau += actual_deltaT;
+		}
 		sort(segment_states.begin(), segment_states.end(), state_order);
 		sort(segment_controls.begin(), segment_controls.end(), state_order);
-		path->insert(path->end(), segment_states.begin(), segment_states.end());
-		controls->insert(controls->end(), segment_controls.begin(), segment_controls.end());
+		segment_length = segment_states.size();
+		for (size_t jdx = 0; jdx < segment_length; ++jdx) {
+			segment_states[jdx].first += max_tau;
+			segment_controls[jdx].first += max_tau;
+			path->push_back(segment_states[jdx]);
+			controls->push_back(segment_controls[jdx]);
+		}
+		max_tau = segment_states[segment_length-1].first;
 	}
 
 	/*
@@ -3879,6 +3897,7 @@ void createNominalTrajectory(const tree_t & tree, const path_t &key_points, stat
 		vis::markBelief(x_pos, y_pos, z_pos);
 		std::cout << x_pos << ", " << y_pos << std::endl;
 	}
+	_getchar();
 	*/
 }
 
@@ -3980,20 +3999,17 @@ public:
 
 bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulation = VISUALIZE_SIMULATION) {
 	// Simulate the trajectory
-	path_t key_points;
-	extractPath(tree, &key_points);
-
 	state_time_list_t path;
 	control_time_list_t controls;
-	createNominalTrajectory(tree, key_points, &path, &controls);
+	createNominalTrajectory(tree, &path, &controls);
 
 	state observation = state::Zero();
 
 	double x_pos = 0, y_pos = 0, z_pos = 0;
-	state state_belief = tree[key_points[0]].x;
+	state state_belief = tree[START_NODE_ID].x;
 	state state_update = state::Zero();
 	control u = control::Zero();
-	Simulator sim(dynamics, tree[key_points[0]].x, NOISE_FREE, visualize_simulation);
+	Simulator sim(dynamics, tree[START_NODE_ID].x, NOISE_FREE, visualize_simulation);
 	bool free_path = true;
 	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
 		// Observe state
@@ -4200,49 +4216,8 @@ x1[5] = 0;
 			vis::RestoreEnvironment<3>();
 			world->positionCamera();
 
-			vis::visualizeFinalPath(tree, false, false);
-			/*
-			path_t path;
-			extractPath(tree, &path);
+			vis::visualizeFinalPath(tree, false, false, true);
 
-			double cost, tau;
-			state_time_list_t segment;
-			size_t path_size = path.size();
-			size_t max_segment_size = 1000;
-			size_t current_segment_size = 0;
-			CAL_scalar * points = new CAL_scalar[3*max_segment_size];
-			for (int idx = 0; idx < path_size - 1; ++idx) {
-				segment.clear();
-				connect(tree[path[idx]].x, tree[path[idx+1]].x, DBL_MAX, cost, tau, &segment);
-
-				current_segment_size = segment.size() - 1;
-				if (current_segment_size > max_segment_size) {
-					std::cout << "REALLOCATING" << std::endl;
-					delete[] points;
-					max_segment_size = current_segment_size;
-					points = new CAL_scalar[3*max_segment_size];
-				}
-
-				for (int jdx = 0; jdx < current_segment_size - 2; ++jdx) {
-					points[3*jdx] = segment[jdx+1].second[0];
-					points[3*jdx+1] = segment[jdx+1].second[1];
-	#if POSITION_DIM == 3
-					points[3*jdx+2] = segment[jdx+1].second[2];
-	#else
-					points[3*jdx+2] = 0;
-	#endif
-				}
-				points[3*(current_segment_size - 1)] = segment[current_segment_size-1].second[0];
-				points[3*(current_segment_size - 1)+1] = segment[current_segment_size-1].second[1];
-	#if POSITION_DIM == 3
-				points[3*(current_segment_size - 1)+2] = segment[current_segment_size-1].second[2];
-	#else
-				points[3*(current_segment_size - 1)+2] = 0;
-	#endif
-
-				CAL_CreatePolyline(vis::solution_group, 1, (int*)&current_segment_size, points);
-			}
-			*/
 			tree_loaded = true;
 		}
 

@@ -285,6 +285,8 @@ FILE* path_log;
 FILE* experiment_log;
 
 const int NO_PARENT = -1;
+const int START_NODE_ID = 1;
+const int GOALD_NODE_ID = 0;
 typedef int node_id_t;
 typedef double cost_t;
 typedef double location_t;
@@ -401,13 +403,13 @@ bool (*computeCost)(const state& x0, const state& x1, double radius, double& cos
 bool __cdecl computeCostClosedForm(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);
 bool __cdecl computeCostRK4(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);
 
-bool (*checkPath)(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t * vis, control_time_list_t * con) = NULL;
-bool __cdecl checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t * vis = NULL, control_time_list_t * con = NULL);
-bool __cdecl checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t * vis = NULL, control_time_list_t * con = NULL);
+bool (*checkPath)(const state& x0, const state& x1, const double tau, const state& d_tau, double * actual_deltaT, state_time_list_t * vis, control_time_list_t * con) = NULL;
+bool __cdecl checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, double * actual_deltaT, state_time_list_t * vis = NULL, control_time_list_t * con = NULL);
+bool __cdecl checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, double * actual_deltaT, state_time_list_t * vis = NULL, control_time_list_t * con = NULL);
 
 char _getchar();
 
-bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis, control_time_list_t* con);
+bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, double * actual_deltaT, state_time_list_t* vis, control_time_list_t* con);
 
 void convertTreeToPoints(const tree_t& tree, double *points);
 	
@@ -423,6 +425,8 @@ inline Eigen::Matrix<double,numRows1+numRows2, numCols1+numCols2> block(const Ei
 	m.block<numRows2,numCols1>(numRows1,0) = C;	m.block<numRows2,numCols2>(numRows1,numCols1) = D;
 	return m;
 }
+
+void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, control_time_list_t * controls);
 
 /**
  * The idea for the structure of this k-d tree is to use a structure for each node. The structure indicates whether the node

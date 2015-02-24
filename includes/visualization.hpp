@@ -272,83 +272,58 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	WarpEnvironment<3>(Rotation, Scale);
 }
 
-void visualizePath(const tree_t& tree, bool thick_line=false, bool log = true) {
-	int numpoints[1] = {2};
-	float points[6] = {0, 0, 0, 0, 0, 0};
-	float x_pos, y_pos, z_pos;
-
+void visualizePath(const tree_t& tree, bool thick_line=false, bool log = true, bool build_keyframe = true) {
 	CAL_EmptyGroup(solution_group);
 	CAL_EmptyGroup(solution_marker_group);
 	CAL_SetGroupColor(solution_group, 0, 0, 1);
 	CAL_SetGroupColor(solution_marker_group, 0, 0, 1);
 
-	//CAL_ClearGroupKeyStates(robot_model, true);
 	robot->clearGroupKeyStates(true);
-	
-	Node current = tree[0];
-	double cost, tau;
-	state d_tau;
-	vector<state, Eigen::aligned_allocator<state> > state_list;
-	while (current.parent != NO_PARENT) {
-		state_list.push_back(current.x);
-		current = tree[current.parent];
-	}
-	
-	state_list.push_back(current.x);
-	reverse(state_list.begin(), state_list.end());
-	
-	state_time_list_t segment;
-	double max_tau = 0.0;
-	double current_time = 0.0;
-	
-	for(vector<state, Eigen::aligned_allocator<state> >::iterator p = state_list.begin(); (p + 1) != state_list.end(); p++) {
-		segment.clear();
-		//computeCost(*p, *(p + 1), DBL_MAX, cost, tau, d_tau);
-		//checkPath(*p, *(p+1), tau, d_tau, &segment);
 
-		connect(*p, *(p+1), DBL_MAX, cost, tau, &segment, NULL);
-
-		sort(segment.begin(), segment.end(), state_order);
-		for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
-			current_time = (q->first) + max_tau;
-			buildKeyframe(current_time, q->second);
-			if (thick_line) {
-				x_pos = q->second[0];
-				y_pos = q->second[1];
+	float x_pos, y_pos, z_pos;
+	state_time_list_t path;
+	control_time_list_t controls;
+	createNominalTrajectory(tree, &path, &controls);
+	size_t path_length = path.size();
+	CAL_scalar * points = new CAL_scalar[3*path_length];
+	for (int idx = 0; idx < path_length; ++idx) {
+		if (build_keyframe) {
+			buildKeyframe(path[idx].first, path[idx].second);
+		}
+		if (thick_line) {
+			x_pos = path[idx].second[0];
+			y_pos = path[idx].second[1];
 #if POSITION_DIM == 3
-				z_pos = q->second[2];
+			z_pos = path[idx].second[2];
 #else
-				z_pos = 0;
+			z_pos = 0;
 #endif
-				CAL_CreateSphere(solution_group, NODE_SIZE, x_pos, y_pos, z_pos);
-			} else if ((q+1) != segment.end()) {
-				points[0] = q->second[0];
-				points[1] = q->second[1];
+			CAL_CreateSphere(solution_group, NODE_SIZE, x_pos, y_pos, z_pos);
+		} else {
+			points[3*idx] = path[idx].second[0];
+			points[3*idx+1] = path[idx].second[1];
 #if POSITION_DIM == 3
-				points[2] = q->second[2];
+			points[3*idx+2] = path[idx].second[2];
+#else
+			points[3*idx+2] = 0;
 #endif
-				points[3] = (q+1)->second[0];
-				points[4] = (q+1)->second[1];
-#if POSITION_DIM == 3
-				points[5] = (q+1)->second[2];
-#endif
-				CAL_CreatePolyline(solution_group, 1, numpoints, points);
-			}
-			if (log) {
+		}
+		if (log) {
+			fwrite((const void *)&(path[idx].first), sizeof(double), 1, path_log);
+			double *current_elements = (path[idx].second.data());
+			//fwrite((const void *)current_elements, sizeof(double), X_DIM, path_log);
+			for (int i = 0; i < X_DIM; i++) {
+				current_time = current_elements[i];
 				fwrite((const void *)&current_time, sizeof(double), 1, path_log);
-				double *current_elements = (q->second.data());
-				//fwrite((const void *)current_elements, sizeof(double), X_DIM, path_log);
-				for (int i = 0; i < X_DIM; i++) {
-					current_time = current_elements[i];
-					fwrite((const void *)&current_time, sizeof(double), 1, path_log);
-				}
 			}
 		}
-		max_tau += tau;
+	}
+
+	if (!thick_line) {
+		CAL_CreatePolyline(vis::solution_group, 1, (int*)&path_length, points);
 	}
 
 	double sentinel = -1;
-
 	if (log) {
 		fwrite((const void *)&sentinel, sizeof(double), 1, path_log);
 		fflush(path_log);
@@ -360,8 +335,9 @@ void plotPath(const state& x0, const state& x1, const double radius) {
 	double max_tau = 0.0;
 	double current_time = 0.0;
 	double cost = 0.0;
+	double actual_deltaT = 0.0;
 
-	connect(x0, x1, radius, cost, max_tau, &segment, NULL);
+	connect(x0, x1, radius, cost, max_tau, &actual_deltaT, &segment, NULL);
 
 	sort(segment.begin(), segment.end(), state_order);
 	for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
@@ -396,9 +372,6 @@ void visualizeTree(const tree_t& tree, bool prune = false) {
 
 	CAL_SetGroupVisibility(paths_group, 0, true, true);
 
-	int np[1] = {2};
-	float p[6] = {0, 0, 0, 0, 0, 0};
-
 	CAL_EmptyGroup(solution_group);
 	CAL_EmptyGroup(solution_marker_group);
 	CAL_SetGroupColor(solution_group, 0, 0, 1);
@@ -413,40 +386,36 @@ void visualizeTree(const tree_t& tree, bool prune = false) {
 	cout << "Rendering paths...";
 	double cost, tau;
 	state_time_list_t segment;
-	double max_tau = 0.0;
-	double current_time = 0.0;
+	double actual_deltaT = 0.0;
 	int node_counter = 0, nodes_skipped = 0;
+	size_t max_length = 10000;
+	CAL_scalar * points = new CAL_scalar[max_length];
+	size_t segment_length = 0;
 	for (tree_t::const_iterator parent = tree.begin(); parent != tree.end(); ++parent) {
 		for (node_list_t::const_iterator child = parent->children.begin(); child != parent->children.end(); ++child) {
 			std::cout << ++node_counter << '\r';
-			/*
-			if (tree[*child].cost_from_start >= tree[0].cost_from_start) {
-				++nodes_skipped;
-				continue;
-			}
-			*/
+
 			segment.clear();
-			connect(parent->x, tree[*child].x, DBL_MAX, cost, tau, &segment, NULL);
-
+			connect(parent->x, tree[*child].x, DBL_MAX, cost, tau, &actual_deltaT, &segment, NULL);
 			sort(segment.begin(), segment.end(), state_order);
-			for(state_time_list_t::iterator q = segment.begin(); (q+1) != segment.end(); q++) {
-				current_time = (q->first) + max_tau;
 
-				p[0] = q->second[0];
-				p[1] = q->second[1];
-#if POSITION_DIM == 3
-				p[2] = q->second[2];
-#endif
-				p[3] = (q+1)->second[0];
-				p[4] = (q+1)->second[1];
-#if POSITION_DIM == 3
-				p[5] = (q+1)->second[2];
-#endif
-
-				CAL_CreatePolyline(paths_group, 1, np, p);
-
+			segment_length = segment.size();
+			if (segment_length > max_length) {
+				max_length = segment_length;
+				delete[] points;
+				points = new CAL_scalar[max_length];
 			}
-			max_tau += tau;
+
+			for (size_t idx = 0; idx < segment_length; ++idx) {
+				points[3*idx] = segment[idx].second[0];
+				points[3*idx+1] = segment[idx].second[1];
+#if POSITION_DIM == 3
+				points[3*idx+2] = segment[idx].second[2];
+#else
+				points[3*idx+2] = 0;
+#endif
+			}
+			CAL_CreatePolyline(paths_group, 1, (int *)&segment_length, points);
 		}
 	}
 
@@ -635,13 +604,13 @@ void visualizeLog() {
 	exit(0);
 }
 
-void visualizeFinalPath(const tree_t& tree, bool thick_line=false, bool log = true) {
+void visualizeFinalPath(const tree_t& tree, bool thick_line=false, bool log = true, bool build_keyframes = true) {
 	CAL_SuspendVisualisation();
 	if (tree[0].cost_from_start < DBL_MAX) {
 		cout << setw(10) << 0 << " " << setw(11) << TARGET_NODES << "/" << TARGET_NODES << " cost: " << tree[0].cost_from_start << endl;
 
 		// Build a visualization of the final path
-		vis::visualizePath(tree, thick_line, log);
+		vis::visualizePath(tree, thick_line, log, build_keyframes);
 	} else {
 		cout << endl << "No path found" << endl;
 	}
@@ -791,8 +760,8 @@ void graphPath() {
 
 	tree_t tree;
 	double cost;
-	double junk;
-	if (connect(x0, x1, radius, cost, junk, NULL, NULL)) {
+	double junk, junk2;
+	if (connect(x0, x1, radius, cost, junk, &junk2, NULL, NULL)) {
 		std::cout << "connected\t";
 
 		Node start, end;
