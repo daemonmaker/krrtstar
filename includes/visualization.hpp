@@ -8,6 +8,17 @@ int cal_scale, cal_rotate, axis_group, collision_hit_group, collision_free_group
 	, solution_marker_group, simulation_belief_group, simulation_actual_group;
 int robot_base, robot_group, robot_collision_object, robot_model, robot_model_object;
 
+void clearAll() {
+	CAL_EmptyGroup(solution_group);
+	CAL_EmptyGroup(solution_marker_group);
+	CAL_EmptyGroup(edge_group);
+	CAL_EmptyGroup(node_group);
+	CAL_EmptyGroup(paths_group);
+	CAL_EmptyGroup(velocity_group);
+	CAL_EmptyGroup(simulation_belief_group);
+	CAL_EmptyGroup(simulation_actual_group);
+}
+
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
 	bool isQuat = true;
 	double x_rot, y_rot;
@@ -293,9 +304,9 @@ void visualizePath(const tree_t& tree, bool thick_line=false, bool log = true) {
 	for(vector<state, Eigen::aligned_allocator<state> >::iterator p = state_list.begin(); (p + 1) != state_list.end(); p++) {
 		segment.clear();
 		//computeCost(*p, *(p + 1), DBL_MAX, cost, tau, d_tau);
-		//checkPath(*p, *(p+1), tau, d_tau, false, &segment);
+		//checkPath(*p, *(p+1), tau, d_tau, &segment);
 
-		connect(*p, *(p+1), DBL_MAX, cost, tau, &segment);
+		connect(*p, *(p+1), DBL_MAX, cost, tau, &segment, NULL);
 
 		sort(segment.begin(), segment.end(), state_order);
 		for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
@@ -350,7 +361,7 @@ void plotPath(const state& x0, const state& x1, const double radius) {
 	double current_time = 0.0;
 	double cost = 0.0;
 
-	connect(x0, x1, radius, cost, max_tau, &segment);
+	connect(x0, x1, radius, cost, max_tau, &segment, NULL);
 
 	sort(segment.begin(), segment.end(), state_order);
 	for(state_time_list_t::iterator q = segment.begin(); q != segment.end(); q++) {
@@ -415,7 +426,7 @@ void visualizeTree(const tree_t& tree, bool prune = false) {
 			}
 			*/
 			segment.clear();
-			connect(parent->x, tree[*child].x, DBL_MAX, cost, tau, &segment);
+			connect(parent->x, tree[*child].x, DBL_MAX, cost, tau, &segment, NULL);
 
 			sort(segment.begin(), segment.end(), state_order);
 			for(state_time_list_t::iterator q = segment.begin(); (q+1) != segment.end(); q++) {
@@ -781,7 +792,7 @@ void graphPath() {
 	tree_t tree;
 	double cost;
 	double junk;
-	if (connect(x0, x1, radius, cost, junk, NULL)) {
+	if (connect(x0, x1, radius, cost, junk, NULL, NULL)) {
 		std::cout << "connected\t";
 
 		Node start, end;

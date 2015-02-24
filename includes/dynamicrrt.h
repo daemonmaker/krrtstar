@@ -131,6 +131,7 @@ std::string dynamics_type_to_name(const int id) {
 #define EPSILON 0.1 // Probabitlity of checking the goal for a connection
 #define TIMING_FREQUENCY 0.1 // How often to record the time taken to expand nodes
 //#define WORLD EmptyWorld // Which world to use
+#define VISUALIZE_SIMULATION true
 
 #if (defined(REDUCE_RADIUS) && DYNAMICS == SINGLE_INTEGRATOR_2D)
 #undef REDUCE_RADIUS
@@ -191,7 +192,7 @@ double sphere_volume;
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
 #define ROBOT Puck
 #define DISTANCE_THRESHOLD 5
-#define TARGET_NODES 2000 // Determines how many nodes the tree should have
+#define TARGET_NODES 200 // Determines how many nodes the tree should have
 #define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
@@ -208,8 +209,8 @@ double sphere_volume;
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
-#define DISTANCE_THRESHOLD 10
-#define TARGET_NODES 500
+#define DISTANCE_THRESHOLD 1
+#define TARGET_NODES 250
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1
 
@@ -290,7 +291,9 @@ typedef double location_t;
 typedef std::list<node_id_t> node_list_t;
 typedef std::pair<double, node_id_t> node_cost_pair_t; // The first element is the cost to the node specified by the second element
 typedef std::pair<double, state> state_time_t;
+typedef std::pair<double, control> control_time_t;
 typedef std::vector< state_time_t, Eigen::aligned_allocator<state_time_t> > state_time_list_t;
+typedef std::vector< control_time_t, Eigen::aligned_allocator<control_time_t> > control_time_list_t;
 typedef std::vector< node_id_t > path_t;
 
 //BOUNDS x_bounds;
@@ -302,7 +305,6 @@ BOUNDS u_bounds;
 #endif
 #endif
 
-typedef Eigen::Matrix<double,U_DIM,1> control_t;
 typedef Eigen::Matrix<double,3,3> generic_3d_matrix_t;
 typedef Eigen::Matrix<double,X_DIM,X_DIM> natural_dynamics_t;
 typedef Eigen::Matrix<double,X_DIM,U_DIM> control_dynamics_t;
@@ -328,11 +330,11 @@ state x1 = state::Zero();
 Eigen::Matrix<double,2*X_DIM,2*X_DIM> Alpha;
 Eigen::Matrix<double,2*X_DIM,1> chi;
 Eigen::Matrix<double,2*X_DIM,1> c0;
-motion_noise_covariance_t M = motion_noise_covariance_t::Zero();
+motion_noise_covariance_t MotionNoiseCovariance = motion_noise_covariance_t::Zero();
 state v = state::Zero();
 observation_t C = observation_t::Zero();
 observation_bias_t d = Eigen::Matrix<double,Z_DIM,1>::Zero();
-observation_noise_covariance_t N = observation_noise_covariance_t::Zero();
+observation_noise_covariance_t ObservationNoiseCovariance = observation_noise_covariance_t::Zero();
 //Eigen::Matrix<double,Z_DIM,1> w = Eigen::Matrix<double,Z_DIM,1>::Zero();
 generic_3d_matrix_t Rotation = generic_3d_matrix_t::Identity();
 generic_3d_matrix_t Scale = generic_3d_matrix_t::Identity();
@@ -343,9 +345,9 @@ struct dynamics_t {
 	natural_dynamics_t * A;
 	control_dynamics_t * B;
 	motion_bias_t * c;
-	motion_noise_covariance_t * M;
+	motion_noise_covariance_t * MotionNoiseCovariance;
 	observation_t * C;
-	observation_noise_covariance_t * N;
+	observation_noise_covariance_t * ObservationNoiseCovariance;
 	observation_bias_t * d;
 	kalman_gain_t * K;
 	lqr_gain_t * L;
@@ -399,13 +401,13 @@ bool (*computeCost)(const state& x0, const state& x1, double radius, double& cos
 bool __cdecl computeCostClosedForm(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);
 bool __cdecl computeCostRK4(const state& x0, const state& x1, double radius, double& cost, double& tau, state& d_tau);
 
-bool (*checkPath)(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) = NULL;
-bool __cdecl checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis = NULL);
-bool __cdecl checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis = NULL);
+bool (*checkPath)(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t * vis, control_time_list_t * con) = NULL;
+bool __cdecl checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t * vis = NULL, control_time_list_t * con = NULL);
+bool __cdecl checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t * vis = NULL, control_time_list_t * con = NULL);
 
 char _getchar();
 
-bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis);
+bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis, control_time_list_t* con);
 
 void convertTreeToPoints(const tree_t& tree, double *points);
 	

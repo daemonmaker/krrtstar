@@ -151,28 +151,29 @@ void save_experiment(FILE * experiment_log_fh) {
 	WRITE_RECORD("REACHABILITY_CONSTANT: ", REACHABILITY_CONSTANT);
 	WRITE_RECORD("sphere_volume: ", sphere_volume);
 	WRITE_RECORD("statespace_volume: ", statespace_volume);
+	WRITE_RECORD("NOISE_FREE: ", NOISE_FREE);
 
-	record.clear();
-	record.str("");
-	record << "Rotation: " << std::endl;
-	for (int idx = 0; idx < 3; ++idx) {
-		for (int jdx = 0; jdx < 3; ++jdx) {
-			record << Rotation(idx, jdx) << ' ';
-		}
-		record << std::endl;
-	}
+#define WRITE_MATRIX(label, matrix)	\
+	record.clear(); \
+	record.str(""); \
+	record << label << ": " << std::endl; \
+	for (int idx = 0; idx < matrix.rows(); ++idx) { \
+		for (int jdx = 0; jdx < matrix.cols(); ++jdx) { \
+			record << matrix(idx, jdx) << ' '; \
+		} \
+		record << std::endl; \
+	} \
 	fputs(record.str().c_str(), experiment_log_fh);
 
-	record.clear();
-	record.str("");
-	record << "Scale: " << std::endl;
-	for (int idx = 0; idx < 3; ++idx) {
-		for (int jdx = 0; jdx < 3; ++jdx) {
-			record << Scale(idx, jdx) << ' ';
-		}
-		record << std::endl;
-	}
-	fputs(record.str().c_str(), experiment_log_fh);
+	WRITE_MATRIX("A", A);
+	WRITE_MATRIX("B", B);
+	WRITE_MATRIX("C", C);
+	WRITE_MATRIX("MotionNoiseCovariance", MotionNoiseCovariance);
+	WRITE_MATRIX("ObservationNoiseCovariance", ObservationNoiseCovariance);
+	WRITE_MATRIX("K", K);
+	WRITE_MATRIX("L", L);
+	WRITE_MATRIX("Rotation", Rotation);
+	WRITE_MATRIX("Scale", Scale);
 
 	fflush(experiment_log_fh);
 }
@@ -238,18 +239,25 @@ void setupParameters(void) {
 
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
-	K(0,0) = 1;
-	K(1,1) = 1;
+	/*
+	K(0,0) = 0.9102;
+	K(0,2) = 0.4142;
+	K(1,1) = 0.9102;
+	K(1,3) = 0.4142;
+	K(2,0) = 0.4142;
+	K(2,2) = 1.2872;
+	K(3,1) = 0.4142;
+	K(3,3) = 1.2872;
+
 	L(0,0) = 1;
 	L(1,1) = 1;
-	C(0,0) = 1;
-	C(1,1) = 1;
-	/*
-	M(0,0) = 0.1;
-	M(1,1) = 0.5;
-	N(0,0) = 0.5;
-	N(1,1) = 0.1;
+	L(0,2) = 1.7321;
+	L(1,3) = 1.7321;
+	
+	MotionNoiseCovariance = motion_noise_covariance_t::Identity()*0.0000001;
+	ObservationNoiseCovariance = observation_noise_covariance_t::Identity()*0.0000001;
 	*/
+	/*
 	float rotation_angle = M_PI/8.0;
 	Rotation(0, 0) = cos(rotation_angle);
 	Rotation(0, 1) = -sin(rotation_angle);
@@ -259,7 +267,25 @@ void setupParameters(void) {
 	Scale(0, 0) = 0.1;
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
+	*/
+
+	/*
+	Rotation(0, 0) = -0.1701;
+	Rotation(0, 2) = 0.9854;
+	Rotation(1, 1) = 0.1701;
 	
+	//Rotation(1, 3) = -0.9854;
+	//Rotation(2, 0) = -0.9854;
+	//Rotation(2, 2) = -0.1701;
+	//Rotation(3, 1) = 0.9854;
+	//Rotation(3, 3) = 0.1701;
+	
+
+	Scale(0, 0) = 7863600;
+	Scale(1, 1) = 7863600;
+	//Scale(2, 2) = 4662000;
+	//Scale(2, 2) = 4662000;
+	*/
 	robot = new ROBOT(vis::cal_rotate);
 
 	control_penalty = 1;
@@ -278,6 +304,8 @@ void setupParameters(void) {
 
 	c = state::Zero();
 
+	C = observation_t::Identity();
+
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D)
 
 	/*
@@ -291,18 +319,18 @@ void setupParameters(void) {
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
 	*/
-	Scale(0, 0) = 0.1291;
-	Scale(1, 1) = 0.8165;
-	K(0,0) = 1;
-	K(1,1) = 1;
+	Scale(0, 0) = 1;
+	Scale(1, 1) = 1;
+	K(0,0) = 2;
+	K(1,1) = 0.0001;
 	L(0,0) = 1;
 	L(1,1) = 1;
 	C(0,0) = 1;
 	C(1,1) = 1;
-	M(0,0) = 0.01;
-	M(1,1) = 0.01;
-	N(0,0) = 0.01;
-	N(1,1) = 0.01;
+	MotionNoiseCovariance(0,0) = 0.001;
+	MotionNoiseCovariance(1,1) = 0.001;
+	ObservationNoiseCovariance(0,0) = 0.0001;
+	ObservationNoiseCovariance(1,1) = 0.0001;
 
 	robot = new ROBOT(vis::cal_rotate);
 
@@ -311,6 +339,11 @@ void setupParameters(void) {
 
 	B(0,0) = 1;
 	B(1,1) = 1;
+
+	R(0,0) = 0.2857;
+	R(0,1) = 0.2857;
+	R(1,0) = 0.2857;
+	R(1,1) = 0.2857;
 
 	c = state::Zero();
 
@@ -392,16 +425,6 @@ void buildEnvironment(int base_group) {
 	world = new WORLD(base_group);
 	world->setBound(2, make_pair(-10.0, 10.0));
 	world->setBound(3, make_pair(-10.0, 10.0));
-
-	M(0,0) = 0.25*0.0001 + 0.0000000000001;
-	M(1,1) = 0.25*0.0001 + 0.0000000000001;
-	M(2,2) = 1.0*0.0001 + 0.0000000000001;
-	M(3,3) = 1.0*0.0001 + 0.0000000000001;
-	M(2,0) = 0.5*0.0001;
-	M(3,1) = 0.5*0.0001;
-
-	N(0,0) = 0.000001;
-	N(1,1) = 0.000001;
 
 	x0[0] = world->getStartState()[0];
 	x0[1] = world->getStartState()[1];
@@ -607,13 +630,13 @@ inline double dcost(double tau, const Eigen::Matrix<double,_numRows,_numRows>& G
 	return 1 + 2*((A*x1).transpose()*d).trace() - (d.transpose()*BRiBt*d).trace();
 }
 
-inline bool collision_free(const state& s, bool distance_check = USE_THRESHOLDS) {
+inline bool collision_free(const state& s, bool distance_check = USE_THRESHOLDS, bool model = false) {
 #if (USE_OBSTACLES > 0)
 	int result = 0;
 	int collisions = 0;
 
-	robot->rotate(s);
-	robot->position(s);
+	robot->rotate(s, model);
+	robot->position(s, model);
 
 	// Sloppy! Refactor this to properly handle the two different types of possible collision checks
 	if (distance_check) {
@@ -1094,17 +1117,7 @@ bool validateStateAndControl(const state& x, const control& u) {
 	return goodState && goodControl && collision_free(x);
 }
 
-bool checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
-	double t;
-	double bound = (plot ? deltaT * 8 : deltaT);
-	int numPoints = ceil(tau / bound);
-	int step = 1;
-	while (step < numPoints) step *= 2;
-
-	for ( ; step > 1; step /= 2) {
-		for (int i = step / 2; i < numPoints; i += step) {
-			t = (tau*i)/numPoints;
-
+void calculateStateAndControl(const state& x0, const state& x1, const double tau, const state& d_tau, double t, state * x, control * u) {
 #if (DYNAMICS == QUADROTOR)
 			double j = inertia;
 			double g = gravity;
@@ -1290,45 +1303,57 @@ bool checkPathClosedForm(const state& x0, const state& x1, const double tau, con
 #else
 			dynamicsError();
 #endif
+			(*x) = chi.block<X_DIM,1>(0,0);
+			(*u) = R.ldlt().solve(B.transpose()*chi.block<X_DIM,1>(X_DIM,0));
+}
 
-			state x = chi.block<X_DIM,1>(0,0);
-			control u = R.ldlt().solve(B.transpose()*chi.block<X_DIM,1>(X_DIM,0));
+void recordTrajectory(double t, const state &x, const control &u, state_time_list_t* vis, control_time_list_t* con) {
+	if (vis) {
+		vis->push_back(make_pair(t, x));
+	}
 
-			if (!(plot || vis) && !validateStateAndControl(x, u)) {
+	if (con) {
+		con->push_back(make_pair(t, u));
+	}
+}
+
+bool checkPathClosedForm(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t* vis, control_time_list_t* con) {
+	double t;
+	double bound = deltaT;
+	int numPoints = ceil(tau / bound);
+	int step = 1;
+	while (step < numPoints) step *= 2;
+
+	for ( ; step > 1; step /= 2) {
+		for (int i = step / 2; i < numPoints; i += step) {
+			t = (tau*i)/numPoints;
+
+			state x;
+			control u;
+			calculateStateAndControl(x0, x1, tau, d_tau, t, &x, &u);
+
+			if (!(vis || con) && !validateStateAndControl(x, u)) {
 				return false;
 			}
 
-			if (plot || vis) {
-				double x_coord = 0.0, y_coord = 0.0, z_coord = 0.0;
-
-#if (DYNAMICS == QUADROTOR)
-				x_coord = x[0];
-				y_coord = x[1];
-				z_coord = x[2];
-#else
-				x_coord = x[0];
-				y_coord = 0;
-				z_coord = x[1];
-#endif
-
-				if (plot) {
-					fwrite((const void *)&t, sizeof(double), 1, path_log);
-					fwrite(x.data(), sizeof(double), (x.rows())*(x.cols()), path_log);
-					//CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
-					vis::createSphere(2*NODE_SIZE, x_coord, y_coord, z_coord);
-				}
-
-				if (vis) {
-					vis->push_back(make_pair(t, x));
-				}
-			}
+			recordTrajectory(t, x, u, vis, con);
 		}
 	}
+
+	state x;
+	control u;
+	calculateStateAndControl(x0, x1, tau, d_tau, 0, &x, &u);
+
+	if (!(vis || con) && !validateStateAndControl(x, u)) {
+		return false;
+	}
+
+	recordTrajectory(0, x, u, vis, con);
 
 	return true;
 }
 
-bool checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, const bool plot, state_time_list_t* vis) {
+bool checkPathRK4(const state& x0, const state& x1, const double tau, const state& d_tau, state_time_list_t* vis, control_time_list_t* con) {
 	Alpha = block<X_DIM,X_DIM,X_DIM,X_DIM>(A, -BRiBt, Eigen::Matrix<double,X_DIM,X_DIM>::Zero(), -A.transpose());
 
 	chi.block<X_DIM,1>(0,0) = x1;
@@ -1367,41 +1392,17 @@ bool checkPathRK4(const state& x0, const state& x1, const double tau, const stat
 
 		//cout << "checkBounds(x, x_bounds): " << checkBounds(x, x_bounds) << "\tcheckBounds(u, u_bounds): " << checkBounds(u, u_bounds) << endl;
 
-		if (!(plot || vis) && !validateStateAndControl(x, u)) {
+		if (!(vis || con) && !validateStateAndControl(x, u)) {
 			return false;
 		}
 
-		if (plot || vis) {
-			double x_coord = 0.0, y_coord = 0.0, z_coord = 0.0;
-
-#if (DYNAMICS == QUADROTOR)
-			x_coord = x[0];
-			y_coord = x[1];
-			z_coord = x[2];
-#else
-			x_coord = x[0];
-			y_coord = 0;
-			z_coord = x[1];
-#endif
-
-			if (plot) {
-				double temp = deltaT*j;
-				fwrite((const void *)&(temp), sizeof(double), 1, path_log);
-				//FIX HERE
-				fwrite(x.data(), sizeof(double), (x.rows())*(x.cols()), path_log);
-				//CAL_CreateSphere(solution_group, 2*NODE_SIZE, x_coord, y_coord, z_coord);
-				vis::createSphere(2*NODE_SIZE, x_coord, y_coord, z_coord);
-			}
-
-			if (vis) {
-				vis->push_back(make_pair(deltaT*j, x));
-			}
-		}
+		recordTrajectory(deltaT*j, x, u, vis, con);
 	}
+
 	return true;
 }
 
-inline bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis) {
+inline bool connect(const state& x0, const state& x1, const double radius, double& cost, double& tau, state_time_list_t* vis, control_time_list_t * cons) {
 	state d_tau;
 
 	state xend = x1;
@@ -1422,7 +1423,7 @@ inline bool connect(const state& x0, const state& x1, const double radius, doubl
 #endif
 
 	if (computeCost(x0, xend, radius, cost, tau, d_tau)) {
-		if (checkPath(x0, xend, tau, d_tau, false, vis)) {
+		if (checkPath(x0, xend, tau, d_tau, vis, cons)) {
 			return true;
 		} else {
 			//cout << "Failed checkPath" << endl;
@@ -3525,7 +3526,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			node_id_t j = Q.top().second;
 			Q.pop();
 
-			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL)) {
+			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, NULL, NULL)) {
 				min_dist = tree[j].cost_from_start + cost;
 				x_near_id = j;
 			}
@@ -3660,7 +3661,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 				for (node_list_t::iterator p = tree[j].children.begin(); p != tree[j].children.end(); ) {
 					// If we can get to a node via the new node faster than via it's existing parent then change the parent
 					double junk;
-					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL)) {
+					if (connect(x_rand, tree[*p].x, min(radius, tree[*p].cost_from_start - decrease_cost - x_rand_node.cost_from_start), cost, junk, NULL, NULL)) {
 						tree[*p].parent = x_rand_node_id;
 						tree[x_rand_node_id].children.push_back(*p);
 						s.push(make_pair(*p, tree[*p].cost_from_start - (x_rand_node.cost_from_start + cost)));
@@ -3703,7 +3704,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		if (x_near_id != NO_PARENT) {
 			for (size_t j = 0; j < orphans.size(); ) {
 				double junk;
-				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL)) {
+				if (connect(x_rand, tree[orphans[j]].x, radius, cost, junk, NULL, NULL)) {
 					tree[orphans[j]].cost_from_start = x_rand_node.cost_from_start + cost;
 					tree[orphans[j]].parent = x_rand_node_id;
 					tree[x_rand_node_id].children.push_back(orphans[j]);
@@ -3852,6 +3853,35 @@ void extractPath(const tree_t &tree, path_t * path) {
 	reverse(path->begin(), path->end());
 }
 
+void createNominalTrajectory(const tree_t & tree, const path_t &key_points, state_time_list_t * path, control_time_list_t * controls) {
+	double cost, tau;
+	state_time_list_t segment_states;
+	control_time_list_t segment_controls;
+	for (int idx = 0; idx < key_points.size() - 1; ++idx) {
+		segment_states.clear();
+		segment_controls.clear();
+		connect(tree[key_points[idx]].x, tree[key_points[idx+1]].x, DBL_MAX, cost, tau, &segment_states, &segment_controls);
+		sort(segment_states.begin(), segment_states.end(), state_order);
+		sort(segment_controls.begin(), segment_controls.end(), state_order);
+		path->insert(path->end(), segment_states.begin(), segment_states.end());
+		controls->insert(controls->end(), segment_controls.begin(), segment_controls.end());
+	}
+
+	/*
+	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
+		double x_pos = path[current_step].second[0];
+		double y_pos = path[current_step].second[1];
+#if POSITION_DIM == 3
+		double z_pos = path[current_step].second[2];
+#else
+		double z_pos = 0;
+#endif
+		vis::markBelief(x_pos, y_pos, z_pos);
+		std::cout << x_pos << ", " << y_pos << std::endl;
+	}
+	*/
+}
+
 template<class T>
 void rand_gaussian_vector(T& v) {
 	size_t v_size = v.size();
@@ -3875,8 +3905,6 @@ void rand_gaussian_vector(T& v) {
 
 class Simulator {
 private:
-	World * world;
-	Robot * robot;
 	const dynamics_t &dynamics;
 	state actual;
 	motion_noise_covariance_t L_of_M;
@@ -3884,54 +3912,59 @@ private:
 	observation_noise_covariance_t L_of_N;
 	observation_noise_t observation_noise;
 	bool noise_free;
+	bool visualize_actual;
 
 public:
-	Simulator(const dynamics_t &dynamics, state &x0, bool noise_free = false)
-		: dynamics(dynamics), actual(x0), noise_free(noise_free)
+	Simulator(const dynamics_t &dynamics, state &x0, bool noise_free = false, bool visualize_actual = VISUALIZE_SIMULATION)
+		: dynamics(dynamics), actual(x0), noise_free(noise_free), visualize_actual(visualize_actual)
 	{
 		if (!(this->noise_free)) {
-			Eigen::LLT<natural_dynamics_t> LLT_of_M(*(dynamics.M));
+			Eigen::LLT<natural_dynamics_t> LLT_of_M(*(dynamics.MotionNoiseCovariance));
 			if (LLT_of_M.info() == Eigen::Success) {
 				this->L_of_M = LLT_of_M.matrixL();
 			} else {
 				std::cout << "Motion Noise Covariance is not positive semi-definite. Cannot perform a Cholesky decompotions, try an Eigen decomposition instead." << std::endl;
+				_getchar();
 				exit(-1);
 			}
 
-			Eigen::LLT<observation_noise_covariance_t> LLT_of_N(*(dynamics.N));
+			Eigen::LLT<observation_noise_covariance_t> LLT_of_N(*(dynamics.ObservationNoiseCovariance));
 			if (LLT_of_N.info() == Eigen::Success) {
 				this->L_of_N = LLT_of_N.matrixL();
 			} else {
 				std::cout << "Observation Noise Covariance is not positive semi-definite. Cannot perform a Cholesky decompotions, try an Eigen decomposition instead." << std::endl;
+				_getchar();
 				exit(-1);
 			}
 		}
 	}
 
-	bool step(const control_t &u) {
+	bool step(const control &u) {
 		//std::cout << "Step? ";
 		//_getchar();
 
-		this->actual += (*(dynamics.A))*actual + (*(dynamics.B))*u;
+		this->actual += ((*(dynamics.A))*actual + (*(dynamics.B))*u)*deltaT;
 
 		if (!(this->noise_free)) {
 			rand_gaussian_vector<motion_noise_t>(this->motion_noise); // Motion noise is actually noise = Mv, this assumes M = I.
 			this->motion_noise = this->L_of_M*this->motion_noise;
-			this->actual += (*(dynamics.c)) + motion_noise;
+			this->actual += (*(dynamics.c)) + motion_noise*deltaT*deltaT; // multiply noise by sqrt(time-step)
 		}
 
-		std::cout << "Actual: " << this->actual << std::endl;
+		if (visualize_actual) {
+			std::cout << "Actual: " << this->actual << std::endl;
 
-		double x_pos = this->actual[0];
-		double y_pos = this->actual[1];
+			double x_pos = this->actual[0];
+			double y_pos = this->actual[1];
 #if POSITION_DIM == 3
-		double z_pos = this->actual[2];
+			double z_pos = this->actual[2];
 #else
-		double z_pos = 0;
+			double z_pos = 0;
 #endif
-		vis::markActual(x_pos, y_pos, z_pos);
+			vis::markActual(x_pos, y_pos, z_pos);
+		}
 
-		return collision_free(this->actual, false);
+		return collision_free(this->actual, false, false);
 	}
 
 	void observe(state * s) {
@@ -3945,51 +3978,47 @@ public:
 	}
 };
 
-bool simulate(const dynamics_t &dynamics, tree_t &tree) {
+bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulation = VISUALIZE_SIMULATION) {
 	// Simulate the trajectory
 	path_t key_points;
 	extractPath(tree, &key_points);
 
-	double cost, tau;
 	state_time_list_t path;
-	state_time_list_t segment;
-	for (int idx = 0; idx < key_points.size() - 1; ++idx) {
-		segment.clear();
-		connect(tree[key_points[idx]].x, tree[key_points[idx+1]].x, DBL_MAX, cost, tau, &segment);
-		sort(segment.begin(), segment.end(), state_order);
-		path.insert(path.end(), segment.begin(), segment.end());
-	}
+	control_time_list_t controls;
+	createNominalTrajectory(tree, key_points, &path, &controls);
 
 	state observation = state::Zero();
 
 	double x_pos = 0, y_pos = 0, z_pos = 0;
-	state state_belief = path[0].second;
+	state state_belief = tree[key_points[0]].x;
 	state state_update = state::Zero();
-	control_t control = control_t::Zero();
-	Simulator sim(dynamics, path[0].second, NOISE_FREE);
+	control u = control::Zero();
+	Simulator sim(dynamics, tree[key_points[0]].x, NOISE_FREE, visualize_simulation);
 	bool free_path = true;
 	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
 		// Observe state
 		sim.observe(&observation);
 
 		// Calculate control -- Apply LQR control
-		control = (*(dynamics.L))*(path[current_step + 1].second - state_belief);
+		u = -(*(dynamics.L))*(state_belief);
 
 		// Estimate state -- Apply Kalman filter
-		state_update = (*(dynamics.A))*state_belief + (*(dynamics.B))*control;
-		state_belief += state_update + (*(dynamics.K))*(observation - (*(dynamics.C))*state_belief);
+		state_update = ((*(dynamics.A))*state_belief + (*(dynamics.B))*u)*deltaT;
+		state_belief += state_update + (*(dynamics.K))*(observation); // - (*(dynamics.C))*state_belief);
 
-		std::cout << "Belief: " << state_belief << std::endl;
+		if (visualize_simulation) {
+			std::cout << "Belief: " << state_belief << std::endl;
 
-		x_pos = state_belief[0];
-		y_pos = state_belief[1];
+			x_pos = state_belief[0] + path[current_step].second[0];
+			y_pos = state_belief[1] + path[current_step].second[1];
 #if POSITION_DIM == 3
-		z_pos = state_belief[2];
+			z_pos = state_belief[2] + path[current_step].second[2];
 #endif
-		vis::markBelief(x_pos, y_pos, z_pos);
+			vis::markBelief(x_pos, y_pos, z_pos);
+		}
 
 		// Apply control
-		if (!sim.step(control)) {
+		if (!sim.step(u)) {
 			free_path = false;
 			break;
 		}
@@ -3998,14 +4027,16 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree) {
 	return free_path;
 }
 
-int testSolution(const tree_t & tree, int num_sims) {
+int testSolution(const dynamics_t &dynamics, tree_t & tree, int num_sims, bool visualize_simulation = VISUALIZE_SIMULATION) {
 	// Attempt to follow the trajectory the specified number of times.
 	int good_runs = 0;
-	for (int count = 0; count < num_sims; ++count) {
-		if (simulate) {
+	for (int count = 1; count <= num_sims; ++count) {
+		if (simulate(dynamics, tree, visualize_simulation)) {
 			++good_runs;
 		}
+		std::cout << count << '/' << num_sims << " with " << good_runs << " successfully completed." << '\r';
 	}
+	std::cout << std::endl;
 
 	// Return the count of successful runs.
 	return good_runs;
@@ -4081,144 +4112,180 @@ x1[5] = 0;
 	return 0;
 #endif
 
+	dynamics_t dynamics;
+	dynamics.A = &A;
+	dynamics.B = &B;
+	dynamics.c = &c;
+	dynamics.MotionNoiseCovariance = &MotionNoiseCovariance;
+	dynamics.C = &C;
+	dynamics.ObservationNoiseCovariance = &ObservationNoiseCovariance;
+	dynamics.d = &d;
+	dynamics.K = &K;
+	dynamics.L = &L;
+
 	tree_t tree;
 
-	std::cout << "Load file? ";
-	if (response_affirmative()) {
-		read_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), &tree);
-		std::cout << "Number of nodes: " << tree.size() << std::endl;
-		std::cout << "Solution found? ";
-		if (tree[0].cost_from_start < DBL_MAX) {
-			std::cout << "Yes\tCost to goal: " << tree[0].cost_from_start;
-		} else {
-			std::cout << "No";
+	char key;
+	bool tree_loaded = false;
+	do {
+		std::cout << ">> ";
+		key = _getchar();
+
+		if (key == 'h') {
+			std::cout << "h - This help menu." << std::endl;
+			std::cout << "l - Load tree from file." << std::endl;
+			std::cout << "r - Run kRRT*." << std::endl;
+			std::cout << "v - Visualize" << std::endl;
+			std::cout << "c - Clear visualization" << std::endl;
+			std::cout << "t - Test solution." << std::endl;
 		}
-		std::cout << std::endl;
 
-		vis::RestoreEnvironment<3>();
-		world->positionCamera();
+		if (key == 'r') {
+			tree.clear();
 
-		vis::visualizeFinalPath(tree, false, false);
-		/*
-		path_t path;
-		extractPath(tree, &path);
+			//vis::WarpEnvironment<3>(Rotation, Scale);
+			//world->positionCamera(Rotation, Scale.inverse());
 
-		double cost, tau;
-		state_time_list_t segment;
-		size_t path_size = path.size();
-		size_t max_segment_size = 1000;
-		size_t current_segment_size = 0;
-		CAL_scalar * points = new CAL_scalar[3*max_segment_size];
-		for (int idx = 0; idx < path_size - 1; ++idx) {
-			segment.clear();
-			connect(tree[path[idx]].x, tree[path[idx+1]].x, DBL_MAX, cost, tau, &segment);
+			open_logs();
+			save_experiment(experiment_log);
 
-			current_segment_size = segment.size() - 1;
-			if (current_segment_size > max_segment_size) {
-				std::cout << "REALLOCATING" << std::endl;
-				delete[] points;
-				max_segment_size = current_segment_size;
-				points = new CAL_scalar[3*max_segment_size];
-			}
+			start_time = clock();
 
-			for (int jdx = 0; jdx < current_segment_size - 2; ++jdx) {
-				points[3*jdx] = segment[jdx+1].second[0];
-				points[3*jdx+1] = segment[jdx+1].second[1];
-#if POSITION_DIM == 3
-				points[3*jdx+2] = segment[jdx+1].second[2];
-#else
-				points[3*jdx+2] = 0;
-#endif
-			}
-			points[3*(current_segment_size - 1)] = segment[current_segment_size-1].second[0];
-			points[3*(current_segment_size - 1)+1] = segment[current_segment_size-1].second[1];
-#if POSITION_DIM == 3
-			points[3*(current_segment_size - 1)+2] = segment[current_segment_size-1].second[2];
-#else
-			points[3*(current_segment_size - 1)+2] = 0;
-#endif
-
-			CAL_CreatePolyline(vis::solution_group, 1, (int*)&current_segment_size, points);
-		}
-		*/
-	} else {
-		open_logs();
-		save_experiment(experiment_log);
-
-		start_time = clock();
-
-		//KD_Tree::testKDTree(tree);
+			//KD_Tree::testKDTree(tree);
 	
-		rrtstar(x0, x1, TARGET_NODES, radius, tree, true, EPSILON);
-		end_time = clock();
+			rrtstar(x0, x1, TARGET_NODES, radius, tree, true, EPSILON);
+			end_time = clock();
 
-		double runtime = (double)(end_time - start_time)/(double)CLOCKS_PER_SEC;
-		cout << "Runtime: " << runtime << endl;
+			double runtime = (double)(end_time - start_time)/(double)CLOCKS_PER_SEC;
+			cout << "Runtime: " << runtime << endl;
 
-		ostringstream os;
-		os.clear();
-		os.str("");
-		os << "Runtime: " << runtime << std::endl;
-		fputs(os.str().c_str(), experiment_log);
+			ostringstream os;
+			os.clear();
+			os.str("");
+			os << "Runtime: " << runtime << std::endl;
+			fputs(os.str().c_str(), experiment_log);
 
-		os.clear();
-		os.str("");
-		os << "Solution found? ";
-		if (tree[0].cost_from_start < DBL_MAX) {
-			os << "Yes" << std::endl << "Cost to goal: " << tree[0].cost_from_start;
-		} else {
-			os << "No";
-		}
-		std::cout << std::endl;
-		os << "Solution found: " << (tree[0].cost_from_start < DBL_MAX ? "Yes" : "No") << std::endl;
-		fputs(os.str().c_str(), experiment_log);
+			os.clear();
+			os.str("");
+			os << "Solution found: ";
+			if (tree[0].cost_from_start < DBL_MAX) {
+				os << "Yes" << std::endl << "Cost to goal: " << tree[0].cost_from_start;
+			} else {
+				os << "No";
+			}
+			std::cout << os.str() << std::endl;
+			fputs(os.str().c_str(), experiment_log);
 
-		std::cout << "Saving tree...";
-		save_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), tree);
-		std::cout << " done." << std::endl;
+			std::cout << "Saving tree...";
+			save_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), tree);
+			std::cout << " done." << std::endl;
 
-		std::cout << "Restore environment? ";
-		if (response_affirmative()) {
 			vis::RestoreEnvironment<3>();
 			world->positionCamera();
+
+			close_logs();
 		}
 
-		close_logs();
-	}
+		if (key == 'l') {
+			read_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), &tree);
+			std::cout << "Number of nodes: " << tree.size() << std::endl;
+			std::cout << "Solution found? ";
+			if (tree[0].cost_from_start < DBL_MAX) {
+				std::cout << "Yes\tCost to goal: " << tree[0].cost_from_start;
+			} else {
+				std::cout << "No";
+			}
+			std::cout << std::endl;
 
-	std::cout << "Visualize tree? ";
-	if (response_affirmative()) {
-		vis::drawTree(tree);
-	}
+			vis::RestoreEnvironment<3>();
+			world->positionCamera();
 
-	std::cout << "Visualize paths? ";
-	if (response_affirmative()) {
-		vis::visualizeTree(tree);
-	}
+			vis::visualizeFinalPath(tree, false, false);
+			/*
+			path_t path;
+			extractPath(tree, &path);
 
-	std::cout << "Simulate? ";
-	if (response_affirmative()) {
-		dynamics_t dynamics;
-		dynamics.A = &A;
-		dynamics.B = &B;
-		dynamics.c = &c;
-		dynamics.M = &M;
-		dynamics.C = &C;
-		dynamics.N = &N;
-		dynamics.d = &d;
-		dynamics.K = &K;
-		dynamics.L = &L;
+			double cost, tau;
+			state_time_list_t segment;
+			size_t path_size = path.size();
+			size_t max_segment_size = 1000;
+			size_t current_segment_size = 0;
+			CAL_scalar * points = new CAL_scalar[3*max_segment_size];
+			for (int idx = 0; idx < path_size - 1; ++idx) {
+				segment.clear();
+				connect(tree[path[idx]].x, tree[path[idx+1]].x, DBL_MAX, cost, tau, &segment);
 
-		simulate(dynamics, tree);
-	}
+				current_segment_size = segment.size() - 1;
+				if (current_segment_size > max_segment_size) {
+					std::cout << "REALLOCATING" << std::endl;
+					delete[] points;
+					max_segment_size = current_segment_size;
+					points = new CAL_scalar[3*max_segment_size];
+				}
 
-	std::cout << "Visualize solution? ";
-	if (response_affirmative()) {
-		vis::visualizeFinalPath(tree, true, false);
-	}
+				for (int jdx = 0; jdx < current_segment_size - 2; ++jdx) {
+					points[3*jdx] = segment[jdx+1].second[0];
+					points[3*jdx+1] = segment[jdx+1].second[1];
+	#if POSITION_DIM == 3
+					points[3*jdx+2] = segment[jdx+1].second[2];
+	#else
+					points[3*jdx+2] = 0;
+	#endif
+				}
+				points[3*(current_segment_size - 1)] = segment[current_segment_size-1].second[0];
+				points[3*(current_segment_size - 1)+1] = segment[current_segment_size-1].second[1];
+	#if POSITION_DIM == 3
+				points[3*(current_segment_size - 1)+2] = segment[current_segment_size-1].second[2];
+	#else
+				points[3*(current_segment_size - 1)+2] = 0;
+	#endif
 
-	std::cout << "Done. Press any key. ";
-	_getchar();
+				CAL_CreatePolyline(vis::solution_group, 1, (int*)&current_segment_size, points);
+			}
+			*/
+			tree_loaded = true;
+		}
+
+		if (key == 'v') {
+			std::cout << "Select one:" << std::endl;
+			std::cout << "\tt - Visualize tree." << std::endl;
+			std::cout << "\tp - Visualize paths." << std::endl;
+			std::cout << "\ts - Visualize solution." << std::endl;
+			std::cout << ">> ";
+
+			key = _getchar();
+
+			if (key == 't') {
+				vis::drawTree(tree);
+			}
+
+			if (key == 's') {
+				vis::visualizeFinalPath(tree, true, false);
+			}
+
+			if (key == 'p') {
+				vis::visualizeTree(tree);
+			}
+
+			key = NULL;
+		}
+
+		if (key == 'c') {
+			vis::clearAll();
+		}
+
+		if (key == 's') {
+			robot->show_model();
+			simulate(dynamics, tree);
+		}
+
+		if (key == 't') {
+			testSolution(dynamics, tree, 100, false);
+		}
+	} while (key != 'q');
+
+	std::cout << "Quitting." << std::endl;
+	exit(-1);
 
 	return 0;
 }
