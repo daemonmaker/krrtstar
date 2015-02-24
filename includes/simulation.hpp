@@ -1,3 +1,5 @@
+#include <cmath>
+
 #ifndef __SIMULATION_HPP__
 #define __SIMULATION_HPP__
 
@@ -70,7 +72,7 @@ public:
 		if (!(this->noise_free)) {
 			rand_gaussian_vector(this->motion_noise);
 			this->motion_noise = this->L_of_M*this->motion_noise;
-			this->deviation += motion_noise*deltaT*deltaT;
+			this->deviation += motion_noise*sqrt(deltaT);
 		}
 	}
 
@@ -148,7 +150,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 
 		// Estimate state -- Apply Kalman filter
 		state_update = ((*(dynamics.A))*state_belief + (*(dynamics.B))*u)*deltaT;
-		state_belief += state_update + (*(dynamics.K))*(observation); // - (*(dynamics.C))*state_belief);
+		state_belief += state_update + (*(dynamics.K))*(observation - (*(dynamics.C))*state_belief);
 
 		// Visualize
 		if (visualize_simulation) {

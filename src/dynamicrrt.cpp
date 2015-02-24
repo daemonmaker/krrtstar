@@ -287,10 +287,10 @@ void setupParameters(void) {
 	//Scale(2, 2) = 4662000;
 	//Scale(2, 2) = 4662000;
 	*/
-	MotionNoiseCovariance(0,0) = 0.001;
+	MotionNoiseCovariance(0,0) = 0.01;
 	MotionNoiseCovariance(1,1) = 0.001;
-	MotionNoiseCovariance(2,2) = 0.001;
-	MotionNoiseCovariance(3,3) = 0.001;
+	MotionNoiseCovariance(2,2) = 0.0001;
+	MotionNoiseCovariance(3,3) = 0.0001;
 	ObservationNoiseCovariance(0,0) = 0.0001;
 	ObservationNoiseCovariance(1,1) = 0.0001;
 	ObservationNoiseCovariance(2,2) = 0.0001;
