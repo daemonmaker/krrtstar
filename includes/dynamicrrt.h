@@ -70,7 +70,7 @@ TODO
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS SINGLE_INTEGRATOR_2D
+#define DYNAMICS DOUBLE_INTEGRATOR_2D
 
 std::string dynamics_type_to_name(const int id) {
 	std::string name = "UNKNOWN";

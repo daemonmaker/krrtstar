@@ -25,6 +25,7 @@ void rand_gaussian_vector(T& v) {
 class Simulator {
 private:
 	const dynamics_t &dynamics;
+	state deviation;
 	state actual;
 	motion_noise_covariance_t L_of_M;
 	motion_noise_t motion_noise;
@@ -35,7 +36,7 @@ private:
 
 public:
 	Simulator(const dynamics_t &dynamics, state &x0, bool noise_free = false, bool visualize_actual = VISUALIZE_SIMULATION)
-		: dynamics(dynamics), actual(x0), noise_free(noise_free), visualize_actual(visualize_actual)
+		: dynamics(dynamics), deviation(x0), noise_free(noise_free), visualize_actual(visualize_actual)
 	{
 		if (!(this->noise_free)) {
 			Eigen::LLT<natural_dynamics_t> LLT_of_M(*(dynamics.MotionNoiseCovariance));
@@ -58,44 +59,70 @@ public:
 		}
 	}
 
-	bool step(const control &u) {
+	void step(const control &u) {
 		//std::cout << "Step? ";
 		//_getchar();
 
-		this->actual += ((*(dynamics.A))*actual + (*(dynamics.B))*u)*deltaT;
+		// Update deviation
+		this->deviation += ((*(dynamics.A))*deviation + (*(dynamics.B))*u)*deltaT;
 
+		// Ad noise
 		if (!(this->noise_free)) {
-			rand_gaussian_vector<motion_noise_t>(this->motion_noise); // Motion noise is actually noise = Mv, this assumes M = I.
+			rand_gaussian_vector(this->motion_noise); // Motion noise is actually noise = Mv, this assumes M = I.
 			this->motion_noise = this->L_of_M*this->motion_noise;
-			this->actual += (*(dynamics.c)) + motion_noise*deltaT*deltaT; // multiply noise by sqrt(time-step)
+			this->deviation += motion_noise*deltaT*deltaT;
 		}
-
-		if (visualize_actual) {
-			std::cout << "Actual: " << this->actual << std::endl;
-
-			double x_pos = this->actual[0];
-			double y_pos = this->actual[1];
-#if POSITION_DIM == 3
-			double z_pos = this->actual[2];
-#else
-			double z_pos = 0;
-#endif
-			vis::markActual(x_pos, y_pos, z_pos);
-		}
-
-		return collision_free(this->actual, false, false);
 	}
 
 	void observe(state * s) {
-		(*s) = (*(dynamics.C))*actual;
+		// Calculate the observation
+		(*s) = (*(dynamics.C))*(this->deviation);
 
+		// Add noise
 		if (!(this->noise_free)) {
-			rand_gaussian_vector<observation_noise_t>(this->observation_noise); // Observation noise is actually noise = Nw, this assumes N = I.
+			rand_gaussian_vector(this->observation_noise); // Observation noise is actually noise = Nw, this assumes N = I.
 			this->observation_noise = this->L_of_N*this->observation_noise;
 			(*s) += observation_noise;
 		}
 	}
+
+	bool collisionFree(const state &state_nominal) {
+		this->actual = this->deviation + state_nominal;
+		return collision_free(this->actual, false, false);
+	}
+
+	void visualizeActual(const state &state_nominal) {
+		this->actual = this->deviation + state_nominal;
+
+		std::cout << "Actual: " << this->actual << std::endl;
+
+		double x_pos = this->actual[0];
+		double y_pos = this->actual[1];
+#if POSITION_DIM == 3
+		double z_pos = this->actual[2];
+#else
+		double z_pos = 0;
+#endif
+
+		vis::markActual(x_pos, y_pos, z_pos);
+	}
 };
+
+void visualizeBelief(const state & state_nominal, const state &state_belief) {
+	state belief = state_nominal + state_belief;
+
+	std::cout << "Belief: " << state_belief << std::endl;
+
+	double x_pos = state_belief[0];
+	double y_pos = state_belief[1];
+#if POSITION_DIM == 3
+	double z_pos = state_belief[2];
+#else
+	double z_pos = 0;
+#endif
+
+	vis::markBelief(x_pos, y_pos, z_pos);
+}
 
 bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulation = VISUALIZE_SIMULATION) {
 	// Simulate the trajectory
@@ -106,38 +133,35 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 	state observation = state::Zero();
 
 	double x_pos = 0, y_pos = 0, z_pos = 0;
-	state state_belief = tree[START_NODE_ID].x;
+	state state_belief = state::Zero();
 	state state_update = state::Zero();
 	control u = control::Zero();
-	Simulator sim(dynamics, tree[START_NODE_ID].x, NOISE_FREE, visualize_simulation);
+	Simulator sim(dynamics, state_belief, NOISE_FREE, visualize_simulation);
 	bool free_path = true;
 	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
+		// Apply LQR control
+		u = -(*(dynamics.L))*(state_belief);
+		sim.step(u);
+
 		// Observe state
 		sim.observe(&observation);
-
-		// Calculate control -- Apply LQR control
-		u = -(*(dynamics.L))*(state_belief);
 
 		// Estimate state -- Apply Kalman filter
 		state_update = ((*(dynamics.A))*state_belief + (*(dynamics.B))*u)*deltaT;
 		state_belief += state_update + (*(dynamics.K))*(observation); // - (*(dynamics.C))*state_belief);
 
+		// Visualize
 		if (visualize_simulation) {
-			std::cout << "Belief: " << state_belief << std::endl;
-
-			x_pos = state_belief[0] + path[current_step].second[0];
-			y_pos = state_belief[1] + path[current_step].second[1];
-#if POSITION_DIM == 3
-			z_pos = state_belief[2] + path[current_step].second[2];
-#endif
-			vis::markBelief(x_pos, y_pos, z_pos);
+			visualizeBelief(path[current_step].second, state_belief);
+			sim.visualizeActual(path[current_step].second);
 		}
 
-		// Apply control
-		if (!sim.step(u)) {
+		// Check for collision
+		if (!sim.collisionFree(path[current_step].second)) {
 			free_path = false;
 			break;
 		}
+
 	}
 
 	return free_path;
