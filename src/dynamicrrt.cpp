@@ -3568,7 +3568,9 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 				x_rand_node_id = 0;
 				x_rand_node = tree[0];
 
+#ifndef EXPERIMENT
 				draw_path = true;
+#endif
 			} else {
 				continue;
 			}
