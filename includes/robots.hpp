@@ -101,13 +101,13 @@ public:
 		return result;
 	}
 
-	inline const double computeStdDev(const int obstacle_group, bool visualize = SHOW_ROBOT_COLLISION_CHECKER) const {
+	inline const double computeStdDev(const int obstacle_group, const double distance_threshold, bool visualize = SHOW_ROBOT_COLLISION_CHECKER) const {
 		int num_pairs;
 		CAL_GetClosestPairs(this->robot_group, obstacle_group, &num_pairs);
 		CAL_GetResults(close_pairs_results);
 		double closest = close_pairs_results[0].distance;
 		if (visualize) {
-			if (closest < DISTANCE_THRESHOLD) {
+			if (closest < distance_threshold) {
 				CAL_SetGroupColor(this->robot_group, 1, 0, 0);
 			} else {
 				CAL_SetGroupColor(this->robot_group, 0, 0, 0);

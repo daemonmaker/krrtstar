@@ -325,15 +325,15 @@ void setupParameters(void) {
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
 	*/
-	Scale(0, 0) = 1;
-	Scale(1, 1) = 1;
-	K(0,0) = 2;
-	K(1,1) = 0.0001;
+	Scale(0, 0) = 0.0141;
+	Scale(1, 1) = 8165;
+	K(0,0) = 1000;
+	K(1,1) = 1;
 	L(0,0) = 1;
 	L(1,1) = 1;
 	C(0,0) = 1;
 	C(1,1) = 1;
-	MotionNoiseCovariance(0,0) = 0.001;
+	MotionNoiseCovariance(0,0) = 0.1;
 	MotionNoiseCovariance(1,1) = 0.001;
 	ObservationNoiseCovariance(0,0) = 0.0001;
 	ObservationNoiseCovariance(1,1) = 0.0001;
@@ -346,10 +346,10 @@ void setupParameters(void) {
 	B(0,0) = 1;
 	B(1,1) = 1;
 
-	R(0,0) = 0.2857;
-	R(0,1) = 0.2857;
-	R(1,0) = 0.2857;
-	R(1,1) = 0.2857;
+	R(0,0) = 0.995;
+	R(0,1) = 0.995;
+	R(1,0) = 0.995;
+	R(1,1) = 0.995;
 
 	c = state::Zero();
 
@@ -3914,8 +3914,8 @@ void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, cont
 bool planTrajectory(const string &experiment_name, tree_t & tree, double radius) {
 	tree.clear();
 
-	//vis::WarpEnvironment<3>(Rotation, Scale);
-	//world->positionCamera(Rotation, Scale.inverse());
+	vis::WarpEnvironment<3>(Rotation, Scale);
+	world->positionCamera(Rotation, Scale.inverse());
 
 	open_logs(experiment_name);
 	save_experiment(experiment_log);
@@ -4155,8 +4155,6 @@ x1[5] = 0;
 
 				// Iterate over thresholds
 				for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
-					vis::WarpEnvironment<3>(Rotation, Scale);
-
 					world->setDistanceThreshold(distance_thresholds[threshold_idx]);
 
 					paths = 0;
@@ -4173,8 +4171,6 @@ x1[5] = 0;
 					if (planTrajectory(current_experiment_name.str(), tree, radius)) {
 						std::cout << "success." << std::endl << "Simulating... " << std::endl;
 
-						vis::RestoreEnvironment<3>();
-
 						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, false);
 
 						simulation_record.clear();
@@ -4184,8 +4180,6 @@ x1[5] = 0;
 						fflush(simulation_log);
 					} else {
 						std::cout << "failed" << std::endl;
-
-						vis::RestoreEnvironment<3>();
 					}
 				}
 

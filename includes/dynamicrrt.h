@@ -68,7 +68,7 @@ TODO
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS DOUBLE_INTEGRATOR_2D
+#define DYNAMICS SINGLE_INTEGRATOR_2D
 
 std::string dynamics_type_to_name(const int id) {
 	std::string name = "UNKNOWN";
@@ -106,7 +106,7 @@ std::string dynamics_type_to_name(const int id) {
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
-//#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
+#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
 //#define RUN_COLLISION_TESTER // Runs a utility to allow for manual checking of collision functionality
 #define SHOW_ROBOT 0 // Determines whether the robot model should be shown
 #define SHOW_ROBOT_COLLISION_CHECKER 0 // Determines whether the robot collision checker should be displayed
@@ -191,7 +191,6 @@ double sphere_volume;
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
 #define ROBOT Puck
-#define DISTANCE_THRESHOLD 5
 const size_t distance_threshold_count = 5;
 double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0};
 #define TARGET_NODES 200 // Determines how many nodes the tree should have
@@ -211,9 +210,8 @@ double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0}
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
-#define DISTANCE_THRESHOLD 1
-const size_t distance_threshold_count = 5;
-double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0};
+const size_t distance_threshold_count = 3;
+double distance_thresholds[distance_threshold_count] = {1.25, 2.5, 3.0335};
 #define TARGET_NODES 250
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1

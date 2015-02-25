@@ -172,7 +172,7 @@ public:
 	}
 */
 	inline const virtual bool checkDistance(Robot * robot, bool visualize = false) const {
-		if (robot->computeStdDev(this->obstacle_group, visualize) < this->distance_threshold)
+		if (robot->computeStdDev(this->obstacle_group, this->distance_threshold, visualize) < this->distance_threshold)
 			return true;
 		return false;
 	}

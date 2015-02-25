@@ -36,7 +36,7 @@ B = zeros(X_DIM, U_DIM);
 C = zeros(Z_DIM, X_DIM);
 M = eye(X_DIM, X_DIM);
 N = eye(Z_DIM, Z_DIM);
-R = zeros(U_DIM, U_DIM)
+R = zeros(U_DIM, U_DIM);
 
 %% Setup system
 if strcmp(system, 'snglint2d')
@@ -51,8 +51,9 @@ if strcmp(system, 'snglint2d')
     %M(2, 2) = 0;
     %N(1, 1) = 0;
     %N(2, 2) = 0;
-    M(1,1) = M(1,1)*2;
-    M(2,2) = M(2,2)*0.0001;
+    M(1,1) = M(1,1)*0.1;
+    M(2,2) = M(2,2)*0.0001
+    N = N*0.0001
 elseif strcmp(system, 'dblint1d')
     A(1, 2) = 1
     B(2, 1) = 1

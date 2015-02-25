@@ -204,8 +204,8 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	CAL_CreateGroup(&edge_group, 0, false, "Edges");
 	CAL_CreateGroup(&paths_group, 0, false, "Paths");
 	CAL_CreateGroup(&velocity_group, 0, false, "Velocities");
-	CAL_CreateGroup(&start_node_group, cal_rotate, false, "Start");
-	CAL_CreateGroup(&goal_node_group, cal_rotate, false, "Goal");
+	CAL_CreateGroup(&start_node_group, 0, false, "Start");
+	CAL_CreateGroup(&goal_node_group, 0, false, "Goal");
 	CAL_CreateGroup(&simulation_belief_group, 0, false, "Beliefs");
 	CAL_CreateGroup(&simulation_actual_group, 0, false, "Beliefs");
 
