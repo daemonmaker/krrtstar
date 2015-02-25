@@ -1,0 +1,16 @@
+function sigma = solve_gamma(n, lambda, bottom, top, epsilon)
+    sigma = 1;
+    return
+    terminate = false;
+    
+    sigma = top - bottom;
+    while terminate == false
+        sigma = top - bottom;
+        res = gammainc((sigma^2)/2.0, n/2.0) - (1-lambda);
+
+        if abs(res) < epsilon
+            return
+        end
+        
+        if 
+    end
