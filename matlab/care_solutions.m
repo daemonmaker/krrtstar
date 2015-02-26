@@ -52,7 +52,7 @@ if strcmp(system, 'snglint2d')
     %N(1, 1) = 0;
     %N(2, 2) = 0;
     M(1,1) = M(1,1)*0.01;
-    M(2,2) = M(2,2)*1
+    M(2,2) = M(2,2)*5
     N = N*0.1
 elseif strcmp(system, 'dblint1d')
     A(1, 2) = 1

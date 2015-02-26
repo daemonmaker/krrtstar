@@ -212,7 +212,7 @@ double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0}
 #define ROBOT Puck
 const size_t distance_threshold_count = 2;
 double distance_thresholds[distance_threshold_count] = {1.1774, 3.0335};
-#define TARGET_NODES 250
+#define TARGET_NODES 1000
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1
 

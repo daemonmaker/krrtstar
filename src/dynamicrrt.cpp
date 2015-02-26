@@ -328,15 +328,15 @@ void setupParameters(void) {
 	Rotation(0, 0) = 1;
 	Rotation(1, 1) = 1;
 	Scale(0, 0) = 0.0324;
-	Scale(1, 1) = 0.7746;
-	K(0,0) = 1;
-	K(1,1) = 10;
+	Scale(1, 1) = 3.6056;
+	K(0,0) = 0.1;
+	K(1,1) = 50;
 	L(0,0) = 1;
 	L(1,1) = 1;
 	C(0,0) = 1;
 	C(1,1) = 1;
 	MotionNoiseCovariance(0,0) = 0.01;
-	MotionNoiseCovariance(1,1) = 1;
+	MotionNoiseCovariance(1,1) = 5;
 	ObservationNoiseCovariance(0,0) = 0.1;
 	ObservationNoiseCovariance(1,1) = 0.1;
 
@@ -348,10 +348,10 @@ void setupParameters(void) {
 	B(0,0) = 1;
 	B(1,1) = 1;
 	
-	R(0,0) = 0.666;
+	R(0,0) = 0.0741;
 	//R(0,1) = 0.995;
 	//R(1,0) = 0.995;
-	R(1,1) = 0.666;
+	R(1,1) = 0.0741;
 	/*
 	R(0,0) = 1;
 	R(0,1) = 0;
@@ -3976,7 +3976,7 @@ size_t testSolution(const dynamics_t &dynamics, tree_t & tree, int num_sims, boo
 	// Attempt to follow the trajectory the specified number of times.
 	size_t good_runs = 0;
 	for (int count = 1; count <= num_sims; ++count) {
-		if (simulate(dynamics, tree, visualize_simulation)) {
+		if (simulate(dynamics, tree, visualize_simulation, robot)) {
 			++good_runs;
 		}
 		std::cout << count << '/' << num_sims << " with " << good_runs << " successfully completed." << '\r';
@@ -4139,7 +4139,8 @@ x1[5] = 0;
 		}
 
 		if (key == 's') {
-			robot->show_model();
+			robot->hide_model();
+			robot->show_collision_checker();
 			simulate(dynamics, tree);
 		}
 

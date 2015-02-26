@@ -35,10 +35,11 @@ private:
 	observation_noise_t observation_noise;
 	bool noise_free;
 	bool visualize_actual;
+	Robot * robot;
 
 public:
-	Simulator(const dynamics_t &dynamics, state &x0, bool noise_free = false, bool visualize_actual = VISUALIZE_SIMULATION)
-		: dynamics(dynamics), deviation(x0), noise_free(noise_free), visualize_actual(visualize_actual)
+	Simulator(const dynamics_t &dynamics, state &x0, bool noise_free = false, bool visualize_actual = VISUALIZE_SIMULATION, Robot * robot = NULL)
+		: dynamics(dynamics), deviation(x0), noise_free(noise_free), visualize_actual(visualize_actual), robot(robot)
 	{
 		if (!(this->noise_free)) {
 			Eigen::LLT<natural_dynamics_t> LLT_of_M(*(dynamics.MotionNoiseCovariance));
@@ -107,6 +108,10 @@ public:
 #endif
 
 		vis::markActual(x_pos, y_pos, z_pos);
+
+		if (this->robot != NULL) {
+			robot->position(this->actual, true);
+		}
 	}
 };
 
@@ -126,7 +131,7 @@ void visualizeBelief(const state & state_nominal, const state &state_belief) {
 	vis::markBelief(x_pos, y_pos, z_pos);
 }
 
-bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulation = VISUALIZE_SIMULATION) {
+bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulation = VISUALIZE_SIMULATION, Robot * robot = NULL) {
 	// Simulate the trajectory
 	state_time_list_t path;
 	control_time_list_t controls;
@@ -138,7 +143,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 	state state_belief = state::Zero();
 	state state_update = state::Zero();
 	control u = control::Zero();
-	Simulator sim(dynamics, state_belief, NOISE_FREE, visualize_simulation);
+	Simulator sim(dynamics, state_belief, NOISE_FREE, visualize_simulation, robot);
 	bool free_path = true;
 	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
 		// Apply LQR control
