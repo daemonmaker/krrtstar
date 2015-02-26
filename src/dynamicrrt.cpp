@@ -325,18 +325,20 @@ void setupParameters(void) {
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
 	*/
-	Scale(0, 0) = 0.0141;
-	Scale(1, 1) = 8165;
-	K(0,0) = 1000;
-	K(1,1) = 1;
+	Rotation(0, 0) = 1;
+	Rotation(1, 1) = 1;
+	Scale(0, 0) = 0.0324;
+	Scale(1, 1) = 0.7746;
+	K(0,0) = 1;
+	K(1,1) = 10;
 	L(0,0) = 1;
 	L(1,1) = 1;
 	C(0,0) = 1;
 	C(1,1) = 1;
-	MotionNoiseCovariance(0,0) = 0.1;
-	MotionNoiseCovariance(1,1) = 0.001;
-	ObservationNoiseCovariance(0,0) = 0.0001;
-	ObservationNoiseCovariance(1,1) = 0.0001;
+	MotionNoiseCovariance(0,0) = 0.01;
+	MotionNoiseCovariance(1,1) = 1;
+	ObservationNoiseCovariance(0,0) = 0.1;
+	ObservationNoiseCovariance(1,1) = 0.1;
 
 	robot = new ROBOT(vis::cal_rotate);
 
@@ -345,12 +347,17 @@ void setupParameters(void) {
 
 	B(0,0) = 1;
 	B(1,1) = 1;
-
-	R(0,0) = 0.995;
-	R(0,1) = 0.995;
-	R(1,0) = 0.995;
-	R(1,1) = 0.995;
-
+	
+	R(0,0) = 0.666;
+	//R(0,1) = 0.995;
+	//R(1,0) = 0.995;
+	R(1,1) = 0.666;
+	/*
+	R(0,0) = 1;
+	R(0,1) = 0;
+	R(1,0) = 0;
+	R(1,1) = 1;
+	*/
 	c = state::Zero();
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
@@ -3416,7 +3423,7 @@ void calc_forward_reachable_bounds(const state& state, const double& radius, BOU
 #endif
 }
 
-void rrtstar(const state& x_init, const state& x_final, int n, double radius, tree_t& tree, const bool rewire, const float epsilon) {
+void rrtstar(const state& x_init, const state& x_final, int n, double radius, tree_t& tree, const bool rewire, const float epsilon, bool terminate_after_first = false) {
 	// local variables
 	ostringstream os;
 	node_ids_t k_d_results;
@@ -3451,7 +3458,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 #endif
 
 	// Create n nodes -- counter variable only incremented when a valid new node is found
-	for (int i = 1; i <= n;) {
+	for (int idx = 1; idx <= n;) {
 #if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
 		Sleep(SHOW_COLLISION_SLEEP_TIME);
 #endif
@@ -3562,7 +3569,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 		double time_diff = (double)(clock() - start_time)/(double)CLOCKS_PER_SEC;
 		cout << "                                                                              \r";
-		cout << setw(9) << time_diff << " " << setw(11) << i << "/" << n << " tree: " << setw(9) << tree.size() << " radius: " << setw(9) << radius << " orphans: " << orphans.size() << "\r";
+		cout << setw(9) << time_diff << " " << setw(11) << idx << "/" << n << " tree: " << setw(9) << tree.size() << " radius: " << setw(9) << radius << " orphans: " << orphans.size() << "\r";
 
 		// Update the tree
 		node_id_t x_rand_node_id;
@@ -3597,14 +3604,14 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 			tree.push_back(x_rand_node);
 			k_d_tree.add(x_rand_node_id);
 
-			if ((i % int(TIMING_FREQUENCY*TARGET_NODES)) == 0) {
+			if ((idx % int(TIMING_FREQUENCY*TARGET_NODES)) == 0) {
 				os.str("");
-				os << i << "\t" << time_diff << endl;
+				os << idx << "\t" << time_diff << endl;
 				fputs(os.str().c_str(), time_log);
 				fflush(time_log);
 			}
 
-			i++;
+			++idx;
 		}
 
 		if (rewire && !check_goal && x_near_id != NO_PARENT) {
@@ -3682,8 +3689,8 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 
 						if (*p == 0) { // i.e. if we're updating the cost to the goal
 							//std::cout << "\n\rConnect x_rand: " << x_rand << "\n\rto " << tree[*p].x << "\n\r";
-							summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
-
+							summarize_path(os, time_diff, idx, n, tree[0].cost_from_start, radius, orphans.size())
+								
 #ifndef EXPERIMENT
 							draw_path = true;
 #endif
@@ -3695,7 +3702,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 							tree[*p].cost_from_start -= decrease_cost;
 							if (*p == 0) {
 								//std::cout << "\n\rConnect child x_rand: " << x_rand << "\n\rto " << tree[*p].x << "\n\r";
-								summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
+								summarize_path(os, time_diff, idx, n, tree[0].cost_from_start, radius, orphans.size())
 
 #ifndef EXPERIMENT
 								draw_path = true;
@@ -3728,7 +3735,10 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 #endif
 
 						//std::cout << "\n\rConnect orhpan x_rand: " << x_rand << "\n\rto " << tree[orphans[j]].x << "\n\r";
-						summarize_path(os, time_diff, i, n, tree[0].cost_from_start, radius, orphans.size())
+						summarize_path(os, time_diff, idx, n, tree[0].cost_from_start, radius, orphans.size())
+						if (terminate_after_first) {
+							idx = n;
+						}
 					}
 
 					orphans[j] = orphans.back(); // remove orphan
@@ -3911,7 +3921,7 @@ void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, cont
 	*/
 }
 
-bool planTrajectory(const string &experiment_name, tree_t & tree, double radius) {
+bool planTrajectory(const string &experiment_name, tree_t & tree, double radius, bool terminate_after_first = false) {
 	tree.clear();
 
 	vis::WarpEnvironment<3>(Rotation, Scale);
@@ -3924,7 +3934,7 @@ bool planTrajectory(const string &experiment_name, tree_t & tree, double radius)
 
 	//KD_Tree::testKDTree(tree);
 	
-	rrtstar(x0, x1, TARGET_NODES, radius, tree, true, EPSILON);
+	rrtstar(x0, x1, TARGET_NODES, radius, tree, true, EPSILON, terminate_after_first);
 	end_time = clock();
 
 	double runtime = (double)(end_time - start_time)/(double)CLOCKS_PER_SEC;
@@ -4078,7 +4088,7 @@ x1[5] = 0;
 		}
 
 		if (key == 'r') {
-			planTrajectory(experiment_name, tree, radius);
+			planTrajectory(experiment_name, tree, radius, true);
 		}
 
 		if (key == 'l') {

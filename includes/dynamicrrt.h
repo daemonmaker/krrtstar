@@ -106,7 +106,7 @@ std::string dynamics_type_to_name(const int id) {
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
-#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
+//#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
 //#define RUN_COLLISION_TESTER // Runs a utility to allow for manual checking of collision functionality
 #define SHOW_ROBOT 0 // Determines whether the robot model should be shown
 #define SHOW_ROBOT_COLLISION_CHECKER 0 // Determines whether the robot collision checker should be displayed
@@ -210,8 +210,8 @@ double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0}
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
-const size_t distance_threshold_count = 3;
-double distance_thresholds[distance_threshold_count] = {1.25, 2.5, 3.0335};
+const size_t distance_threshold_count = 2;
+double distance_thresholds[distance_threshold_count] = {1.1774, 3.0335};
 #define TARGET_NODES 250
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1

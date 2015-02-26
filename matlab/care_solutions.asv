@@ -44,16 +44,16 @@ if strcmp(system, 'snglint2d')
     B(2, 2) = 1
     C(1, 1) = 1;
     C(2, 2) = 1
-    R = eye(U_DIM, U_DIM)
+    R = ones(U_DIM, U_DIM)
     
     %M(1, 1) = 10;
     %M(1, 1) = 0;
     %M(2, 2) = 0;
     %N(1, 1) = 0;
     %N(2, 2) = 0;
-    M(1,1) = M(1,1)*0.01;
-    M(2,2) = M(2,2)*1
-    N = N*0.1
+    M(1,1) = M(1,1)*0.1;
+    M(2,2) = M(2,2)*0.0001
+    N = N*0.0001
 elseif strcmp(system, 'dblint1d')
     A(1, 2) = 1
     B(2, 1) = 1
@@ -73,7 +73,7 @@ elseif strcmp(system, 'dblint2dfullyobservable')
 end
 
 %% Solve CARE
-[P, L, G] = care(A, transpose(C)*inv(transpose(N)), M*transpose(M));
+[P, L, G] = care(A, transpose(C)/transpose(N), M*transpose(M));
 P
 
 %% Calculate K
@@ -84,9 +84,9 @@ K = P*transpose(C)*inv(N*transpose(N))
 % Can start with the penalty matrices Q = I, R = I to start (these are not
 % the same Q as used in the paper draft.
 
-Q_penalty = eye(X_DIM, X_DIM)*0.1;
-N_penalty = zeros(X_DIM, U_DIM)*0.1;
-R_penalty = eye(U_DIM, U_DIM)*0.1;
+Q_penalty = eye(X_DIM, X_DIM);
+N_penalty = zeros(X_DIM, U_DIM);
+R_penalty = eye(U_DIM, U_DIM);
 [L, S, e] = lqr(A, B, Q_penalty, R_penalty, N_penalty);
 L
 
@@ -94,7 +94,7 @@ L
 BL = B*L;
 KC = K*C;
 KN = K*N;
-F = [A -BL; KC (A - BL - KC)]
+F = [A -BL; KC A - BL - KC]
 G = [M zeros(X_DIM, size(KN, 2)); zeros(size(KN, 1), X_DIM) KN]
 
 %% Solve Lyapunov
@@ -122,7 +122,7 @@ R_tilde = R/k
 % 1. If this is not the case then the order of any two columns can be
 % swapped to make it the case. However doing so requires that the
 % associated rows of the scale matrix be swapped too.
-final = chol(x_sigma, 'lower')
+final = inv(chol(x_sigma, 'upper'))
 
 [U, S, V] = svd(final)
 det(U)

@@ -115,10 +115,10 @@ void visualizeBelief(const state & state_nominal, const state &state_belief) {
 
 	std::cout << "Belief: " << state_belief << std::endl;
 
-	double x_pos = state_belief[0];
-	double y_pos = state_belief[1];
+	double x_pos = belief[0];
+	double y_pos = belief[1];
 #if POSITION_DIM == 3
-	double z_pos = state_belief[2];
+	double z_pos = belief[2];
 #else
 	double z_pos = 0;
 #endif
@@ -149,8 +149,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 		sim.observe(&observation);
 
 		// Estimate state -- Apply Kalman filter
-		state_update = ((*(dynamics.A))*state_belief + (*(dynamics.B))*u)*deltaT;
-		state_belief += state_update + (*(dynamics.K))*(observation - (*(dynamics.C))*state_belief);
+		state_belief = state_belief + (((*(dynamics.A)) - (*(dynamics.B))*(*(dynamics.L)))*state_belief + (*(dynamics.K))*(observation - (*(dynamics.C))*state_belief))*deltaT;
 
 		// Visualize
 		if (visualize_simulation) {
