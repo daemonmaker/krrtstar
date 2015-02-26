@@ -61,12 +61,12 @@ public:
 		}
 	}
 
-	void step(const control &u) {
+	void step(const state &state_belief, const control &u) {
 		//std::cout << "Step? ";
 		//_getchar();
 
 		// Update deviation
-		this->deviation += ((*(dynamics.A))*deviation + (*(dynamics.B))*u)*deltaT;
+		this->deviation = ((*(dynamics.A))*deviation - (*(dynamics.B))*(*(dynamics.L))*u)*deltaT;
 
 		// Ad noise
 		if (!(this->noise_free)) {
@@ -143,7 +143,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
 		// Apply LQR control
 		u = -(*(dynamics.L))*(state_belief);
-		sim.step(u);
+		sim.step(state_belief, u);
 
 		// Observe state
 		sim.observe(&observation);
