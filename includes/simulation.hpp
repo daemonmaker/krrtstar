@@ -24,6 +24,7 @@ void rand_gaussian_vector(T& v) {
 	}
 }
 
+/*
 class Simulator {
 private:
 	const dynamics_t &dynamics;
@@ -42,7 +43,7 @@ public:
 		: dynamics(dynamics), deviation(x0), noise_free(noise_free), visualize_actual(visualize_actual), robot(robot)
 	{
 		if (!(this->noise_free)) {
-			Eigen::LLT<natural_dynamics_t> LLT_of_M(*(dynamics.MotionNoiseCovariance));
+			Eigen::LLT<natural_dynamics_t> LLT_of_M(dynamics.MotionNoiseCovariance);
 			if (LLT_of_M.info() == Eigen::Success) {
 				this->L_of_M = LLT_of_M.matrixL();
 			} else {
@@ -51,7 +52,7 @@ public:
 				exit(-1);
 			}
 
-			Eigen::LLT<observation_noise_covariance_t> LLT_of_N(*(dynamics.ObservationNoiseCovariance));
+			Eigen::LLT<observation_noise_covariance_t> LLT_of_N(dynamics.ObservationNoiseCovariance);
 			if (LLT_of_N.info() == Eigen::Success) {
 				this->L_of_N = LLT_of_N.matrixL();
 			} else {
@@ -67,7 +68,7 @@ public:
 		//_getchar();
 
 		// Update deviation
-		this->deviation = ((*(dynamics.A))*deviation - (*(dynamics.B))*(*(dynamics.L))*u)*deltaT;
+		this->deviation = ((dynamics.A)*deviation - (dynamics.B)*(dynamics.L)*u)*deltaT;
 
 		// Ad noise
 		if (!(this->noise_free)) {
@@ -79,7 +80,7 @@ public:
 
 	void observe(state * s) {
 		// Calculate the observation
-		(*s) = (*(dynamics.C))*(this->deviation);
+		(*s) = (dynamics.C)*(this->deviation);
 
 		// Add noise
 		if (!(this->noise_free)) {
@@ -130,31 +131,40 @@ void visualizeBelief(const state & state_nominal, const state &state_belief) {
 
 	vis::markBelief(x_pos, y_pos, z_pos);
 }
-
+*/
 bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulation = VISUALIZE_SIMULATION, Robot * robot = NULL) {
 	// Simulate the trajectory
 	state_time_list_t path;
 	control_time_list_t controls;
 	createNominalTrajectory(tree, &path, &controls);
 
-	state observation = state::Zero();
+	double sqrt_deltaT = sqrt(deltaT);
 
 	double x_pos = 0, y_pos = 0, z_pos = 0;
+	state actual = state::Zero();
+	state belief = state::Zero();
+	double_state_t y = double_state_t::Zero();
+	double_noise_t q = double_noise_t::Zero();
+
+	/*
 	state state_belief = state::Zero();
-	state state_update = state::Zero();
+	state observation = state::Zero();
 	control u = control::Zero();
-	Simulator sim(dynamics, state_belief, NOISE_FREE, visualize_simulation, robot);
+	Simulator sim(dynamics, state_belief, NOISE_FREE, visualize_simulation, robot);\
+	*/
 	bool free_path = true;
 	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
+		/*
 		// Apply LQR control
-		u = -(*(dynamics.L))*(state_belief);
+		u = -(dynamics.L)*(state_belief);
 		sim.step(state_belief, u);
+
 
 		// Observe state
 		sim.observe(&observation);
 
 		// Estimate state -- Apply Kalman filter
-		state_belief = state_belief + (((*(dynamics.A)) - (*(dynamics.B))*(*(dynamics.L)))*state_belief + (*(dynamics.K))*(observation - (*(dynamics.C))*state_belief))*deltaT;
+		state_belief = state_belief + (((dynamics.A) - (dynamics.B)*(dynamics.L))*state_belief + (dynamics.K)*(observation - (dynamics.C)*state_belief))*deltaT;
 
 		// Visualize
 		if (visualize_simulation) {
@@ -167,7 +177,48 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 			free_path = false;
 			break;
 		}
+		*/
+		y += (dynamics.F)*y*deltaT;
+		if (!NOISE_FREE) {
+			rand_gaussian_vector(q);
+			y += (dynamics.G)*q*sqrt_deltaT;
+		}
 
+		actual = (dynamics.X)*y + path[current_step].second;
+		if (!collision_free(actual, false, false)) {
+			free_path = false;
+			break;
+		}
+
+		if (visualize_simulation) {
+			//std::cout << "Actual: " << actual << std::endl;
+
+			x_pos = actual[0];
+			y_pos = actual[1];
+#if POSITION_DIM == 3
+			z_pos = actual[2];
+#endif
+
+			vis::markActual(x_pos, y_pos, z_pos);
+
+			belief = (dynamics.Xhat)*y + path[current_step].second;
+
+			//std::cout << "Belief: " << belief << std::endl;
+
+			x_pos = belief[0];
+			y_pos = belief[1];
+#if POSITION_DIM == 3
+			z_pos = belief[2];
+#endif
+
+			vis::markBelief(x_pos, y_pos, z_pos);
+
+			if (robot != NULL) {
+				robot->position(actual, true);
+			}
+
+			Sleep(deltaT*10);
+		}
 	}
 
 	return free_path;

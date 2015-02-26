@@ -100,7 +100,7 @@ std::string dynamics_type_to_name(const int id) {
 #define EXPERIMENT_NAME "test"
 //#define EXPERIMENT
 #define TRAJECTORY_COUNT 30 // Number of paths to plan duing experiments
-#define NUM_SIMS 100 // Number of times to simulate paths duing experiments
+#define NUM_SIMS 10000 // Number of times to simulate paths duing experiments
 #define USE_THRESHOLDS 1 // Whether to use distance thresholds instead of collisions checks during trajectory planning.
 #define NOISE_FREE false // Whether the simulation(s) should be noise free.
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
@@ -212,7 +212,7 @@ double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0}
 #define ROBOT Puck
 const size_t distance_threshold_count = 2;
 double distance_thresholds[distance_threshold_count] = {1.1774, 3.0335};
-#define TARGET_NODES 1000
+#define TARGET_NODES 250
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1
 
@@ -323,6 +323,12 @@ typedef Eigen::Matrix<double,Z_DIM,1> observation_noise_t;
 typedef Eigen::Matrix<double,U_DIM,U_DIM> control_penalty_t;
 typedef Eigen::Matrix<double,X_DIM,Z_DIM> kalman_gain_t;
 typedef Eigen::Matrix<double,U_DIM,X_DIM> lqr_gain_t;
+typedef Eigen::Matrix<double,2*X_DIM,1> double_state_t;
+typedef Eigen::Matrix<double,X_DIM+Z_DIM,1> double_noise_t;
+typedef Eigen::Matrix<double,2*X_DIM,2*X_DIM> combined_natural_dynamics_t;
+typedef Eigen::Matrix<double,2*X_DIM,X_DIM+Z_DIM> combined_noise_covariance_t;
+typedef Eigen::Matrix<double,X_DIM,2*X_DIM> state_extractor_t;
+typedef Eigen::Matrix<double,U_DIM,2*X_DIM> control_extractor_t;
 
 natural_dynamics_t A = natural_dynamics_t::Zero();
 control_dynamics_t B = control_dynamics_t::Zero();
@@ -346,15 +352,20 @@ kalman_gain_t K = kalman_gain_t::Zero();
 lqr_gain_t L = lqr_gain_t::Zero();
 
 struct dynamics_t {
-	natural_dynamics_t * A;
-	control_dynamics_t * B;
-	motion_bias_t * c;
-	motion_noise_covariance_t * MotionNoiseCovariance;
-	observation_t * C;
-	observation_noise_covariance_t * ObservationNoiseCovariance;
-	observation_bias_t * d;
-	kalman_gain_t * K;
-	lqr_gain_t * L;
+	natural_dynamics_t A;
+	control_dynamics_t B;
+	motion_bias_t c;
+	motion_noise_covariance_t MotionNoiseCovariance;
+	observation_t C;
+	observation_noise_covariance_t ObservationNoiseCovariance;
+	observation_bias_t d;
+	kalman_gain_t K;
+	lqr_gain_t L;
+	combined_natural_dynamics_t F;
+	combined_noise_covariance_t G;
+	state_extractor_t X;
+	state_extractor_t Xhat;
+	control_extractor_t U;
 };
 
 struct Node {

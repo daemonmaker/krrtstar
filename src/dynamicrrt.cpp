@@ -23,23 +23,25 @@ Robot * robot = NULL;
 	fputs(os.str().c_str(), log_fh);	\
 	fflush(stats_log);
 
-#define WRITE_RECORD(label, value)	\
-	record.clear();	\
-	record.str(""); \
-	record << label << value << std::endl;	\
-	fputs(record.str().c_str(), experiment_log_fh);
+#define WRITE_RECORD(os, label, value)	\
+	os.clear();	\
+	os.str(""); \
+	os << label << value << std::endl;	\
+	fputs(os.str().c_str(), experiment_log); \
+	std::cout << label << value << std::endl;
 
-#define WRITE_MATRIX(label, matrix)	\
-	record.clear(); \
-	record.str(""); \
-	record << label << ": " << std::endl; \
+#define WRITE_MATRIX(os, label, matrix)	\
+	os.clear(); \
+	os.str(""); \
+	os << label << ": " << std::endl; \
 	for (int idx = 0; idx < matrix.rows(); ++idx) { \
 		for (int jdx = 0; jdx < matrix.cols(); ++jdx) { \
-			record << matrix(idx, jdx) << ' '; \
+			os << matrix(idx, jdx) << ' '; \
 		} \
-		record << std::endl; \
+		os << std::endl; \
 	} \
-	fputs(record.str().c_str(), experiment_log_fh);
+	fputs(os.str().c_str(), experiment_log); \
+	std::cout << label << ": " << std::endl << matrix << std::endl;
 
 void dynamicsError() {
 	cout << "Invalid dynamics \"" << dynamics_type_to_name(DYNAMICS) << "\" (" << DYNAMICS << ")" << endl;
@@ -134,44 +136,44 @@ void read_tree(const string log_file, tree_t * tree) {
 	fclose(tree_log_fh);
 }
 
-void save_experiment(FILE * experiment_log_fh) {
+void save_experiment(FILE * experiment_log) {
 	ostringstream record;
 
-	WRITE_RECORD("DYNAMICS: ", dynamics_type_to_name(DYNAMICS));
-	WRITE_RECORD("ROBOT: ", typeid(ROBOT).name());
-	WRITE_RECORD("STATE_SPACE: ", typeid(STATE_SPACE).name());
-	WRITE_RECORD("WORLD: ", typeid(WORLD).name());
-	WRITE_RECORD("USE_THRESHOLDS: ", USE_THRESHOLDS);
-	WRITE_RECORD("distance_threshold: ", world->getDistanceThreshold());
-	WRITE_RECORD("EPSILON: ", EPSILON);
-	WRITE_RECORD("USE_OBSTACLES: ", USE_OBSTACLES);
+	WRITE_RECORD(record, "DYNAMICS: ", dynamics_type_to_name(DYNAMICS));
+	WRITE_RECORD(record, "ROBOT: ", typeid(ROBOT).name());
+	WRITE_RECORD(record, "STATE_SPACE: ", typeid(STATE_SPACE).name());
+	WRITE_RECORD(record, "WORLD: ", typeid(WORLD).name());
+	WRITE_RECORD(record, "USE_THRESHOLDS: ", USE_THRESHOLDS);
+	WRITE_RECORD(record, "distance_threshold: ", world->getDistanceThreshold());
+	WRITE_RECORD(record, "EPSILON: ", EPSILON);
+	WRITE_RECORD(record, "USE_OBSTACLES: ", USE_OBSTACLES);
 	bool reduce_radius = false;
 #if defined(REDUCE_RADIUS)
 	reduce_radius = true;
 #endif
-	WRITE_RECORD("REDUCE_RADIUS: ", reduce_radius);
-	WRITE_RECORD("TARGET_NODES: ", TARGET_NODES);
-	WRITE_RECORD("START_RADIUS: ", START_RADIUS);
-	WRITE_RECORD("RADIUS_MULTIPLIER: ", RADIUS_MULTIPLIER);
-	WRITE_RECORD("deltaT: ", deltaT);
-	WRITE_RECORD("control_penalty: ", control_penalty);
-	WRITE_RECORD("control_penalty1: ", control_penalty1);
-	WRITE_RECORD("REACHABILITY_CONSTANT: ", REACHABILITY_CONSTANT);
-	WRITE_RECORD("sphere_volume: ", sphere_volume);
-	WRITE_RECORD("statespace_volume: ", statespace_volume);
-	WRITE_RECORD("NOISE_FREE: ", NOISE_FREE);
+	WRITE_RECORD(record, "REDUCE_RADIUS: ", reduce_radius);
+	WRITE_RECORD(record, "TARGET_NODES: ", TARGET_NODES);
+	WRITE_RECORD(record, "START_RADIUS: ", START_RADIUS);
+	WRITE_RECORD(record, "RADIUS_MULTIPLIER: ", RADIUS_MULTIPLIER);
+	WRITE_RECORD(record, "deltaT: ", deltaT);
+	WRITE_RECORD(record, "control_penalty: ", control_penalty);
+	WRITE_RECORD(record, "control_penalty1: ", control_penalty1);
+	WRITE_RECORD(record, "REACHABILITY_CONSTANT: ", REACHABILITY_CONSTANT);
+	WRITE_RECORD(record, "sphere_volume: ", sphere_volume);
+	WRITE_RECORD(record, "statespace_volume: ", statespace_volume);
+	WRITE_RECORD(record, "NOISE_FREE: ", NOISE_FREE);
 
-	WRITE_MATRIX("A", A);
-	WRITE_MATRIX("B", B);
-	WRITE_MATRIX("C", C);
-	WRITE_MATRIX("MotionNoiseCovariance", MotionNoiseCovariance);
-	WRITE_MATRIX("ObservationNoiseCovariance", ObservationNoiseCovariance);
-	WRITE_MATRIX("K", K);
-	WRITE_MATRIX("L", L);
-	WRITE_MATRIX("Rotation", Rotation);
-	WRITE_MATRIX("Scale", Scale);
+	WRITE_MATRIX(record, "A", A);
+	WRITE_MATRIX(record, "B", B);
+	WRITE_MATRIX(record, "C", C);
+	WRITE_MATRIX(record, "MotionNoiseCovariance", MotionNoiseCovariance);
+	WRITE_MATRIX(record, "ObservationNoiseCovariance", ObservationNoiseCovariance);
+	WRITE_MATRIX(record, "K", K);
+	WRITE_MATRIX(record, "L", L);
+	WRITE_MATRIX(record, "Rotation", Rotation);
+	WRITE_MATRIX(record, "Scale", Scale);
 
-	fflush(experiment_log_fh);
+	fflush(experiment_log);
 }
 
 #include "visualization.hpp"
@@ -325,20 +327,24 @@ void setupParameters(void) {
 	Scale(1, 1) = 1;
 	Scale(2, 2) = 1;
 	*/
-	Rotation(0, 0) = 1;
-	Rotation(1, 1) = 1;
-	Scale(0, 0) = 0.0324;
-	Scale(1, 1) = 3.6056;
-	K(0,0) = 0.1;
-	K(1,1) = 50;
-	L(0,0) = 1;
-	L(1,1) = 1;
 	C(0,0) = 1;
 	C(1,1) = 1;
 	MotionNoiseCovariance(0,0) = 0.01;
-	MotionNoiseCovariance(1,1) = 5;
+	MotionNoiseCovariance(1,1) = 1;
 	ObservationNoiseCovariance(0,0) = 0.1;
 	ObservationNoiseCovariance(1,1) = 0.1;
+	K(0,0) = 0.1;
+	K(1,1) = 10;
+	L(0,0) = 1;
+	L(1,1) = 1;
+	R(0,0) = 0.6666;
+	R(0,1) = 0.1667;
+	R(1,0) = 0.1667;
+	R(1,1) = 0.6666;
+	Rotation(0, 0) = 1;
+	Rotation(1, 1) = 1;
+	Scale(0, 0) = 0.0324;
+	Scale(1, 1) = 0.7746;
 
 	robot = new ROBOT(vis::cal_rotate);
 
@@ -348,16 +354,6 @@ void setupParameters(void) {
 	B(0,0) = 1;
 	B(1,1) = 1;
 	
-	R(0,0) = 0.0741;
-	//R(0,1) = 0.995;
-	//R(1,0) = 0.995;
-	R(1,1) = 0.0741;
-	/*
-	R(0,0) = 1;
-	R(0,1) = 0;
-	R(1,0) = 0;
-	R(1,1) = 1;
-	*/
 	c = state::Zero();
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_1D)
@@ -376,11 +372,6 @@ void setupParameters(void) {
 #else
     dynamicsError();
 #endif
-
-	std::cout << "Dynamics A: " << std::endl << A << std::endl;
-	std::cout << "Dynamics B: " << std::endl << B << std::endl;
-	std::cout << "Rotation: " << std::endl << Rotation << std::endl;
-	std::cout << "Scale: " << std::endl << Scale << std::endl;
 
 #if SHOW_ROBOT
 	robot->show_model();
@@ -3458,6 +3449,9 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 #endif
 
 	// Create n nodes -- counter variable only incremented when a valid new node is found
+	if (terminate_after_first) {
+		n = 100000; // HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACK!
+	}
 	for (int idx = 1; idx <= n;) {
 #if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
 		Sleep(SHOW_COLLISION_SLEEP_TIME);
@@ -4057,16 +4051,72 @@ x1[5] = 0;
 	return 0;
 #endif
 
+	combined_natural_dynamics_t F = combined_natural_dynamics_t::Zero();
+	F.block<X_DIM,X_DIM>(0, 0) = A;
+	F.block<X_DIM,X_DIM>(0, X_DIM) = -(B*L);
+	F.block<X_DIM,X_DIM>(X_DIM, 0) = K*C;
+	F.block<X_DIM,X_DIM>(X_DIM, X_DIM) = A - B*L - K*C;
+
+	combined_noise_covariance_t G = combined_noise_covariance_t::Zero();
+	G.block<X_DIM, X_DIM>(0, 0) = MotionNoiseCovariance;
+	G.block<X_DIM, Z_DIM>(X_DIM, Z_DIM) = K*ObservationNoiseCovariance;
+
+	state_extractor_t X = state_extractor_t::Zero();
+	X.block<X_DIM,X_DIM>(0, 0) = natural_dynamics_t::Identity();
+
+	state_extractor_t Xhat = state_extractor_t::Zero();
+	Xhat.block<X_DIM,X_DIM>(0, X_DIM) = natural_dynamics_t::Identity();
+
+	control_extractor_t U = control_extractor_t::Zero();
+	U.block<U_DIM, X_DIM>(0, X_DIM) = -L;
+
+	/*
+	std::cout << "A: " << std::endl << A << std::endl;
+	std::cout << "B: " << std::endl << B << std::endl;
+	std::cout << "C: " << std::endl << C << std::endl;
+	std::cout << "L: " << std::endl << L << std::endl;
+	std::cout << "K: " << std::endl << K << std::endl;
+	std::cout << "-BL: " << std::endl << -(B*L) << std::endl;
+	std::cout << "KC: " << std::endl << K*C << std::endl;
+	std::cout << "A - BL - KC: " << std::endl << (A - B*L - K*C) << std::endl;
+	std::cout << "MotionNoiseCovariance: " << std::endl << MotionNoiseCovariance << std::endl;
+	std::cout << "ObservationNoiseCovariance: " << std::endl << ObservationNoiseCovariance << std::endl;
+	std::cout << "F: " << std::endl << F << std::endl;
+	std::cout << "G: " << std::endl << G << std::endl;
+	std::cout << "X: " << std::endl << X << std::endl;
+	std::cout << "Xhat: " << std::endl << Xhat << std::endl;
+	std::cout << "U: " << std::endl << U << std::endl;
+	*/
+	/*
+	ostringstream record;
+	Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> negBL = -(B*L);
+	std::cout << "negBL.rows(): " << negBL.rows() << std::endl;
+	std::cout << "negBL.cols(): " << negBL.cols() << std::endl;
+	WRITE_MATRIX(record, "-BL", negBL);
+	WRITE_MATRIX(record, "KC", (K*C));
+	WRITE_MATRIX(record, "A - BL - KC", (A - B*L - K*C));
+	WRITE_MATRIX(record, "F", F);
+	WRITE_MATRIX(record, "G", G);
+	WRITE_MATRIX(record, "X", X);
+	WRITE_MATRIX(record, "Xhat", Xhat);
+	WRITE_MATRIX(record, "U", U);
+	*/
+
 	dynamics_t dynamics;
-	dynamics.A = &A;
-	dynamics.B = &B;
-	dynamics.c = &c;
-	dynamics.MotionNoiseCovariance = &MotionNoiseCovariance;
-	dynamics.C = &C;
-	dynamics.ObservationNoiseCovariance = &ObservationNoiseCovariance;
-	dynamics.d = &d;
-	dynamics.K = &K;
-	dynamics.L = &L;
+	dynamics.A = A;
+	dynamics.B = B;
+	dynamics.c = c;
+	dynamics.MotionNoiseCovariance = MotionNoiseCovariance;
+	dynamics.C = C;
+	dynamics.ObservationNoiseCovariance = ObservationNoiseCovariance;
+	dynamics.d = d;
+	dynamics.K = K;
+	dynamics.L = L;
+	dynamics.F = F;
+	dynamics.G = G;
+	dynamics.X = X;
+	dynamics.Xhat = Xhat;
+	dynamics.U = U;
 
 	tree_t tree;
 
@@ -4141,11 +4191,11 @@ x1[5] = 0;
 		if (key == 's') {
 			robot->hide_model();
 			robot->show_collision_checker();
-			simulate(dynamics, tree);
+			simulate(dynamics, tree, robot);
 		}
 
 		if (key == 't') {
-			testSolution(dynamics, tree, 100, false);
+			testSolution(dynamics, tree, NUM_SIMS, false);
 		}
 
 		if (key == 'e') {
@@ -4179,7 +4229,7 @@ x1[5] = 0;
 
 					std::cout << "Planning for " << current_experiment_name.str() << "... ";
 
-					if (planTrajectory(current_experiment_name.str(), tree, radius)) {
+					if (planTrajectory(current_experiment_name.str(), tree, radius, true)) {
 						std::cout << "success." << std::endl << "Simulating... " << std::endl;
 
 						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, false);

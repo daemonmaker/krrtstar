@@ -44,7 +44,9 @@ if strcmp(system, 'snglint2d')
     B(2, 2) = 1
     C(1, 1) = 1;
     C(2, 2) = 1
-    R = eye(U_DIM, U_DIM)
+    R = ones(U_DIM, U_DIM);
+    R(1, 2) = 0.25;
+    R(2, 1) = 0.25
     
     %M(1, 1) = 10;
     %M(1, 1) = 0;
@@ -52,7 +54,7 @@ if strcmp(system, 'snglint2d')
     %N(1, 1) = 0;
     %N(2, 2) = 0;
     M(1,1) = M(1,1)*0.01;
-    M(2,2) = M(2,2)*5
+    M(2,2) = M(2,2)*1
     N = N*0.1
 elseif strcmp(system, 'dblint1d')
     A(1, 2) = 1
