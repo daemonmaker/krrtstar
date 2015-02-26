@@ -44,9 +44,10 @@ if strcmp(system, 'snglint2d')
     B(2, 2) = 1
     C(1, 1) = 1;
     C(2, 2) = 1
-    R = ones(U_DIM, U_DIM);
-    R(1, 2) = 0.25;
-    R(2, 1) = 0.25
+    R = eye(U_DIM)*0.25;
+    %R = ones(U_DIM, U_DIM);
+    %R(1, 2) = 0.25;
+    %R(2, 1) = 0.25
     
     %M(1, 1) = 10;
     %M(1, 1) = 0;

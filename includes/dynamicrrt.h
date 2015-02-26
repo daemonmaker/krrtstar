@@ -99,8 +99,9 @@ std::string dynamics_type_to_name(const int id) {
 // Flags to control various features of the program
 #define EXPERIMENT_NAME "test"
 //#define EXPERIMENT
+#define FIND_FIRST_PATH_ONLY false
 #define TRAJECTORY_COUNT 30 // Number of paths to plan duing experiments
-#define NUM_SIMS 10000 // Number of times to simulate paths duing experiments
+#define NUM_SIMS 100 // Number of times to simulate paths duing experiments
 #define USE_THRESHOLDS 1 // Whether to use distance thresholds instead of collisions checks during trajectory planning.
 #define NOISE_FREE false // Whether the simulation(s) should be noise free.
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
@@ -212,7 +213,7 @@ double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0}
 #define ROBOT Puck
 const size_t distance_threshold_count = 2;
 double distance_thresholds[distance_threshold_count] = {1.1774, 3.0335};
-#define TARGET_NODES 250
+#define TARGET_NODES 3000
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1
 

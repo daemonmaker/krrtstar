@@ -337,10 +337,10 @@ void setupParameters(void) {
 	K(1,1) = 10;
 	L(0,0) = 1;
 	L(1,1) = 1;
-	R(0,0) = 0.6666;
-	R(0,1) = 0.1667;
-	R(1,0) = 0.1667;
-	R(1,1) = 0.6666;
+	R(0,0) = 0.2222;
+	//R(0,1) = 0.1667;
+	//R(1,0) = 0.1667;
+	R(1,1) = 0.2222;
 	Rotation(0, 0) = 1;
 	Rotation(1, 1) = 1;
 	Scale(0, 0) = 0.0324;
@@ -4070,24 +4070,7 @@ x1[5] = 0;
 	control_extractor_t U = control_extractor_t::Zero();
 	U.block<U_DIM, X_DIM>(0, X_DIM) = -L;
 
-	/*
-	std::cout << "A: " << std::endl << A << std::endl;
-	std::cout << "B: " << std::endl << B << std::endl;
-	std::cout << "C: " << std::endl << C << std::endl;
-	std::cout << "L: " << std::endl << L << std::endl;
-	std::cout << "K: " << std::endl << K << std::endl;
-	std::cout << "-BL: " << std::endl << -(B*L) << std::endl;
-	std::cout << "KC: " << std::endl << K*C << std::endl;
-	std::cout << "A - BL - KC: " << std::endl << (A - B*L - K*C) << std::endl;
-	std::cout << "MotionNoiseCovariance: " << std::endl << MotionNoiseCovariance << std::endl;
-	std::cout << "ObservationNoiseCovariance: " << std::endl << ObservationNoiseCovariance << std::endl;
-	std::cout << "F: " << std::endl << F << std::endl;
-	std::cout << "G: " << std::endl << G << std::endl;
-	std::cout << "X: " << std::endl << X << std::endl;
-	std::cout << "Xhat: " << std::endl << Xhat << std::endl;
-	std::cout << "U: " << std::endl << U << std::endl;
-	*/
-	/*
+	/* FIX THIS!
 	ostringstream record;
 	Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> negBL = -(B*L);
 	std::cout << "negBL.rows(): " << negBL.rows() << std::endl;
@@ -4138,7 +4121,7 @@ x1[5] = 0;
 		}
 
 		if (key == 'r') {
-			planTrajectory(experiment_name, tree, radius, true);
+			planTrajectory(experiment_name, tree, radius, FIND_FIRST_PATH_ONLY);
 		}
 
 		if (key == 'l') {
@@ -4205,14 +4188,14 @@ x1[5] = 0;
 			ostringstream current_experiment_name;
 			ostringstream simulation_record;
 
+			FILE * simulation_log = fopen(make_log_file_name(experiment_name, "simulations", "txt").c_str(), "w");
+			WRITE_HEADER(simulation_record, "experiment\tsimulations\tsuccessful", simulation_log);
+
 			// Plan multiple trajectories
 			for (size_t trajectory_count = 0; trajectory_count < TRAJECTORY_COUNT; ++trajectory_count) {
 				experiment_base_name.clear();
 				experiment_base_name.str("");
 				experiment_base_name << experiment_name << "_trajectory_" << trajectory_count;
-
-				FILE * simulation_log = fopen(make_log_file_name(experiment_base_name.str(), "simulations", "txt").c_str(), "w");
-				WRITE_HEADER(simulation_record, "experiment\tsimulations\tsuccessful", simulation_log);
 
 				// Iterate over thresholds
 				for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
@@ -4229,7 +4212,7 @@ x1[5] = 0;
 
 					std::cout << "Planning for " << current_experiment_name.str() << "... ";
 
-					if (planTrajectory(current_experiment_name.str(), tree, radius, true)) {
+					if (planTrajectory(current_experiment_name.str(), tree, radius, FIND_FIRST_PATH_ONLY)) {
 						std::cout << "success." << std::endl << "Simulating... " << std::endl;
 
 						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, false);
@@ -4238,14 +4221,15 @@ x1[5] = 0;
 						simulation_record.str("");
 						simulation_record << current_experiment_name.str() << '\t' << NUM_SIMS << '\t' << good_runs << std::endl;
 						fputs(simulation_record.str().c_str(), simulation_log);
-						fflush(simulation_log);
 					} else {
 						std::cout << "failed" << std::endl;
 					}
-				}
 
-				fclose(simulation_log);
+					fflush(simulation_log);
+				}
 			}
+
+			fclose(simulation_log);
 		}
 	} while (key != 'q');
 
