@@ -97,7 +97,6 @@ std::string dynamics_type_to_name(const int id) {
 #define POSITION_DIM 2
 
 // Flags to control various features of the program
-#define EXPERIMENT_NAME "test"
 //#define EXPERIMENT
 #define FIND_FIRST_PATH_ONLY false
 #define TRAJECTORY_COUNT 30 // Number of paths to plan duing experiments

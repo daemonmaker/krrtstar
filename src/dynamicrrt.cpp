@@ -4105,7 +4105,7 @@ x1[5] = 0;
 
 	char key;
 	bool tree_loaded = false;
-	string experiment_name = EXPERIMENT_NAME;
+	string experiment_name = "test";
 	do {
 		std::cout << ">> ";
 		key = _getchar();
@@ -4125,7 +4125,7 @@ x1[5] = 0;
 		}
 
 		if (key == 'l') {
-			read_tree(make_log_file_name(EXPERIMENT_NAME, "tree", "rrt"), &tree);
+			read_tree(make_log_file_name(experiment_name, "tree", "rrt"), &tree);
 			std::cout << "Number of nodes: " << tree.size() << std::endl;
 			std::cout << "Solution found? ";
 			if (tree[0].cost_from_start < DBL_MAX) {
@@ -4182,7 +4182,7 @@ x1[5] = 0;
 		}
 
 		if (key == 'e') {
-			experiment_name = "experiment";
+			experiment_name = dynamics_type_to_name(DYNAMICS);
 
 			ostringstream experiment_base_name;
 			ostringstream current_experiment_name;
