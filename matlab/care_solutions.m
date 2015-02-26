@@ -125,7 +125,7 @@ R_tilde = R/k
 % 1. If this is not the case then the order of any two columns can be
 % swapped to make it the case. However doing so requires that the
 % associated rows of the scale matrix be swapped too.
-final = chol(x_sigma, 'lower')
+final = inv(chol(x_sigma, 'lower'))
 
 [U, S, V] = svd(final)
 det(U)
