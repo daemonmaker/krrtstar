@@ -258,7 +258,7 @@ double distance_thresholds[distance_threshold_count] = {1.1774}; //, 3.0335};
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
-			#define WORLD worlds::VanDenBergPassages
+			#define WORLD worlds::VanDenBergPassagesExaggerated
 		#endif
 	#elif USE_OBSTACLES == 5
 		#define WORLD SimpleRaceTrack

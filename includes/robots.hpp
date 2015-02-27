@@ -172,10 +172,10 @@ class Puck
 	: public Robot
 {
 public:
-	Puck(int base_group) : Robot(base_group)
+	Puck(int base_group, double radius = 5) : Robot(base_group)
 	{
-		CAL_CreateCylinder(this->robot_group, 5, 3, 0, 0, 0, &(this->robot_collision_object));
-		CAL_CreateCylinder(this->robot_model, 5, 3, 0, 0, 0, &(this->robot_model_object));
+		CAL_CreateCylinder(this->robot_group, radius, 1, 0, 0, 0, &(this->robot_collision_object));
+		CAL_CreateCylinder(this->robot_model, radius, 1, 0, 0, 0, &(this->robot_model_object));
 		CAL_SetGroupColor(this->robot_model, 0.05, 0.05, 0.05);
 	}
 

@@ -598,6 +598,55 @@ protected:
 		CAL_SetViewParams(0, 50*(this->scaler), 50*(this->scaler), 101*(this->scaler), 50*(this->scaler), 50*(this->scaler), 0, 0, 1, 0);
 	}
 };
+
+class VanDenBergPassagesExaggerated
+	: public World
+{
+private:
+	float scaler;
+
+public:
+	VanDenBergPassagesExaggerated(int base_group)
+		: World(base_group), scaler(2)
+	{
+		this->x0[0] = 22.5*(this->scaler);
+		this->x0[1] = 22.5*(this->scaler);
+		this->x1[0] = 75*(this->scaler);
+		this->x1[1] = 75*(this->scaler);
+
+		this->x_bounds.resize(X_DIM);
+		for (BOUNDS::iterator p = this->x_bounds.begin(); p != this->x_bounds.end(); ++p) {
+			p->first = 0.0;
+			p->second = 0.0;
+		}
+
+		this->x_bounds[0] = std::make_pair(0*(this->scaler), 100*(this->scaler));
+		this->x_bounds[1] = std::make_pair(0*(this->scaler), 100*(this->scaler));
+	}
+
+protected:
+	virtual void _buildEnvironment() {
+		int box_id = 0;
+
+		// Make outer walls
+		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 50*(this->scaler), -2.5*(this->scaler), 0*(this->scaler)); // Bottom
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 10*(this->scaler), -2.5*(this->scaler), 50*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 10*(this->scaler), 102.5*(this->scaler), 50*(this->scaler), 0*(this->scaler)); // Right
+		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 50*(this->scaler), 102.5*(this->scaler), 0*(this->scaler)); // Top
+
+		// Make boxes
+		CAL_CreateBox(this->obstacle_group, 15*(this->scaler), 20*(this->scaler), 10*(this->scaler), 7.5*(this->scaler), 40*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 20*(this->scaler), 15*(this->scaler), 10*(this->scaler), 40*(this->scaler), 7.5*(this->scaler), 0*(this->scaler)); // Right
+
+		// Make large boxes
+		CAL_CreateBox(this->obstacle_group, 20*(this->scaler), 20*(this->scaler), 10*(this->scaler), 40*(this->scaler), 40*(this->scaler), 0*(this->scaler)); // Left
+		//CAL_CreateBox(this->obstacle_group, 12.5*(this->scaler), 20*(this->scaler), 10*(this->scaler), 15*(this->scaler), 15*(this->scaler), 0*(this->scaler)); // Right
+	}
+
+	virtual void positionCamera() {
+		CAL_SetViewParams(0, 50*(this->scaler), 50*(this->scaler), 101*(this->scaler), 50*(this->scaler), 50*(this->scaler), 0, 0, 1, 0);
+	}
+};
 }
 
 class TwoWalls

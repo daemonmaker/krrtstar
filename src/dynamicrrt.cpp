@@ -348,7 +348,7 @@ void setupParameters(void) {
 	MotionNoiseCovariance(1,1) = 1;
 	ObservationNoiseCovariance(0,0) = 0.1;
 	ObservationNoiseCovariance(1,1) = 0.1;
-	K(0,0) = 0.1;
+	K(0,0) = 0.01;
 	K(1,1) = 10;
 	L(0,0) = 1;
 	L(1,1) = 1;
@@ -356,12 +356,12 @@ void setupParameters(void) {
 	//R(0,1) = 0.1667;
 	//R(1,0) = 0.1667;
 	R(1,1) = 0.2222;
-	Rotation(0, 0) = 1;
-	Rotation(1, 1) = 1;
-	Scale(0, 0) = 0.0324;
-	Scale(1, 1) = 0.7746;
+	//Rotation(0, 0) = 1;
+	//Rotation(1, 1) = 1;
+	Scale(0, 0) = 30.8607;
+	Scale(1, 1) = 1.2910;
 
-	robot = new ROBOT(vis::cal_rotate);
+	robot = new ROBOT(vis::cal_rotate, 5);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -4185,7 +4185,9 @@ x1[5] = 0;
 		}
 
 		if (key == 'e') {
-			experiment_name = dynamics_type_to_name(DYNAMICS);
+			ostringstream experiment_name_os;
+			experiment_name_os << dynamics_type_to_name(DYNAMICS) << "_M_" << MotionNoiseCovariance(0,0) << '_' << MotionNoiseCovariance(0,1) << '_' << MotionNoiseCovariance(1,1) << "_N_" << ObservationNoiseCovariance(0,0) << '_' << ObservationNoiseCovariance(0,1) << '_' << ObservationNoiseCovariance(1,1);
+			experiment_name = experiment_name_os.str();
 
 			ostringstream experiment_base_name;
 			ostringstream current_experiment_name;
