@@ -101,7 +101,8 @@ std::string dynamics_type_to_name(const int id) {
 #define FIND_FIRST_PATH_ONLY false
 #define TRAJECTORY_COUNT 30 // Number of paths to plan duing experiments
 #define NUM_SIMS 100 // Number of times to simulate paths duing experiments
-#define USE_THRESHOLDS 1 // Whether to use distance thresholds instead of collisions checks during trajectory planning.
+#define USE_SET_CLEARANCE 0 // Whether to grow the obstacles using callisto's set clearance. Cannot be used with USE_THRESHOLDS.
+#define USE_THRESHOLDS 1 // Whether to use distance thresholds instead of collisions checks during trajectory planning. Cannot be used with USE_SET_CLEARANCE.
 #define NOISE_FREE false // Whether the simulation(s) should be noise free.
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
@@ -132,6 +133,10 @@ std::string dynamics_type_to_name(const int id) {
 #define TIMING_FREQUENCY 0.1 // How often to record the time taken to expand nodes
 //#define WORLD EmptyWorld // Which world to use
 #define VISUALIZE_SIMULATION true
+
+#if USE_THRESHOLDS && USE_SET_CLEARANCE
+	WTF? The comments say you cannot do that...
+#endif
 
 #if (defined(REDUCE_RADIUS) && DYNAMICS == SINGLE_INTEGRATOR_2D)
 #undef REDUCE_RADIUS
@@ -210,8 +215,8 @@ double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0}
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
-const size_t distance_threshold_count = 2;
-double distance_thresholds[distance_threshold_count] = {1.1774, 3.0335};
+const size_t distance_threshold_count = 1;
+double distance_thresholds[distance_threshold_count] = {1.1774}; //, 3.0335};
 #define TARGET_NODES 3000
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1

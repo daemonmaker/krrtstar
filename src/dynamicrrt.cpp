@@ -560,7 +560,6 @@ void buildEnvironment(int base_group) {
 	state_space = new STATE_SPACE(position_generator, world->getBounds());
 
 	world->buildEnvironment();
-	world->setDistanceThreshold(distance_thresholds[0]);
 }
 
 template <size_t _numRows>
@@ -3930,11 +3929,17 @@ void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, cont
 	*/
 }
 
-bool planTrajectory(const string &experiment_name, tree_t & tree, double radius, bool terminate_after_first = false) {
+bool planTrajectory(const string &experiment_name, tree_t & tree, double radius, double clearance, bool terminate_after_first = false) {
 	tree.clear();
 
 	vis::WarpEnvironment<3>(Rotation, Scale);
 	world->positionCamera(Rotation, Scale.inverse());
+
+#if USE_THRESHOLDS
+	world->setDistanceThreshold(clearance);
+#elif USE_SET_CLEARANCE
+	world->setClearance(clearance);
+#endif
 
 	open_logs(experiment_name);
 	save_experiment(experiment_log);
@@ -3972,6 +3977,10 @@ bool planTrajectory(const string &experiment_name, tree_t & tree, double radius,
 	std::cout << "Saving tree...";
 	save_tree(make_log_file_name(experiment_name, "tree", "rrt"), tree);
 	std::cout << " done." << std::endl;
+
+#if USE_SET_CLEARANCE
+	world->setClearance(0);
+#endif
 
 	vis::RestoreEnvironment<3>();
 	world->positionCamera();
@@ -4115,7 +4124,7 @@ x1[5] = 0;
 		}
 
 		if (key == 'r') {
-			planTrajectory(experiment_name, tree, radius, FIND_FIRST_PATH_ONLY);
+			planTrajectory(experiment_name, tree, radius, distance_thresholds[0], FIND_FIRST_PATH_ONLY);
 		}
 
 		if (key == 'l') {
@@ -4193,8 +4202,6 @@ x1[5] = 0;
 
 				// Iterate over thresholds
 				for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
-					world->setDistanceThreshold(distance_thresholds[threshold_idx]);
-
 					paths = 0;
 
 					vis::clearPaths();
@@ -4206,7 +4213,7 @@ x1[5] = 0;
 
 					std::cout << "Planning for " << current_experiment_name.str() << "... ";
 
-					if (planTrajectory(current_experiment_name.str(), tree, radius, FIND_FIRST_PATH_ONLY)) {
+					if (planTrajectory(current_experiment_name.str(), tree, radius, distance_thresholds[threshold_idx], FIND_FIRST_PATH_ONLY)) {
 						std::cout << "success." << std::endl << "Simulating... " << std::endl;
 
 						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, false);
