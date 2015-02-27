@@ -4189,7 +4189,7 @@ x1[5] = 0;
 			ostringstream simulation_record;
 
 			FILE * simulation_log = fopen(make_log_file_name(experiment_name, "simulations", "txt").c_str(), "w");
-			WRITE_HEADER(simulation_record, "experiment\tsimulations\tsuccessful", simulation_log);
+			WRITE_HEADER(simulation_record, "experiment\tsimulations\tsuccessful\ttrajectory\tthreshold", simulation_log);
 
 			// Plan multiple trajectories
 			for (size_t trajectory_count = 0; trajectory_count < TRAJECTORY_COUNT; ++trajectory_count) {
@@ -4219,7 +4219,7 @@ x1[5] = 0;
 
 						simulation_record.clear();
 						simulation_record.str("");
-						simulation_record << current_experiment_name.str() << '\t' << NUM_SIMS << '\t' << good_runs << std::endl;
+						simulation_record << current_experiment_name.str() << '\t' << NUM_SIMS << '\t' << good_runs << '\t' << trajectory_count << '\t' << world->getDistanceThreshold() << std::endl;
 						fputs(simulation_record.str().c_str(), simulation_log);
 					} else {
 						std::cout << "failed" << std::endl;
