@@ -173,6 +173,21 @@ void save_experiment(FILE * experiment_log) {
 	WRITE_MATRIX(record, "Rotation", Rotation);
 	WRITE_MATRIX(record, "Scale", Scale);
 
+	generic_matrix_t matrix = -B*L;
+	WRITE_MATRIX(record, "-BL", matrix);
+
+	matrix = K*C;
+	WRITE_MATRIX(record, "KC", matrix);
+
+	matrix = A - B*L - K*C;
+	WRITE_MATRIX(record, "A - BL - KC", matrix);
+
+	WRITE_MATRIX(record, "F", F);
+	WRITE_MATRIX(record, "G", G);
+	WRITE_MATRIX(record, "X", X);
+	WRITE_MATRIX(record, "Xhat", Xhat);
+	WRITE_MATRIX(record, "U", U);
+
 	fflush(experiment_log);
 }
 
@@ -4051,41 +4066,20 @@ x1[5] = 0;
 	return 0;
 #endif
 
-	combined_natural_dynamics_t F = combined_natural_dynamics_t::Zero();
 	F.block<X_DIM,X_DIM>(0, 0) = A;
 	F.block<X_DIM,X_DIM>(0, X_DIM) = -(B*L);
 	F.block<X_DIM,X_DIM>(X_DIM, 0) = K*C;
 	F.block<X_DIM,X_DIM>(X_DIM, X_DIM) = A - B*L - K*C;
 
-	combined_noise_covariance_t G = combined_noise_covariance_t::Zero();
 	G.block<X_DIM, X_DIM>(0, 0) = MotionNoiseCovariance;
 	G.block<X_DIM, Z_DIM>(X_DIM, Z_DIM) = K*ObservationNoiseCovariance;
 
-	state_extractor_t X = state_extractor_t::Zero();
 	X.block<X_DIM,X_DIM>(0, 0) = natural_dynamics_t::Identity();
 
-	state_extractor_t Xhat = state_extractor_t::Zero();
 	Xhat.block<X_DIM,X_DIM>(0, X_DIM) = natural_dynamics_t::Identity();
 
-	control_extractor_t U = control_extractor_t::Zero();
 	U.block<U_DIM, X_DIM>(0, X_DIM) = -L;
 
-	/* FIX THIS!
-	ostringstream record;
-	Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> negBL = -(B*L);
-	std::cout << "negBL.rows(): " << negBL.rows() << std::endl;
-	std::cout << "negBL.cols(): " << negBL.cols() << std::endl;
-	WRITE_MATRIX(record, "-BL", negBL);
-	WRITE_MATRIX(record, "KC", (K*C));
-	WRITE_MATRIX(record, "A - BL - KC", (A - B*L - K*C));
-	WRITE_MATRIX(record, "F", F);
-	WRITE_MATRIX(record, "G", G);
-	WRITE_MATRIX(record, "X", X);
-	WRITE_MATRIX(record, "Xhat", Xhat);
-	WRITE_MATRIX(record, "U", U);
-	*/
-
-	dynamics_t dynamics;
 	dynamics.A = A;
 	dynamics.B = B;
 	dynamics.c = c;

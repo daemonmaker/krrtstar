@@ -171,6 +171,7 @@ public:
 		return CAL_CheckGroupCollision(robot_group, this->obstacle_group, false, collisions);
 	}
 */
+
 	inline const virtual bool checkDistance(Robot * robot, bool visualize = false) const {
 		if (robot->computeStdDev(this->obstacle_group, this->distance_threshold, visualize) < this->distance_threshold)
 			return true;

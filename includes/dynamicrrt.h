@@ -309,6 +309,7 @@ BOUNDS u_bounds;
 #endif
 #endif
 
+typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> generic_matrix_t;
 typedef Eigen::Matrix<double,3,3> generic_3d_matrix_t;
 typedef Eigen::Matrix<double,X_DIM,X_DIM> natural_dynamics_t;
 typedef Eigen::Matrix<double,X_DIM,U_DIM> control_dynamics_t;
@@ -350,6 +351,11 @@ generic_3d_matrix_t Rotation = generic_3d_matrix_t::Identity();
 generic_3d_matrix_t Scale = generic_3d_matrix_t::Identity();
 kalman_gain_t K = kalman_gain_t::Zero();
 lqr_gain_t L = lqr_gain_t::Zero();
+combined_natural_dynamics_t F = combined_natural_dynamics_t::Zero();
+combined_noise_covariance_t G = combined_noise_covariance_t::Zero();
+state_extractor_t X = state_extractor_t::Zero();
+state_extractor_t Xhat = state_extractor_t::Zero();
+control_extractor_t U = control_extractor_t::Zero();
 
 struct dynamics_t {
 	natural_dynamics_t A;
@@ -366,7 +372,7 @@ struct dynamics_t {
 	state_extractor_t X;
 	state_extractor_t Xhat;
 	control_extractor_t U;
-};
+} dynamics;
 
 struct Node {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
