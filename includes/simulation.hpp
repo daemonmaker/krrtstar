@@ -217,7 +217,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 				robot->position(actual, true);
 			}
 
-			Sleep(deltaT*10);
+			Sleep(deltaT*50);
 		}
 	}
 

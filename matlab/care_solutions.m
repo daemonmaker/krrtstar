@@ -10,7 +10,7 @@
 
 %% Select system and setup basic variables
 clear
-system = 'snglint2d'
+system = 'dblint2dfullyobservable'
 
 % Set dimensionality information for system
 if strcmp(system, 'snglint2d')
@@ -54,9 +54,16 @@ if strcmp(system, 'snglint2d')
     %M(2, 2) = 0;
     %N(1, 1) = 0;
     %N(2, 2) = 0;
+
+    %multiplier = 3
+    %M(1,1) = M(1,1)*0.1*multiplier;
+    %M(1,2) = 1*multiplier;
+    %M(2,1) = 0;
+    %M(2,2) = M(2,2)*1*multiplier
+    
     M(1,1) = M(1,1)*0.1;
-    M(1,2) = 1;
-    M(2,1) = 0;
+    M(1,2) = 0.1;
+    M(2,1) = 0.1;
     M(2,2) = M(2,2)*1
     
     N = N*0.1
@@ -66,16 +73,34 @@ elseif strcmp(system, 'dblint1d')
     C(1, 1) = 1
     C(2, 2) = 1
     R = ones(U_DIM, U_DIM)
+elseif strcmp(system, 'dblint2dfully')
+    A(1, 3) = 1;
+    A(2, 4) = 1
+    B(3, 1) = 1;
+    B(4, 2) = 1
+    C = eye(4)
+    M(1,1) = M(1,1)*0.1;
+    M(1,2) = 0.1;
+    M(2,1) = 0.1;
+    M(2,2) = M(2,2)*1
+    M = M*0
+    N = N*0
 elseif strcmp(system, 'dblint2dfullyobservable')
     A(1, 3) = 1;
     A(2, 4) = 1
     B(3, 1) = 1;
     B(4, 2) = 1
     C = eye(4)
-    %M = M*0.0000001
-    %N = N*0.0000001
-    M = M*0
-    N = N*0
+    M(1,1) = 0.5;
+    M(1,2) = 1;
+    M(2,2) = 0.5;
+    M(3,3) = 1;
+    M(3,4) = 2;
+    M(4,4) = 1
+    M = chol(M*transpose(M))
+    N = N*0.1;
+    N(1,1) = 0.5;
+    N(2,2) = 0.5
 end
 
 %% Solve CARE
@@ -146,4 +171,4 @@ V
 det(V)
 
 %% Save the parameters
-save('parameters.txt', 'A', 'B', 'C', 'M', 'N', 'K', 'L', 'R_tilde', 'S', 'V', '-mat')
+save('../krrtstar/krrtstar/parameters.txt', 'A', 'B', 'C', 'M', 'N', 'K', 'L', 'R_tilde', 'S', 'V', '-mat')

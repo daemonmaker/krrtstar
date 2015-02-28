@@ -391,7 +391,7 @@ void setupParameters(string parameters_file) {
 	Rotation(1, 1) = 0.0979;
 	*/
 
-	robot = new ROBOT(vis::cal_rotate, 0.0005);
+	robot = new ROBOT(vis::cal_rotate, 5);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -4273,13 +4273,14 @@ x1[5] = 0;
 					vis::clearPaths();
 					vis::clearSimulation();
 
+					world->setDistanceThreshold(distance_thresholds[threshold_idx]);
 					current_experiment_name.clear();
 					current_experiment_name.str("");
 					current_experiment_name << experiment_base_name.str() << "_threshold_" << world->getDistanceThreshold();
 
 					std::cout << "Planning for " << current_experiment_name.str() << "... ";
 
-					if (planTrajectory(current_experiment_name.str(), tree, radius, distance_thresholds[threshold_idx], FIND_FIRST_PATH_ONLY)) {
+					if (planTrajectory(current_experiment_name.str(), tree, radius, world->getDistanceThreshold(), FIND_FIRST_PATH_ONLY)) {
 						std::cout << "success." << std::endl << "Simulating... " << std::endl;
 
 						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, false);
