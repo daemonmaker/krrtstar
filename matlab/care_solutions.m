@@ -54,7 +54,7 @@ if strcmp(system, 'snglint2d')
     %M(2, 2) = 0;
     %N(1, 1) = 0;
     %N(2, 2) = 0;
-    M(1,1) = M(1,1)*0.5;
+    M(1,1) = M(1,1)*0.1;
     M(1,2) = 1;
     M(2,1) = 0;
     M(2,2) = M(2,2)*1
@@ -146,4 +146,4 @@ V
 det(V)
 
 %% Save the parameters
-save('parameters.txt', 'M', 'N', 'K', 'L', 'R_tilde', 'S', 'V', '-mat')
+save('parameters.txt', 'A', 'B', 'C', 'M', 'N', 'K', 'L', 'R_tilde', 'S', 'V', '-mat')

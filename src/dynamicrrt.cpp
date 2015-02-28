@@ -423,7 +423,7 @@ void setupParameters(string parameters_file) {
 		std::cout << "Could not load parameters" << std::endl;
 		exit(-1);
 	}
-	/*
+
 	int ndir;
 	const char **dir = (const char **)matGetDir(pmat, &ndir);
 	if (dir == NULL) {
@@ -436,7 +436,10 @@ void setupParameters(string parameters_file) {
 		}
 		std::cout << std::endl;
 	}
-	*/
+
+	readMatlabArray(pmat, "A", A);
+	readMatlabArray(pmat, "B", B);
+	readMatlabArray(pmat, "C", C);
 	readMatlabArray(pmat, "M", MotionNoiseCovariance);
 	readMatlabArray(pmat, "N", ObservationNoiseCovariance);
 	readMatlabArray(pmat, "K", K);
