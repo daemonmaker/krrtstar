@@ -201,6 +201,7 @@ void readMatlabArray(MATFile *pmat, const string &element, T &matrix) {
 	mxArray *aPtr = matGetVariable(pmat, element.c_str());
     if (aPtr == NULL) {
 		std::cout << "mxArray not found: " << element.c_str() << std::endl;
+		_getchar();
         exit(-1);
     }
 
@@ -421,13 +422,15 @@ void setupParameters(string parameters_file) {
 	MATFile *pmat = matOpen(parameters_file.c_str(), "r");
 	if (pmat == NULL) {
 		std::cout << "Could not load parameters" << std::endl;
+		_getchar();
 		exit(-1);
 	}
-
+	/*
 	int ndir;
 	const char **dir = (const char **)matGetDir(pmat, &ndir);
 	if (dir == NULL) {
 		std::cout << "Error reading directory of file " << parameters_file << std::endl;
+		_getchar();
 		exit(-1);
 	} else {
 		std::cout << "Directory of " << parameters_file << std::endl;
@@ -436,7 +439,7 @@ void setupParameters(string parameters_file) {
 		}
 		std::cout << std::endl;
 	}
-
+	*/
 	readMatlabArray(pmat, "A", A);
 	readMatlabArray(pmat, "B", B);
 	readMatlabArray(pmat, "C", C);
