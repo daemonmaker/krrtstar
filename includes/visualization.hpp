@@ -156,7 +156,7 @@ void WarpEnvironment(const Eigen::Matrix<double,_dim,_dim>& V, const Eigen::Matr
 		_getchar();
 		exit(1);
 	}
-
+	/*
 	q = Eigen::Quaternion<double>(V.transpose());
 	result = CAL_SetGroupQuaternion(cal_rotate, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
 	if (result != CAL_SUCCESS) {
@@ -164,6 +164,7 @@ void WarpEnvironment(const Eigen::Matrix<double,_dim,_dim>& V, const Eigen::Matr
 		_getchar();
 		exit(1);
 	}
+	*/
 }
 
 template <size_t _dim>
@@ -819,6 +820,7 @@ bool testCollisions_loop = true;
 float testCollisions_x_delta = 0;
 float testCollisions_y_delta = 0;
 bool testCollisions_use_thresholds = USE_THRESHOLDS;
+bool testCollisions_world_warped = false;
 void testCollisionsKeypressCallback(char key, bool pressed) {
 	if (pressed && key == '?') {
 		std::cout << "u - up" << std::endl;
@@ -855,11 +857,26 @@ void testCollisionsKeypressCallback(char key, bool pressed) {
 	if (key == 'q') {
 		testCollisions_loop = false;
 	}
+	if (key == 's') {
+		if (testCollisions_world_warped) {
+			RestoreEnvironment<3>();
+		} else {
+			WarpEnvironment<3>(Rotation, Scale);
+		}
+	}
 	if (pressed && key == 'c') {
 		if (testCollisions_use_thresholds == 1) {
+#if USE_THRESHOLDS
 			testCollisions_use_thresholds = 0;
+#elif USE_SET_CLEARANCE
+			world->setClearance(0);
+#endif
 		} else {
+#if USE_THRESHOLDS
 			testCollisions_use_thresholds = 1;
+#elif USE_SET_CLEARANCE
+			world->setClearance(distance_thresholds[0]);
+#endif
 		}
 		std::cout << "Set testCollisions_use_thresholds to " << testCollisions_use_thresholds << std::endl;
 	}
@@ -886,7 +903,7 @@ void testCollisions(World * world, Robot * robot) {
 			world->checkCollisions(robot, &collisions, true);
 			std::cout << "Collisions? " << collisions << std::endl;
 		}
-		Sleep(20);
+		Sleep(50);
 	}
 }
 

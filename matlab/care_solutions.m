@@ -54,8 +54,11 @@ if strcmp(system, 'snglint2d')
     %M(2, 2) = 0;
     %N(1, 1) = 0;
     %N(2, 2) = 0;
-    M(1,1) = M(1,1)*0.01;
+    M(1,1) = M(1,1)*0.5;
+    M(1,2) = 1;
+    M(2,1) = 0;
     M(2,2) = M(2,2)*1
+    
     N = N*0.1
 elseif strcmp(system, 'dblint1d')
     A(1, 2) = 1
@@ -127,8 +130,20 @@ R_tilde = R/k
 % associated rows of the scale matrix be swapped too.
 final = inv(chol(x_sigma, 'lower'))
 
-[U, S, V] = svd(final)
-det(U)
+[U, S, V] = svd(final);
+
+if (int8(det(V)) == -1)
+    a = S(1, 1);
+    S(1, 1) = S(2, 2);
+    S(2, 2) = a;
+    
+    a = V(:, 1);
+    V(:, 1) = V(:, 2);
+    V(:, 2) = a;
+end
+S
+V
 det(V)
 
-%%
+%% Save the parameters
+save('parameters.txt', 'M', 'N', 'K', 'L', 'R_tilde', 'S', 'V', '-mat')

@@ -150,7 +150,7 @@ public:
 		
 		CAL_SetViewParams(0, eye[0], eye[1], eye[2], camera[0], camera[1], camera[2], up[0], up[1], up[2]);
 
-		//CAL_ShowView(1);
+		CAL_ShowView(1);
 
 		camera = S*R*camera;
 		eye = S*R*eye;

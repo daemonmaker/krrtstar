@@ -33,6 +33,7 @@ TODO
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <mat.h>
 
 //#include "matrix.h"
 #include "callisto.h"

@@ -143,6 +143,7 @@ void save_experiment(FILE * experiment_log) {
 	WRITE_RECORD(record, "ROBOT: ", typeid(ROBOT).name());
 	WRITE_RECORD(record, "STATE_SPACE: ", typeid(STATE_SPACE).name());
 	WRITE_RECORD(record, "WORLD: ", typeid(WORLD).name());
+	WRITE_RECORD(record, "USE_SET_CLEARANCE: ", USE_SET_CLEARANCE);
 	WRITE_RECORD(record, "USE_THRESHOLDS: ", USE_THRESHOLDS);
 	WRITE_RECORD(record, "distance_threshold: ", world->getDistanceThreshold());
 	WRITE_RECORD(record, "EPSILON: ", EPSILON);
@@ -170,6 +171,7 @@ void save_experiment(FILE * experiment_log) {
 	WRITE_MATRIX(record, "ObservationNoiseCovariance", ObservationNoiseCovariance);
 	WRITE_MATRIX(record, "K", K);
 	WRITE_MATRIX(record, "L", L);
+	WRITE_MATRIX(record, "R", R);
 	WRITE_MATRIX(record, "Rotation", Rotation);
 	WRITE_MATRIX(record, "Scale", Scale);
 
@@ -194,7 +196,26 @@ void save_experiment(FILE * experiment_log) {
 #include "visualization.hpp"
 #include "simulation.hpp"
 
-void setupParameters(void) {
+template<class T>
+void readMatlabArray(MATFile *pmat, const string &element, T &matrix) {
+	mxArray *aPtr = matGetVariable(pmat, element.c_str());
+    if (aPtr == NULL) {
+		std::cout << "mxArray not found: " << element.c_str() << std::endl;
+        exit(-1);
+    }
+
+	const mwSize * dims = mxGetDimensions(aPtr);
+	size_t num_rows = mxGetM(aPtr);
+	size_t num_cols = mxGetN(aPtr);
+	double *data = mxGetPr(aPtr);
+	for (size_t idx = 0; idx < num_rows; ++idx) {
+		for (size_t jdx = 0; jdx < num_cols; ++jdx) {
+			matrix(idx, jdx) = data[jdx*num_rows + idx];
+		}
+	}
+}
+
+void setupParameters(string parameters_file) {
 	vis::initVisulization();
 
 	//x_bounds.resize(X_DIM);
@@ -344,24 +365,32 @@ void setupParameters(void) {
 	*/
 	C(0,0) = 1;
 	C(1,1) = 1;
-	MotionNoiseCovariance(0,0) = 0.01;
-	MotionNoiseCovariance(1,1) = 1;
+	/*
+	MotionNoiseCovariance(0,0) = 0.1;
+	MotionNoiseCovariance(0,1) = 1.009;
+	MotionNoiseCovariance(1,0) = 0;
+	MotionNoiseCovariance(1,1) = 0.09;
 	ObservationNoiseCovariance(0,0) = 0.1;
 	ObservationNoiseCovariance(1,1) = 0.1;
-	K(0,0) = 0.01;
-	K(1,1) = 10;
+	K(0,0) = 0.1851;
+	K(0,1) = 0.9827;
+	K(1,0) = 0.9827;
+	K(1,1) = 10.0823;
 	L(0,0) = 1;
 	L(1,1) = 1;
-	R(0,0) = 0.2222;
+	R(0,0) = 0.2213;
 	//R(0,1) = 0.1667;
 	//R(1,0) = 0.1667;
-	R(1,1) = 0.2222;
-	//Rotation(0, 0) = 1;
-	//Rotation(1, 1) = 1;
-	Scale(0, 0) = 30.8607;
-	Scale(1, 1) = 1.2910;
+	R(1,1) = 0.2213;
+	Scale(0, 0) = 1.2702;
+	Scale(1, 1) = 32.9106;
+	Rotation(0, 0) = 0.0979;
+	Rotation(1, 0) = 0.9952;
+	Rotation(0, 1) = -0.9952;
+	Rotation(1, 1) = 0.0979;
+	*/
 
-	robot = new ROBOT(vis::cal_rotate, 5);
+	robot = new ROBOT(vis::cal_rotate, 0.0005);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -387,6 +416,34 @@ void setupParameters(void) {
 #else
     dynamicsError();
 #endif
+
+	std::cout << "Loading parameters " << parameters_file << std::endl;
+	MATFile *pmat = matOpen(parameters_file.c_str(), "r");
+	if (pmat == NULL) {
+		std::cout << "Could not load parameters" << std::endl;
+		exit(-1);
+	}
+	/*
+	int ndir;
+	const char **dir = (const char **)matGetDir(pmat, &ndir);
+	if (dir == NULL) {
+		std::cout << "Error reading directory of file " << parameters_file << std::endl;
+		exit(-1);
+	} else {
+		std::cout << "Directory of " << parameters_file << std::endl;
+		for	(size_t i=0; i < ndir; i++) {
+			std::cout << dir[i] << std::endl;
+		}
+		std::cout << std::endl;
+	}
+	*/
+	readMatlabArray(pmat, "M", MotionNoiseCovariance);
+	readMatlabArray(pmat, "N", ObservationNoiseCovariance);
+	readMatlabArray(pmat, "K", K);
+	readMatlabArray(pmat, "L", L);
+	readMatlabArray(pmat, "R_tilde", R);
+	readMatlabArray(pmat, "S", Scale);
+	readMatlabArray(pmat, "V", Rotation);
 
 #if SHOW_ROBOT
 	robot->show_model();
@@ -4007,7 +4064,8 @@ size_t testSolution(const dynamics_t &dynamics, tree_t & tree, int num_sims, boo
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	setupParameters();
+	string parameters_file = "C:\\Users\\Dustin\\Documents\\GitHub\\krrtstar\\krrtstar\\krrtstar\\parameters.txt";
+	setupParameters(parameters_file);
 	init();
 
 	vis::setupVisualization(x0, x1, buildEnvironment);
