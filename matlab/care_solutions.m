@@ -28,6 +28,11 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     X_DIM = 4
     U_DIM = 2
     Z_DIM = 4
+elseif strcmp(system, 'dblint2dpartiallyobservable')
+    % Double integrator 2D
+    X_DIM = 4
+    U_DIM = 2
+    Z_DIM = 2
 end
 
 % Setup space for system
@@ -40,7 +45,7 @@ R = zeros(U_DIM, U_DIM);
 
 %% Setup system
 if strcmp(system, 'snglint2d')
-    B(1, 1) = 1;
+    B(1, 1) = 0;
     B(2, 2) = 1
     C(1, 1) = 1;
     C(2, 2) = 1
@@ -48,23 +53,25 @@ if strcmp(system, 'snglint2d')
     %R = ones(U_DIM, U_DIM);
     %R(1, 2) = 0.25;
     %R(2, 1) = 0.25
-    
+
     %M(1, 1) = 10;
     %M(1, 1) = 0;
     %M(2, 2) = 0;
     %N(1, 1) = 0;
     %N(2, 2) = 0;
 
-    %multiplier = 3
-    %M(1,1) = M(1,1)*0.1*multiplier;
-    %M(1,2) = 1*multiplier;
-    %M(2,1) = 0;
-    %M(2,2) = M(2,2)*1*multiplier
+    % Scale and rotate
+    multiplier = 1
+    M(1,1) = M(1,1)*0.1*multiplier;
+    M(1,2) = 0.1*multiplier;
+    M(2,1) = 0.1*multiplier;
+    M(2,2) = M(2,2)*1*multiplier
     
-    M(1,1) = M(1,1)*0.1;
-    M(1,2) = 0.1;
-    M(2,1) = 0.1;
-    M(2,2) = M(2,2)*1
+    % Scale only
+    %M(1,1) = M(1,1)*0.1;
+    %M(1,2) = 0.1;
+    %M(2,1) = 0.1;
+    %M(2,2) = M(2,2)*1
     
     N = N*0.1
 elseif strcmp(system, 'dblint1d')
@@ -91,16 +98,35 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     B(3, 1) = 1;
     B(4, 2) = 1
     C = eye(4)
+    %M(1,1) = 0.5;
+    %M(1,2) = 1;
+    %M(2,2) = 0.5;
+    %M(3,3) = 1;
+    %M(3,4) = 2;
+    %M(4,4) = 1
+    M = chol(M*transpose(M))
+    N = N*0.1;
+    N(1,1) = 0.5;
+    N(2,2) = 0.5
+elseif strcmp(system, 'dblint2dpartiallyobservable')
+    A(1, 3) = 1;
+    A(2, 4) = 1
+    B(3, 1) = 1;
+    B(4, 2) = 1
+    C(1, 3) = 1;
+    C(2, 4) = 1
+    multiplier = 1;
     M(1,1) = 0.5;
     M(1,2) = 1;
     M(2,2) = 0.5;
     M(3,3) = 1;
     M(3,4) = 2;
-    M(4,4) = 1
+    M(4,4) = 1;
+    M = M*multiplier
     M = chol(M*transpose(M))
     N = N*0.1;
-    N(1,1) = 0.5;
-    N(2,2) = 0.5
+    N(1,1) = 0.05;
+    N(2,2) = 0.05
 end
 
 %% Solve CARE
@@ -166,8 +192,8 @@ if (int8(det(V)) == -1)
     V(:, 1) = V(:, 2);
     V(:, 2) = a;
 end
-S
-V
+S = S(1:2, 1:2)
+V = V(1:2, 1:2)
 det(V)
 
 %% Save the parameters

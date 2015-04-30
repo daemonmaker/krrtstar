@@ -69,7 +69,7 @@ TODO
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS SINGLE_INTEGRATOR_2D
+#define DYNAMICS DOUBLE_INTEGRATOR_2D
 
 std::string dynamics_type_to_name(const int id) {
 	std::string name = "UNKNOWN";
@@ -109,6 +109,7 @@ std::string dynamics_type_to_name(const int id) {
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
 //#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
+#define SKIP_CONNECTIONS 0
 //#define RUN_COLLISION_TESTER // Runs a utility to allow for manual checking of collision functionality
 #define SHOW_ROBOT 0 // Determines whether the robot model should be shown
 #define SHOW_ROBOT_COLLISION_CHECKER 0 // Determines whether the robot collision checker should be displayed
@@ -197,9 +198,9 @@ double sphere_volume;
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
 #define ROBOT Puck
-const size_t distance_threshold_count = 5;
-double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0};
-#define TARGET_NODES 200 // Determines how many nodes the tree should have
+const size_t distance_threshold_count = 1;
+double distance_thresholds[distance_threshold_count] = {3.0132};
+#define TARGET_NODES 2000 // Determines how many nodes the tree should have
 #define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
@@ -217,8 +218,8 @@ double distance_thresholds[distance_threshold_count] = {1.0, 2.0, 3.0, 4.0, 5.0}
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
 const size_t distance_threshold_count = 1;
-double distance_thresholds[distance_threshold_count] = {1.1774}; //, 3.0335};
-#define TARGET_NODES 3000
+double distance_thresholds[distance_threshold_count] = {1.1774};//3.0132}; //, 1.1774, 3.0335};
+#define TARGET_NODES 1000
 #define START_RADIUS 50
 #define RADIUS_MULTIPLIER 1
 
@@ -254,12 +255,14 @@ double distance_thresholds[distance_threshold_count] = {1.1774}; //, 3.0335};
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
-			#define WORLD worlds::VanDenBergPassages
+			//#define WORLD worlds::VanDenBergPassages
+			#define WORLD worlds::StraightPassage
 		#else
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
-			#define WORLD worlds::VanDenBergPassagesExaggerated
+			//#define WORLD worlds::VanDenBergPassagesExaggerated
+			#define WORLD worlds::StraightPassage
 		#endif
 	#elif USE_OBSTACLES == 5
 		#define WORLD SimpleRaceTrack

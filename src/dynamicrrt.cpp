@@ -322,6 +322,7 @@ void setupParameters(string parameters_file) {
 	//Scale(2, 2) = 4662000;
 	//Scale(2, 2) = 4662000;
 	*/
+	/*
 	MotionNoiseCovariance(0,0) = 0.01;
 	MotionNoiseCovariance(1,1) = 0.001;
 	MotionNoiseCovariance(2,2) = 0.0001;
@@ -330,7 +331,7 @@ void setupParameters(string parameters_file) {
 	ObservationNoiseCovariance(1,1) = 0.0001;
 	ObservationNoiseCovariance(2,2) = 0.0001;
 	ObservationNoiseCovariance(3,3) = 0.0001;
-
+	*/
 	robot = new ROBOT(vis::cal_rotate);
 
 	control_penalty = 1;
@@ -3551,7 +3552,7 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		}
 
 		// Only continue if the configuration is not in collision
-		if (!collision_free(x_rand)) {
+		if (!collision_free(x_rand) || SKIP_CONNECTIONS) {
 			continue;
 		}
 		
