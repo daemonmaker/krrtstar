@@ -199,8 +199,8 @@ double sphere_volume;
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
 #define ROBOT Puck
 const size_t distance_threshold_count = 1;
-double distance_thresholds[distance_threshold_count] = {3.0132};
-#define TARGET_NODES 2000 // Determines how many nodes the tree should have
+double distance_thresholds[distance_threshold_count] = {2.7972}; // {1.1774 - 50%, 1.6634 - 75%, 2.1493 - 90%, 2.4463 - 95%, 2.7972 - 98%, 3.0132 - 99%}
+#define TARGET_NODES 500 // Determines how many nodes the tree should have
 #define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
@@ -308,6 +308,11 @@ typedef std::pair<double, control> control_time_t;
 typedef std::vector< state_time_t, Eigen::aligned_allocator<state_time_t> > state_time_list_t;
 typedef std::vector< control_time_t, Eigen::aligned_allocator<control_time_t> > control_time_list_t;
 typedef std::vector< node_id_t > path_t;
+
+struct nominal_trajectory_t {
+	state_time_list_t path;
+	control_time_list_t controls;
+};
 
 //BOUNDS x_bounds;
 BOUNDS u_bounds;
@@ -458,6 +463,7 @@ inline Eigen::Matrix<double,numRows1+numRows2, numCols1+numCols2> block(const Ei
 }
 
 void extractPath(const tree_t &tree, path_t * path);
+void createNominalTrajectory(const tree_t & tree, nominal_trajectory_t & traj);
 void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, control_time_list_t * controls);
 
 /**

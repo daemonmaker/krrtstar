@@ -132,12 +132,7 @@ void visualizeBelief(const state & state_nominal, const state &state_belief) {
 	vis::markBelief(x_pos, y_pos, z_pos);
 }
 */
-bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulation = VISUALIZE_SIMULATION, Robot * robot = NULL) {
-	// Simulate the trajectory
-	state_time_list_t path;
-	control_time_list_t controls;
-	createNominalTrajectory(tree, &path, &controls);
-
+bool simulate(const dynamics_t &dynamics, tree_t &tree, nominal_trajectory_t &traj, int &collision_step, bool visualize_simulation = VISUALIZE_SIMULATION, Robot * robot = NULL) {
 	double sqrt_deltaT = sqrt(deltaT);
 
 	double x_pos = 0, y_pos = 0, z_pos = 0;
@@ -153,7 +148,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 	Simulator sim(dynamics, state_belief, NOISE_FREE, visualize_simulation, robot);\
 	*/
 	bool free_path = true;
-	for (int current_step = 0; current_step < path.size() - 1; ++current_step) {
+	for (int current_step = 0; current_step < traj.path.size() - 1; ++current_step) {
 		/*
 		// Apply LQR control
 		u = -(dynamics.L)*(state_belief);
@@ -184,9 +179,10 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 			y += (dynamics.G)*q*sqrt_deltaT;
 		}
 
-		actual = (dynamics.X)*y + path[current_step].second;
+		actual = (dynamics.X)*y + traj.path[current_step].second;
 		if (!collision_free(actual, false, false)) {
 			free_path = false;
+			collision_step = current_step;
 			break;
 		}
 
@@ -201,7 +197,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, bool visualize_simulatio
 
 			vis::markActual(x_pos, y_pos, z_pos);
 
-			belief = (dynamics.Xhat)*y + path[current_step].second;
+			belief = (dynamics.Xhat)*y + traj.path[current_step].second;
 
 			//std::cout << "Belief: " << belief << std::endl;
 

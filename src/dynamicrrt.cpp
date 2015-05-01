@@ -3948,6 +3948,10 @@ void extractPath(const tree_t &tree, path_t * path) {
 	reverse(path->begin(), path->end());
 }
 
+void createNominalTrajectory(const tree_t & tree, nominal_trajectory_t & traj) {
+	createNominalTrajectory(tree, &(traj.path), &(traj.controls));
+}
+
 void createNominalTrajectory(const tree_t & tree, state_time_list_t * path, control_time_list_t * controls) {
 	path_t key_points;
 	extractPath(tree, &key_points);
@@ -4054,16 +4058,34 @@ bool planTrajectory(const string &experiment_name, tree_t & tree, double radius,
 	return result;
 }
 
-size_t testSolution(const dynamics_t &dynamics, tree_t & tree, int num_sims, bool visualize_simulation = VISUALIZE_SIMULATION) {
+size_t testSolution(const dynamics_t &dynamics, tree_t &tree, int num_sims, float &average_probability_of_collision, bool visualize_simulation = VISUALIZE_SIMULATION) {
 	// Attempt to follow the trajectory the specified number of times.
 	size_t good_runs = 0;
+	int collision_step = -1;
+	std::map<int, int> collision_stats;
+	nominal_trajectory_t nominal_trajectory;
+	createNominalTrajectory(tree, nominal_trajectory);
 	for (int count = 1; count <= num_sims; ++count) {
-		if (simulate(dynamics, tree, visualize_simulation, robot)) {
+		collision_step = -1;
+		if (simulate(dynamics, tree, nominal_trajectory, collision_step, visualize_simulation, robot)) {
 			++good_runs;
+		} else {
+			++collision_stats[collision_step];
 		}
 		std::cout << count << '/' << num_sims << " with " << good_runs << " successfully completed." << '\r';
 	}
 	std::cout << std::endl;
+
+	float total_collisions = 0;
+	std::cout << "Collision summary:";
+	for (std::map<int, int>::const_iterator iter = collision_stats.cbegin(); iter != collision_stats.cend(); ++iter) {
+		std::cout << "\tStep: " << iter->first << "\tCollisions: " << iter->second << std::endl;
+		total_collisions += iter->second;
+	}
+	total_collisions /= 100.0f;
+	average_probability_of_collision = total_collisions / (100.0*(nominal_trajectory.path.size()));
+	std::cout << "Average probability of collision per time step: " << average_probability_of_collision << std::endl;
+	std::cout << "Average probability of success per time step: " << (1.0f - average_probability_of_collision) << std::endl;
 
 	// Return the count of successful runs.
 	return good_runs;
@@ -4173,7 +4195,12 @@ x1[5] = 0;
 
 	char key;
 	bool tree_loaded = false;
-	string experiment_name = "test";
+	ostringstream experiment_name_os;
+	experiment_name_os << dynamics_type_to_name(DYNAMICS) << "_M_" << MotionNoiseCovariance(0,0) << '_' << MotionNoiseCovariance(0,1) << '_' << MotionNoiseCovariance(1,1) << "_N_" << ObservationNoiseCovariance(0,0) << '_' << ObservationNoiseCovariance(0,1) << '_' << ObservationNoiseCovariance(1,1);
+	string experiment_name = experiment_name_os.str();
+	std::cout << "Experiment name: " << experiment_name << std::endl;
+
+	//string experiment_name = "test";
 	do {
 		std::cout << ">> ";
 		key = _getchar();
@@ -4186,6 +4213,7 @@ x1[5] = 0;
 			std::cout << "c - Clear visualization" << std::endl;
 			std::cout << "t - Test solution." << std::endl;
 			std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
+			std::cout << "a - Analyze a set of experiments" << std::endl;
 		}
 
 		if (key == 'r') {
@@ -4216,6 +4244,9 @@ x1[5] = 0;
 			std::cout << "\tt - Visualize tree." << std::endl;
 			std::cout << "\tp - Visualize paths." << std::endl;
 			std::cout << "\ts - Visualize solution." << std::endl;
+			std::cout << "\tw - Warp environment." << std::endl;
+			std::cout << "\tw - Restore environment." << std::endl;
+			std::cout << "\tq - Cancel." << std::endl;
 			std::cout << ">> ";
 
 			key = _getchar();
@@ -4232,6 +4263,14 @@ x1[5] = 0;
 				vis::visualizeTree(tree);
 			}
 
+			if (key == 'w') {
+				vis::WarpEnvironment<3>(Rotation, Scale);
+			}
+
+			if (key == 'r') {
+				vis::RestoreEnvironment<3>();
+			}
+
 			key = NULL;
 		}
 
@@ -4240,19 +4279,21 @@ x1[5] = 0;
 		}
 
 		if (key == 's') {
+			int collision_step = -1;
 			robot->hide_model();
 			robot->show_collision_checker();
-			simulate(dynamics, tree, robot);
+			nominal_trajectory_t nominal_trajectory;
+			createNominalTrajectory(tree, nominal_trajectory);
+			simulate(dynamics, tree, nominal_trajectory, collision_step, true, robot);
 		}
 
 		if (key == 't') {
-			testSolution(dynamics, tree, NUM_SIMS, false);
+			float average_probability_of_collision = 0.0f;
+			testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
 		}
 
 		if (key == 'e') {
-			ostringstream experiment_name_os;
-			experiment_name_os << dynamics_type_to_name(DYNAMICS) << "_M_" << MotionNoiseCovariance(0,0) << '_' << MotionNoiseCovariance(0,1) << '_' << MotionNoiseCovariance(1,1) << "_N_" << ObservationNoiseCovariance(0,0) << '_' << ObservationNoiseCovariance(0,1) << '_' << ObservationNoiseCovariance(1,1);
-			experiment_name = experiment_name_os.str();
+			float average_probability_of_collision = 0.0f;
 
 			ostringstream experiment_base_name;
 			ostringstream current_experiment_name;
@@ -4284,7 +4325,7 @@ x1[5] = 0;
 					if (planTrajectory(current_experiment_name.str(), tree, radius, world->getDistanceThreshold(), FIND_FIRST_PATH_ONLY)) {
 						std::cout << "success." << std::endl << "Simulating... " << std::endl;
 
-						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, false);
+						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
 
 						simulation_record.clear();
 						simulation_record.str("");
@@ -4299,6 +4340,64 @@ x1[5] = 0;
 			}
 
 			fclose(simulation_log);
+		}
+
+		if (key == 'a') {
+			ostringstream current_experiment_name;
+			ostringstream collision_probabilities_record;
+
+			FILE * collision_probabilities_log = fopen(make_log_file_name(experiment_name, "collision_probabilities", "txt").c_str(), "w");
+			WRITE_HEADER(collision_probabilities_record, "experiment\tthreshold\tmean average probability of collision\tmean average probability of success", collision_probabilities_log);
+
+			int trajectories_found = 0;
+
+			// Iterate over thresholds
+			for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
+				float average_probability_of_collision = 0.0f;
+				float mean_average_probability_of_collision = 0.0f;
+
+				// Load each trajectory
+				for (size_t trajectory_count = 0; trajectory_count < TRAJECTORY_COUNT; ++trajectory_count) {
+					paths = 0;
+
+					vis::clearPaths();
+					vis::clearSimulation();
+
+					world->setDistanceThreshold(distance_thresholds[threshold_idx]);
+					current_experiment_name.clear();
+					current_experiment_name.str("");
+					current_experiment_name << experiment_name << "_trajectory_" << trajectory_count << "_threshold_" << world->getDistanceThreshold();
+
+					std::cout << "Reading " << current_experiment_name.str() << " tree." << std::endl;
+					read_tree(make_log_file_name(current_experiment_name.str(), "tree", "rrt"), &tree);
+
+					// If no trajectory was found move on
+					if (!(tree[0].cost_from_start < DBL_MAX)) {
+						std::cout << "No trajectory found... skipping.";
+						continue;
+					} else {
+						++trajectories_found;
+					}
+
+					average_probability_of_collision = 0.0f;
+					size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
+					mean_average_probability_of_collision += average_probability_of_collision;
+
+					fflush(collision_probabilities_log);
+				}
+
+				mean_average_probability_of_collision /= float(TRAJECTORY_COUNT);
+
+				std::cout << "Mean average probability of collision: " << std::fixed << std::setw(10) << std::setprecision(10) << mean_average_probability_of_collision << std::endl;
+				std::cout << "Mean average probability of success: " << (1.0f - mean_average_probability_of_collision) << std::endl;
+
+				collision_probabilities_record.clear();
+				collision_probabilities_record.str("");
+				collision_probabilities_record << std::fixed << std::setw(10) << std::setprecision(10) << experiment_name << '\t' << world->getDistanceThreshold()  << '\t' << mean_average_probability_of_collision << '\t' << (1.0f - mean_average_probability_of_collision) << std::endl;
+				fputs(collision_probabilities_record.str().c_str(), collision_probabilities_log);
+			}
+
+			fclose(collision_probabilities_log);
 		}
 	} while (key != 'q');
 
