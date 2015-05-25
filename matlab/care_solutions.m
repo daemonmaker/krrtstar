@@ -104,6 +104,13 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     %M(3,3) = 1;
     %M(3,4) = 2;
     %M(4,4) = 1
+    %M = chol(M*transpose(M))
+    M(1,1) = 0.01;
+    M(1,2) = 0;
+    M(2,2) = 1;
+    M(3,3) = 0.0001;
+    M(3,4) = 0.1;
+    M(4,4) = 0.0001;
     M = chol(M*transpose(M))
     N = N*0.1;
     N(1,1) = 0.5;
