@@ -549,6 +549,7 @@ protected:
 
 		CAL_SetViewParams(0, 0*(this->scaler), 0*(this->scaler), 375*(this->scaler), 0*(this->scaler), 0*(this->scaler), 0, 0, 1, 0);
 
+		/*
 		CAL_ShowView(1);
 
 		camera = S*R*camera;
@@ -556,6 +557,7 @@ protected:
 		up = S*R*up;
 		
 		CAL_SetViewParams(1, 0*(this->scaler), 0*(this->scaler), 375*(this->scaler), 0*(this->scaler), 0*(this->scaler), 0, 0, 1, 0);
+		*/
 	}
 };
 

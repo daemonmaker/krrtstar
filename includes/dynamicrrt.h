@@ -199,8 +199,8 @@ double sphere_volume;
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
 #define ROBOT Puck
 const size_t distance_threshold_count = 1;
-double distance_thresholds[distance_threshold_count] = {2.7972}; // {1.1774 - 50%, 1.6634 - 75%, 2.1493 - 90%, 2.4463 - 95%, 2.7972 - 98%, 3.0132 - 99%}
-#define TARGET_NODES 500 // Determines how many nodes the tree should have
+double distance_thresholds[distance_threshold_count] = {1.1774}; // {1.1774 - 50%, 1.6634 - 75%, 2.1493 - 90%, 2.4463 - 95%, 2.7972 - 98%, 3.0132 - 99%}
+#define TARGET_NODES 3000 // Determines how many nodes the tree should have
 #define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
@@ -254,9 +254,9 @@ double distance_thresholds[distance_threshold_count] = {1.1774};//3.0132}; //, 1
 		#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
-			//#define WORLD worlds::LudersBoxes
+			#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassages
-			#define WORLD worlds::StraightPassage
+			//#define WORLD worlds::StraightPassage
 		#else
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
@@ -297,7 +297,7 @@ FILE * experiment_log;
 
 const int NO_PARENT = -1;
 const int START_NODE_ID = 1;
-const int GOALD_NODE_ID = 0;
+const int GOAL_NODE_ID = 0;
 typedef int node_id_t;
 typedef double cost_t;
 typedef double location_t;
