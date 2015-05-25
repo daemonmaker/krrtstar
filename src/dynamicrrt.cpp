@@ -3603,7 +3603,9 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		while (!Q.empty() && Q.top().first < min_dist) {
 			node_id_t j = Q.top().second;
 			Q.pop();
-
+			if (j == GOAL_NODE_ID) { // The goal node should not be a parent.
+				continue;
+			}
 			if (connect(tree[j].x, x_rand, min(radius, min_dist - tree[j].cost_from_start), cost, tau, &actual_deltaT, NULL, NULL)) {
 				min_dist = tree[j].cost_from_start + cost;
 				x_near_id = j;
