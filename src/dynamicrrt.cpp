@@ -7,6 +7,7 @@
 #include <cassert>
 #include <string>
 #include <algorithm>
+#include <list>
 
 using namespace std;
 
@@ -392,7 +393,7 @@ void setupParameters(string parameters_file) {
 	Rotation(1, 1) = 0.0979;
 	*/
 
-	robot = new ROBOT(vis::cal_rotate, 5);
+	robot = new ROBOT(vis::cal_rotate);
 
 	u_bounds[0] = std::make_pair(-10, 10);
 	u_bounds[1] = std::make_pair(-10, 10);
@@ -4093,6 +4094,112 @@ size_t testSolution(const dynamics_t &dynamics, tree_t &tree, int num_sims, floa
 	return good_runs;
 }
 
+int countPaths(const string & path_log_file) {
+	path_log = fopen(path_log_file.c_str(), "rb");
+
+	double t = 0.0, t2;
+	int path_count = 0;
+	fread((void *)&t, sizeof(double), 1, path_log);
+	while (true) {
+		if (t == -1) {
+			path_count++;
+
+			fread((void *)&t, sizeof(double), 1, path_log);
+		}
+		for (int i = 0; i < X_DIM; i++) {
+			fread((void *)&t2, sizeof(double), 1, path_log);
+		}
+
+		fread((void *)&t, sizeof(double), 1, path_log);
+	}
+
+	return path_count;
+}
+
+void convertPathToTree(state_list_t state_list, tree_t & tree) {
+	Node goal_node;
+	goal_node.x = state_list.back();
+	goal_node.parent = state_list.size() - 1;
+	tree.push_back(goal_node);
+
+	Node start_node;
+	start_node.parent = NO_PARENT;
+	start_node.x = state_list.front();
+	if (state_list.size() != 2) { // There exist intermediary nodes
+		start_node.children.push_back(2);
+	} else { // There only exists a start and goal node
+		start_node.children.push_back(GOAL_NODE_ID);
+	}
+	tree.push_back(start_node);
+
+	// Remove the start and goal nodes so they are not added to the tree again
+	state_list.pop_front();
+	state_list.pop_back();
+
+	// Add the intermediary nodes
+	int parent_idx = START_NODE_ID;
+	int child_idx = parent_idx + 2; // Wrong in case of the node immediately before the goal but it will be rewired below
+	for (state_list_t::const_iterator state = state_list.cbegin(); state != state_list.cend(); ++state) {
+		Node new_node;
+		new_node.x = *state;
+		new_node.parent = parent_idx;
+		new_node.children.push_back(parent_idx+2);
+		tree.push_back(new_node);
+
+		++parent_idx;
+		if (parent_idx == 0) {
+			++parent_idx;
+		}
+	}
+
+	// Rewire the last node in the tree to the goal
+	tree.back().children.pop_back();
+	tree.back().children.push_back(GOAL_NODE_ID);
+}
+
+void loadPathsAsTrees(const string & path_log_file, state_lists_t & state_lists) {
+	path_log = fopen(path_log_file.c_str(), "rb");
+	state x;
+	state_list_t state_list;
+	double t = 0.0, t2;
+	int path_count = 0;
+
+	std::cout << "Paths read: " << 0 << '\r';
+
+	int fread_result = fread((void *)&t, sizeof(double), 1, path_log);
+	while (true) {
+		if (t == -1) { // Reached end of a path
+			state_lists.push_back(state_list);
+
+			state_list.clear();
+
+			fread_result = fread((void *)&t, sizeof(double), 1, path_log);
+
+			std::cout << "Paths read: " << state_lists.size() << '\r';
+			
+			if (fread_result == 0) {
+				break;
+			}
+
+			++path_count;
+		}
+
+		// Read next state
+		for (int i = 0; i < X_DIM; i++) {
+			fread((void *)&t2, sizeof(double), 1, path_log);
+			x[i] = t2;
+		}
+
+		// Add state to list
+		state_list.push_back(x);
+
+		// Read time associated with next state -- used to identify the end of a path at the top of the loop
+		fread((void *)&t, sizeof(double), 1, path_log);
+	}
+
+	std::cout << std::endl;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	string parameters_file = "C:\\Users\\Dustin\\Documents\\GitHub\\krrtstar\\krrtstar\\krrtstar\\parameters.txt";
@@ -4145,7 +4252,7 @@ x1[5] = 0;
 #endif
 
 #ifdef VISUALIZE_LOG
-	visualizeLog();
+	vis::visualizeLog();
 #endif
 
 #if MAKE_STILLS > -1
@@ -4201,6 +4308,7 @@ x1[5] = 0;
 	experiment_name_os << dynamics_type_to_name(DYNAMICS) << "_M_" << MotionNoiseCovariance(0,0) << '_' << MotionNoiseCovariance(0,1) << '_' << MotionNoiseCovariance(1,1) << "_N_" << ObservationNoiseCovariance(0,0) << '_' << ObservationNoiseCovariance(0,1) << '_' << ObservationNoiseCovariance(1,1);
 	string experiment_name = experiment_name_os.str();
 	std::cout << "Experiment name: " << experiment_name << std::endl;
+	ostringstream experiment_base_name;
 
 	//string experiment_name = "test";
 	do {
@@ -4211,11 +4319,12 @@ x1[5] = 0;
 			std::cout << "h - This help menu." << std::endl;
 			std::cout << "l - Load tree from file." << std::endl;
 			std::cout << "r - Run kRRT*." << std::endl;
-			std::cout << "v - Visualize" << std::endl;
-			std::cout << "c - Clear visualization" << std::endl;
+			std::cout << "v - Visualize." << std::endl;
+			std::cout << "c - Clear visualization." << std::endl;
 			std::cout << "t - Test solution." << std::endl;
 			std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
-			std::cout << "a - Analyze a set of experiments" << std::endl;
+			std::cout << "a - Analyze a set of experiments." << std::endl;
+			std::cout << "p - Analyze all paths from the experiments." << std::endl;
 		}
 
 		if (key == 'r') {
@@ -4223,7 +4332,27 @@ x1[5] = 0;
 		}
 
 		if (key == 'l') {
-			read_tree(make_log_file_name(experiment_name, "tree", "rrt"), &tree);
+			int trajectory_id = -1;
+			int threshold = -1;
+			experiment_base_name.clear();
+			experiment_base_name.str("");
+			experiment_base_name << experiment_name;
+
+			std::cout << "Trajectory id? ";
+			std::cin >> trajectory_id;
+			if (trajectory_id >= 0) {
+				experiment_base_name << "_trajectory_" << trajectory_id;
+				while ((threshold < 0) || (threshold > threshold_count-1)) {
+					std::cout << "Thresholds: " << std::endl;
+					for (int threshold_idx = 0; threshold_idx < threshold_count; ++threshold_idx) {
+						std::cout << '\t' << threshold_idx << " - " << thresholds[threshold_idx] << std::endl;
+					}
+					std::cout << "? ";
+					std::cin >> threshold;
+				}
+				experiment_base_name << "_threshold_" << thresholds[threshold];
+			}
+			read_tree(make_log_file_name(experiment_base_name.str(), "tree", "rrt"), &tree);
 			std::cout << "Number of nodes: " << tree.size() << std::endl;
 			std::cout << "Solution found? ";
 			if (tree[0].cost_from_start < DBL_MAX) {
@@ -4297,7 +4426,6 @@ x1[5] = 0;
 		if (key == 'e') {
 			float average_probability_of_collision = 0.0f;
 
-			ostringstream experiment_base_name;
 			ostringstream current_experiment_name;
 			ostringstream simulation_record;
 
@@ -4370,8 +4498,9 @@ x1[5] = 0;
 					current_experiment_name.str("");
 					current_experiment_name << experiment_name << "_trajectory_" << trajectory_count << "_threshold_" << world->getDistanceThreshold();
 
-					std::cout << "Reading " << current_experiment_name.str() << " tree." << std::endl;
-					read_tree(make_log_file_name(current_experiment_name.str(), "tree", "rrt"), &tree);
+					string tree_file_name = make_log_file_name(current_experiment_name.str(), "tree", "rrt");
+					std::cout << "Reading " << current_experiment_name.str() << " tree from (" << tree_file_name << ")." << std::endl;
+					read_tree(tree_file_name, &tree);
 
 					// If no trajectory was found move on
 					if (!(tree[0].cost_from_start < DBL_MAX)) {
@@ -4400,6 +4529,77 @@ x1[5] = 0;
 			}
 
 			fclose(collision_probabilities_log);
+		}
+
+		if (key == 'p') {
+			ostringstream current_experiment_name;
+			ostringstream simulation_record;
+
+			FILE * simulation_log = fopen(make_log_file_name(experiment_name, "path_simulations", "txt").c_str(), "w");
+			WRITE_HEADER(simulation_record, "experiment\tthreshold\ttrajectory_id\tnum_paths\tpath_id\tpath_length\tsimulations\tsuccessful", simulation_log);
+
+#define WRITE_SIMULATION_RECORD(threshold, trajectory_idx, num_paths, path_idx, path_length, simulation, successful)	\
+	simulation_record.clear();	\
+	simulation_record.str("");	\
+	simulation_record << experiment_name << '\t' << threshold << '\t' << trajectory_idx << '\t' << num_paths << '\t' << path_length << '\t' << simulation << '\t' << successful << std::endl;	\
+	fputs(simulation_record.str().c_str(), simulation_log);
+
+			const int path_count = 2;
+			const int path_idxs[path_count] = {1, -1}; // Simulate the first and last path
+			int current_path_idx = path_idxs[0];
+
+			float current_threshold = 0.0f;
+
+			for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
+				current_threshold = distance_thresholds[threshold_idx];
+
+				for (size_t trajectory_idx = 0; trajectory_idx < TRAJECTORY_COUNT; ++trajectory_idx) {
+					current_experiment_name.clear();
+					current_experiment_name.str("");
+					current_experiment_name << experiment_name << "_trajectory_" << trajectory_idx << "_threshold_" << current_threshold;
+
+					string path_log_file_name = make_log_file_name(current_experiment_name.str(), "path", "path");
+					std::cout << "Reading " << current_experiment_name.str() << " paths from (" << path_log_file_name << ")." << std::endl;
+
+					state_lists_t state_lists;
+					loadPathsAsTrees(path_log_file_name, state_lists);
+
+					// Determine whether any paths were found in the file
+					if (state_lists.size() == 0) {
+						std::cout << "No paths found... skipping.";
+
+						WRITE_SIMULATION_RECORD(current_threshold, trajectory_idx, 0, 0, 0, 0, 0);
+
+						continue;
+					}
+
+					for (int path_idx = 0; path_idx < path_count; ++path_idx) {
+						current_path_idx = path_idx;
+						if (path_idx < 0) {
+							current_path_idx = state_lists.size() + path_idx;
+						}
+						tree_t tree;
+						convertPathToTree(state_lists[current_path_idx], tree);
+
+						vis::clearPaths();
+						vis::clearSimulation();
+
+						world->setDistanceThreshold(current_threshold);
+
+						nominal_trajectory_t nominal_trajectory;
+						createNominalTrajectory(tree, nominal_trajectory);
+
+						float average_probability_of_collision = 0.0f;
+						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
+
+						WRITE_SIMULATION_RECORD(current_threshold, trajectory_idx, state_lists.size(), current_path_idx, tree.size(), NUM_SIMS, good_runs);
+
+						fflush(simulation_log);
+					}
+				}
+			}
+
+			fclose(simulation_log);
 		}
 	} while (key != 'q');
 

@@ -167,6 +167,10 @@ double control_penalty = 1;
 double control_penalty1 = 0;
 double sphere_volume;
 
+const int threshold_count = 6;
+                                          //50%,    75%,    90%,    95%,    98%     99%
+const double thresholds[threshold_count] = {1.1774, 1.6634, 2.1493, 2.4463, 2.7972, 3.0132};
+
 #if (DYNAMICS == QUADROTOR) // Quadrotor
 #define ROBOT Quadrotor
 #define POSITION_DIM 3
@@ -199,8 +203,8 @@ double sphere_volume;
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
 #define ROBOT Puck
 const size_t distance_threshold_count = 1;
-double distance_thresholds[distance_threshold_count] = {1.1774}; // {1.1774 - 50%, 1.6634 - 75%, 2.1493 - 90%, 2.4463 - 95%, 2.7972 - 98%, 3.0132 - 99%}
-#define TARGET_NODES 3000 // Determines how many nodes the tree should have
+double distance_thresholds[distance_threshold_count] = {3.0132}; // {1.1774 - 50%, 1.6634 - 75%, 2.1493 - 90%, 2.4463 - 95%, 2.7972 - 98%, 3.0132 - 99%}
+#define TARGET_NODES 2000 // Determines how many nodes the tree should have
 #define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
@@ -218,9 +222,9 @@ double distance_thresholds[distance_threshold_count] = {1.1774}; // {1.1774 - 50
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
 const size_t distance_threshold_count = 1;
-double distance_thresholds[distance_threshold_count] = {1.1774};//3.0132}; //, 1.1774, 3.0335};
-#define TARGET_NODES 1000
-#define START_RADIUS 50
+double distance_thresholds[distance_threshold_count] = {3.0132};//3.0132}; //, 1.1774, 3.0335};
+#define TARGET_NODES 2000
+#define START_RADIUS 200
 #define RADIUS_MULTIPLIER 1
 
 #define POLY_DEGREE 2
@@ -254,15 +258,19 @@ double distance_thresholds[distance_threshold_count] = {1.1774};//3.0132}; //, 1
 		#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
-			#define WORLD worlds::LudersBoxes
+			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassages
-			//#define WORLD worlds::StraightPassage
+			#define WORLD worlds::StraightPassage
+			//#define WORLD worlds::UPassage
+			//#define WORLD worlds::SPassage
 		#else
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassagesExaggerated
 			#define WORLD worlds::StraightPassage
+			//#define WORLD worlds::UPassage
+			//#define WORLD worlds::SPassage
 		#endif
 	#elif USE_OBSTACLES == 5
 		#define WORLD SimpleRaceTrack
@@ -397,6 +405,7 @@ struct Node {
 };
 
 typedef std::vector<Node, Eigen::aligned_allocator<Node> > tree_t;
+typedef std::vector<tree_t> trees_t;
 
 struct KD_Node {
 	node_id_t  parent_id;

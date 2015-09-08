@@ -15,9 +15,9 @@ function sigma = solve_gamma(n, lambda, epsilon)
         
         if res > 0
             top = sigma;
-            sigma = (sigma - bottom)/2 + bottom;
+            sigma = (sigma - bottom)/2.0 + bottom;
         else
             bottom = sigma;
-            sigma = (top - sigma)/2 + bottom;
+            sigma = (top - sigma)/2.0 + bottom;
         end
     end

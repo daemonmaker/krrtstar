@@ -1,3 +1,4 @@
+#include <list>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 #include <boost/function.hpp>
@@ -6,6 +7,8 @@
 #define __STATE_HPP__
 
 typedef Eigen::Matrix<double,X_DIM,1> state;
+typedef std::list< state, Eigen::aligned_allocator<state> > state_list_t;
+typedef std::vector< state_list_t, Eigen::aligned_allocator<state_list_t> > state_lists_t;
 
 inline double rand_value(double a, double b) {
 	return ((double) (rand()*(RAND_MAX+1) + rand()) / (RAND_MAX*(RAND_MAX + 2))) * (b - a) + a;
