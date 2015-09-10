@@ -10,7 +10,7 @@
 
 %% Select system and setup basic variables
 clear
-system = 'snglint2d'
+system = 'dblint2dpartiallyobservable'
 
 % Set dimensionality information for system
 if strcmp(system, 'snglint2d')
@@ -130,27 +130,48 @@ elseif strcmp(system, 'dblint2dpartiallyobservable')
     A(2, 4) = 1
     B(3, 1) = 1;
     B(4, 2) = 1
-    C(1, 3) = 1;
-    C(2, 4) = 1
-    multiplier = 1;
-    M(1,1) = 0.5;
-    M(1,2) = 1;
-    M(2,2) = 0.5;
+    C(1, 1) = 1;
+    C(2, 2) = 1
+
+    m_multiplier = 0.01;
+    M(1,1) = 1;
+    M(2,2) = 1;
     M(3,3) = 1;
-    M(3,4) = 2;
     M(4,4) = 1;
-    M = M*multiplier
-    M = chol(M*transpose(M))
-    N = N*0.1;
-    N(1,1) = 0.05;
-    N(2,2) = 0.05
+%     M(1,1) = 0.01;
+%     M(1,2) = 0.001;
+%     M(1,3) = 0.00001;
+%     M(3,1) = 0.00001;
+%     M(1,4) = 0.000001;
+%     M(4,1) = 0.000001;
+%     M(2,1) = 0.001;
+%     M(2,2) = 0.01;
+%     M(2,3) = 0.0001;
+%     M(3,2) = 0.0001;
+%     M(2,4) = 0.00001;
+%     M(4,2) = 0.00001;
+%     M(3,3) = 0.001;
+%     M(3,4) = 0.0001;
+%     M(4,3) = 0.0001;
+%     M(4,4) = 0.001;
+    M = M*m_multiplier
+    %[M,p] = chol(M*transpose(M)) % p = (positive value) indicates M is NOT positive semidefinite
+
+    n_multiplier = 0.01;
+    %N = N*0.1;
+    N(1,1) = 1;
+    N(2,2) = 1;
+%     N(1,1) = 0.00005;
+%     N(1,2) = 0.0000025;
+%     N(2,1) = 0.0000025;
+%     N(2,2) = 0.00005
+    N = N*n_multiplier
 end
 sys = ss(A, B, C, D)
 minreal(sys)
 
 %% Solve CARE
-[P, L, G] = care(A, transpose(C)*inv(transpose(N)), M*transpose(M));
-P
+[P, L, G, report] = care(A, transpose(C)*inv(transpose(N)), M*transpose(M))
 
 %% Calculate K
 K = P*transpose(C)*inv(N*transpose(N))
@@ -161,15 +182,15 @@ K = P*transpose(C)*inv(N*transpose(N))
 % the same Q as used in the paper draft.
 
 Q_penalty = eye(X_DIM, X_DIM)*0.1
-N_penalty = zeros(X_DIM, U_DIM)*0.1
+N_penalty = zeros(X_DIM, U_DIM)
 R_penalty = eye(U_DIM, U_DIM)*0.1
 [L, S, e] = lqr(A, B, Q_penalty, R_penalty, N_penalty);
 L
 
 %% Setup combined system
-BL = B*L;
-KC = K*C;
-KN = K*N;
+BL = B*L
+KC = K*C
+KN = K*N
 F = [A -BL; KC (A - BL - KC)]
 G = [M zeros(X_DIM, size(KN, 2)); zeros(size(KN, 1), X_DIM) KN]
 

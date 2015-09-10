@@ -4342,15 +4342,15 @@ x1[5] = 0;
 			std::cin >> trajectory_id;
 			if (trajectory_id >= 0) {
 				experiment_base_name << "_trajectory_" << trajectory_id;
-				while ((threshold < 0) || (threshold > threshold_count-1)) {
+				while ((threshold < 0) || (threshold > all_distance_threshold_count-1)) {
 					std::cout << "Thresholds: " << std::endl;
-					for (int threshold_idx = 0; threshold_idx < threshold_count; ++threshold_idx) {
-						std::cout << '\t' << threshold_idx << " - " << thresholds[threshold_idx] << std::endl;
+					for (int threshold_idx = 0; threshold_idx < all_distance_threshold_count; ++threshold_idx) {
+						std::cout << '\t' << threshold_idx << " - " << all_distance_thresholds[threshold_idx] << std::endl;
 					}
 					std::cout << "? ";
 					std::cin >> threshold;
 				}
-				experiment_base_name << "_threshold_" << thresholds[threshold];
+				experiment_base_name << "_threshold_" << all_distance_thresholds[threshold];
 			}
 			read_tree(make_log_file_name(experiment_base_name.str(), "tree", "rrt"), &tree);
 			std::cout << "Number of nodes: " << tree.size() << std::endl;
@@ -4541,17 +4541,17 @@ x1[5] = 0;
 #define WRITE_SIMULATION_RECORD(threshold, trajectory_idx, num_paths, path_idx, path_length, simulation, successful)	\
 	simulation_record.clear();	\
 	simulation_record.str("");	\
-	simulation_record << experiment_name << '\t' << threshold << '\t' << trajectory_idx << '\t' << num_paths << '\t' << path_length << '\t' << simulation << '\t' << successful << std::endl;	\
+	simulation_record << experiment_name << '\t' << threshold << '\t' << trajectory_idx << '\t' << num_paths << '\t' << path_idx << '\t' << path_length << '\t' << simulation << '\t' << successful << std::endl;	\
 	fputs(simulation_record.str().c_str(), simulation_log);
 
 			const int path_count = 2;
-			const int path_idxs[path_count] = {1, -1}; // Simulate the first and last path
+			const int path_idxs[path_count] = {0, -1}; // Simulate the first and last path
 			int current_path_idx = path_idxs[0];
 
 			float current_threshold = 0.0f;
 
-			for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
-				current_threshold = distance_thresholds[threshold_idx];
+			for (size_t threshold_idx = 0; threshold_idx < all_distance_threshold_count; ++threshold_idx) {
+				current_threshold = all_distance_thresholds[threshold_idx];
 
 				for (size_t trajectory_idx = 0; trajectory_idx < TRAJECTORY_COUNT; ++trajectory_idx) {
 					current_experiment_name.clear();
@@ -4559,7 +4559,7 @@ x1[5] = 0;
 					current_experiment_name << experiment_name << "_trajectory_" << trajectory_idx << "_threshold_" << current_threshold;
 
 					string path_log_file_name = make_log_file_name(current_experiment_name.str(), "path", "path");
-					std::cout << "Reading " << current_experiment_name.str() << " paths from (" << path_log_file_name << ")." << std::endl;
+					std::cout << "Reading paths from " << path_log_file_name << "." << std::endl;
 
 					state_lists_t state_lists;
 					loadPathsAsTrees(path_log_file_name, state_lists);
@@ -4574,11 +4574,13 @@ x1[5] = 0;
 					}
 
 					for (int path_idx = 0; path_idx < path_count; ++path_idx) {
-						current_path_idx = path_idx;
-						if (path_idx < 0) {
-							current_path_idx = state_lists.size() + path_idx;
+						std::cout << "path_idx: " << path_idxs[path_idx] << std::endl;
+						current_path_idx = path_idxs[path_idx];
+						if (current_path_idx < 0) {
+							current_path_idx = state_lists.size() + current_path_idx;
 						}
 						tree_t tree;
+						std::cout << "current_path_idx: " << current_path_idx << "\tstate_lists.size(): " << state_lists[current_path_idx].size() << std::endl;
 						convertPathToTree(state_lists[current_path_idx], tree);
 
 						vis::clearPaths();

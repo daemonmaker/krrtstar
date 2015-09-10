@@ -167,9 +167,9 @@ double control_penalty = 1;
 double control_penalty1 = 0;
 double sphere_volume;
 
-const int threshold_count = 6;
+const int all_distance_threshold_count = 6;
                                           //50%,    75%,    90%,    95%,    98%     99%
-const double thresholds[threshold_count] = {1.1774, 1.6634, 2.1493, 2.4463, 2.7972, 3.0132};
+const double all_distance_thresholds[all_distance_threshold_count] = {1.1774, 1.6634, 2.1493, 2.4463, 2.7972, 3.0132};
 
 #if (DYNAMICS == QUADROTOR) // Quadrotor
 #define ROBOT Quadrotor
@@ -260,9 +260,9 @@ double distance_thresholds[distance_threshold_count] = {3.0132};//3.0132}; //, 1
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassages
-			#define WORLD worlds::StraightPassage
+			//#define WORLD worlds::StraightPassage
 			//#define WORLD worlds::UPassage
-			//#define WORLD worlds::SPassage
+			#define WORLD worlds::SPassage
 		#else
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
