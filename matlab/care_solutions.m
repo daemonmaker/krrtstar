@@ -10,15 +10,20 @@
 
 %% Select system and setup basic variables
 clear
-system = 'dblint2dpartiallyobservable'
+system = 'snglint2dpartiallyobservable'
 
 % Set dimensionality information for system
-if strcmp(system, 'snglint2d')
+if strcmp(system, 'snglint2dfullyobservable')
     % Single integrator
     X_DIM = 2
     U_DIM = 2
     Z_DIM = 2
-elseif strcmp(system, 'dblint1d')
+elseif strcmp(system, 'snglint2dpartiallyobservable')
+    % Single integrator
+    X_DIM = 2
+    U_DIM = 1
+    Z_DIM = 1
+elseif strcmp(system, 'dblint1dfullyobservable')
     % Double integrator 1D
     X_DIM = 2
     U_DIM = 1
@@ -45,7 +50,7 @@ N = eye(Z_DIM, Z_DIM);
 R = zeros(U_DIM, U_DIM);
 
 %% Setup system
-if strcmp(system, 'snglint2d')
+if strcmp(system, 'snglint2dfullyobservable')
     B(1, 1) = 1;
     B(2, 2) = 1
     C(1, 1) = 1;
@@ -82,37 +87,88 @@ if strcmp(system, 'snglint2d')
     %M(2,2) = M(2,2)*1
     
     N = N*0.5
-elseif strcmp(system, 'dblint1d')
+
+elseif strcmp(system, 'snglint2dpartiallyobservable')
+    % INCOMPLETE
+    
+    B(1, 1) = 1
+    C(1, 1) = 1
+    R = eye(U_DIM)*0.25;
+    %R = ones(U_DIM, U_DIM);
+    %R(1, 2) = 0.25;
+    %R(2, 1) = 0.25
+
+    %M(1, 1) = 10;
+    %M(1, 1) = 0.00001;
+    %M(1, 2) = 0;
+    %M(2, 1) = 0.0001;
+    %M(2, 2) = 0.00001;
+    %N(1, 1) = 0;
+    %N(2, 2) = 0;
+    
+    %M(1,1) = M(1,1)*0.1;
+    %M(1,2) = 0.1;
+    %M(2,1) = 0.1;
+    %M(2,2) = M(2,2)*1
+
+    % Scale and rotate
+    multiplier = 1
+    %M(1,1) = M(1,1)*0.1*multiplier;
+    %M(1,2) = 0.01*multiplier;
+    %M(2,1) = 0.01*multiplier;
+    %M(2,2) = M(2,2)*1*multiplier
+    
+    % Scale only
+    %M(1,1) = M(1,1)*0.1;
+    %M(1,2) = 0.1;
+    %M(2,1) = 0.1;
+    %M(2,2) = M(2,2)*1
+    
+    N = N*0.5
+
+elseif strcmp(system, 'dblint1dfullyobservable')
     A(1, 2) = 1
     B(2, 1) = 1
     C(1, 1) = 1
     C(2, 2) = 1
     R = ones(U_DIM, U_DIM)
-elseif strcmp(system, 'dblint2dfully')
-    A(1, 3) = 1;
-    A(2, 4) = 1
-    B(3, 1) = 1;
-    B(4, 2) = 1
-    C = eye(4)
-    M(1,1) = M(1,1)*0.1;
-    M(1,2) = 0.1;
-    M(2,1) = 0.1;
-    M(2,2) = M(2,2)*1
-    M = M*0
-    N = N*0
+
 elseif strcmp(system, 'dblint2dfullyobservable')
     A(1, 3) = 1;
     A(2, 4) = 1
     B(3, 1) = 1;
     B(4, 2) = 1
     C = eye(4)
-    %M(1,1) = 0.5;
-    %M(1,2) = 1;
-    %M(2,2) = 0.5;
-    %M(3,3) = 1;
-    %M(3,4) = 2;
-    %M(4,4) = 1
-    %M = chol(M*transpose(M))
+    m_multiplier = 10;
+    
+    % Enlarged uniformly - USED FOR EXPERIMENTS DBLINT2DFOv1
+%     M(1,1) = 1;
+%     M(2,2) = 1;
+%     M(3,3) = 1;
+%     M(4,4) = 1;
+ 
+    % Rotated & skewed - USED FOR EXPERIMENTS DBLINT2DFOv2
+    M(1,1) = 0.1;
+    M(2,2) = 1;
+    M(3,3) = 1;
+    M(4,4) = 0.1;
+ 
+    % Rotated & skewed - NOT USED
+%     M(1,1) = 1;
+%     M(1,2) = 0.1;
+%     M(2,1) = M(1,2);
+%     M(1,3) = 0.01;
+%     M(3,1) = M(1,3);
+%     M(1,4) = 0.001;
+%     M(4,1) = M(1,4);
+%     M(2,2) = 0.5;
+%     M(3,3) = 1;
+%     M(3,4) = 0.1;
+%     M(4,4) = 0.1;
+
+    M = M*m_multiplier;
+    M_orig = M
+    M = chol(M*transpose(M))
     
     %M(1,1) = 0.01;
     %M(1,2) = 0;
@@ -125,6 +181,7 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     %N = N*0.1;
     N(1,1) = 0.5;
     N(2,2) = 0.5
+
 elseif strcmp(system, 'dblint2dpartiallyobservable')
     A(1, 3) = 1;
     A(2, 4) = 1
@@ -166,12 +223,13 @@ elseif strcmp(system, 'dblint2dpartiallyobservable')
 %     N(2,1) = 0.0000025;
 %     N(2,2) = 0.00005
     N = N*n_multiplier
+
 end
 sys = ss(A, B, C, D)
 minreal(sys)
 
 %% Solve CARE
-[P, L, G, report] = care(A, transpose(C)*inv(transpose(N)), M*transpose(M))
+[P, L, G, report] = care(transpose(A), transpose(C)*inv(transpose(N)), M*transpose(M))
 
 %% Calculate K
 K = P*transpose(C)*inv(N*transpose(N))
