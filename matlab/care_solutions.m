@@ -10,7 +10,7 @@
 
 %% Select system and setup basic variables
 clear
-system = 'snglint2dpartiallyobservable'
+system = 'dblint2dpartiallyobservable'
 
 % Set dimensionality information for system
 if strcmp(system, 'snglint2dfullyobservable')
@@ -59,38 +59,27 @@ if strcmp(system, 'snglint2dfullyobservable')
     %R = ones(U_DIM, U_DIM);
     %R(1, 2) = 0.25;
     %R(2, 1) = 0.25
+    
+    % Enlarged uniformly - USED FOR EXPERIMENTS SNGLINT2DFOv1
+    m_multiplier = 1
+    M(1,1) = 1;
+    M(2,2) = 1;
+    n_multiplier = 1
+    N = N*0.5;
+    N(1,1) = 0.25;
+    
+    % Skewed - USED FOR EXPERIMENTS SNGLINT2DFOv2
+%     m_multiplier = 0.01
+%     M(1,1) = 0.1;
+%     M(2,2) = 1;
+%     n_multiplier = 1
+%     N = N*0.5;
+%     N(1,1) = 0.25;
 
-    %M(1, 1) = 10;
-    %M(1, 1) = 0.00001;
-    %M(1, 2) = 0;
-    %M(2, 1) = 0.0001;
-    %M(2, 2) = 0.00001;
-    %N(1, 1) = 0;
-    %N(2, 2) = 0;
-    
-    %M(1,1) = M(1,1)*0.1;
-    %M(1,2) = 0.1;
-    %M(2,1) = 0.1;
-    %M(2,2) = M(2,2)*1
-
-    % Scale and rotate
-    multiplier = 1
-    %M(1,1) = M(1,1)*0.1*multiplier;
-    %M(1,2) = 0.01*multiplier;
-    %M(2,1) = 0.01*multiplier;
-    %M(2,2) = M(2,2)*1*multiplier
-    
-    % Scale only
-    %M(1,1) = M(1,1)*0.1;
-    %M(1,2) = 0.1;
-    %M(2,1) = 0.1;
-    %M(2,2) = M(2,2)*1
-    
-    N = N*0.5
 
 elseif strcmp(system, 'snglint2dpartiallyobservable')
     % INCOMPLETE
-    
+   
     B(1, 1) = 1
     C(1, 1) = 1
     R = eye(U_DIM)*0.25;
@@ -98,31 +87,7 @@ elseif strcmp(system, 'snglint2dpartiallyobservable')
     %R(1, 2) = 0.25;
     %R(2, 1) = 0.25
 
-    %M(1, 1) = 10;
-    %M(1, 1) = 0.00001;
-    %M(1, 2) = 0;
-    %M(2, 1) = 0.0001;
-    %M(2, 2) = 0.00001;
-    %N(1, 1) = 0;
-    %N(2, 2) = 0;
-    
-    %M(1,1) = M(1,1)*0.1;
-    %M(1,2) = 0.1;
-    %M(2,1) = 0.1;
-    %M(2,2) = M(2,2)*1
-
-    % Scale and rotate
-    multiplier = 1
-    %M(1,1) = M(1,1)*0.1*multiplier;
-    %M(1,2) = 0.01*multiplier;
-    %M(2,1) = 0.01*multiplier;
-    %M(2,2) = M(2,2)*1*multiplier
-    
-    % Scale only
-    %M(1,1) = M(1,1)*0.1;
-    %M(1,2) = 0.1;
-    %M(2,1) = 0.1;
-    %M(2,2) = M(2,2)*1
+    m_multiplier = 1
     
     N = N*0.5
 
@@ -139,21 +104,23 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     B(3, 1) = 1;
     B(4, 2) = 1
     C = eye(4)
-    m_multiplier = 10;
     
     % Enlarged uniformly - USED FOR EXPERIMENTS DBLINT2DFOv1
+%     m_multiplier = 1;
 %     M(1,1) = 1;
 %     M(2,2) = 1;
 %     M(3,3) = 1;
 %     M(4,4) = 1;
  
     % Rotated & skewed - USED FOR EXPERIMENTS DBLINT2DFOv2
+    m_multiplier = 10;
     M(1,1) = 0.1;
     M(2,2) = 1;
     M(3,3) = 1;
     M(4,4) = 0.1;
  
     % Rotated & skewed - NOT USED
+%     m_multiplier = 0.1;
 %     M(1,1) = 1;
 %     M(1,2) = 0.1;
 %     M(2,1) = M(1,2);
@@ -189,12 +156,27 @@ elseif strcmp(system, 'dblint2dpartiallyobservable')
     B(4, 2) = 1
     C(1, 1) = 1;
     C(2, 2) = 1
+ 
+    % Enlarged uniformly - USED FOR EXPERIMENTS DBLINT2DPOv1
+%     m_multiplier = 1;
+%     M(1,1) = 1;
+%     M(2,2) = 1;
+%     M(3,3) = 1;
+%     M(4,4) = 1;
+%     n_multiplier = 0.01;
+%     N(1,1) = 1;
+%     N(2,2) = 1;
 
-    m_multiplier = 0.01;
-    M(1,1) = 1;
+    % Rotated & skewed - USED FOR EXPERIMENTS DBLINT2DFOv2
+    m_multiplier = 10;
+    M(1,1) = 0.1;
     M(2,2) = 1;
-    M(3,3) = 1;
+    M(3,3) = 0.1;
     M(4,4) = 1;
+    n_multiplier = 0.01;
+    N(1,1) = 1;
+    N(2,2) = 1;
+
 %     M(1,1) = 0.01;
 %     M(1,2) = 0.001;
 %     M(1,3) = 0.00001;
@@ -211,20 +193,27 @@ elseif strcmp(system, 'dblint2dpartiallyobservable')
 %     M(3,4) = 0.0001;
 %     M(4,3) = 0.0001;
 %     M(4,4) = 0.001;
-    M = M*m_multiplier
     %[M,p] = chol(M*transpose(M)) % p = (positive value) indicates M is NOT positive semidefinite
 
-    n_multiplier = 0.01;
+    
     %N = N*0.1;
-    N(1,1) = 1;
-    N(2,2) = 1;
+
 %     N(1,1) = 0.00005;
 %     N(1,2) = 0.0000025;
 %     N(2,1) = 0.0000025;
 %     N(2,2) = 0.00005
-    N = N*n_multiplier
 
 end
+
+% Only needed if M & N are covariance matrices
+M = M*m_multiplier;
+% M_orig = M
+% M = chol(M*transpose(M))
+% 
+N = N*n_multiplier;
+% N_orig = N
+% N = chol(N*transpose(N))
+
 sys = ss(A, B, C, D)
 minreal(sys)
 
