@@ -100,7 +100,7 @@ std::string dynamics_type_to_name(const int id) {
 // Flags to control various features of the program
 //#define EXPERIMENT
 #define FIND_FIRST_PATH_ONLY false
-#define TRAJECTORY_COUNT 30 // Number of paths to plan duing experiments
+int TRAJECTORY_COUNT = 30; // Number of paths to plan duing experiments
 #define NUM_SIMS 100 // Number of times to simulate paths duing experiments
 #define USE_SET_CLEARANCE 0 // Whether to grow the obstacles using callisto's set clearance. Cannot be used with USE_THRESHOLDS.
 #define USE_THRESHOLDS 1 // Whether to use distance thresholds instead of collisions checks during trajectory planning. Cannot be used with USE_SET_CLEARANCE.
@@ -170,6 +170,8 @@ double sphere_volume;
 const int all_distance_threshold_count = 6;
                                           //50%,    75%,    90%,    95%,    98%     99%
 const double all_distance_thresholds[all_distance_threshold_count] = {1.1774, 1.6634, 2.1493, 2.4463, 2.7972, 3.0132};
+size_t distance_threshold_count = 1;
+double distance_thresholds[all_distance_threshold_count] = {3.0132, 0, 0, 0, 0, 0};
 
 #if (DYNAMICS == QUADROTOR) // Quadrotor
 #define ROBOT Quadrotor
@@ -202,9 +204,7 @@ const double all_distance_thresholds[all_distance_threshold_count] = {1.1774, 1.
 
 #elif (DYNAMICS == DOUBLE_INTEGRATOR_2D) // 2D double integrator
 #define ROBOT Puck
-const size_t distance_threshold_count = 1;
-double distance_thresholds[distance_threshold_count] = {3.0132}; // {1.1774 - 50%, 1.6634 - 75%, 2.1493 - 90%, 2.4463 - 95%, 2.7972 - 98%, 3.0132 - 99%}
-#define DEFAULT_TARGET_NODES 500 // Determines how many nodes the tree should have
+#define DEFAULT_TARGET_NODES 10000 // Determines how many nodes the tree should have
 #define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
@@ -221,8 +221,6 @@ double distance_thresholds[distance_threshold_count] = {3.0132}; // {1.1774 - 50
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
-const size_t distance_threshold_count = 1;
-double distance_thresholds[distance_threshold_count] = {3.0132};//3.0132}; //, 1.1774, 3.0335};
 #define DEFAULT_TARGET_NODES 500
 #define START_RADIUS 200
 #define RADIUS_MULTIPLIER 1

@@ -446,7 +446,9 @@ void setupParameters(string parameters_file) {
 	readMatlabArray(pmat, "B", B);
 	readMatlabArray(pmat, "C", C);
 	readMatlabArray(pmat, "M", MotionNoiseCovariance);
+	MotionNoiseCovariance *= MotionNoiseCovariance.transpose();
 	readMatlabArray(pmat, "N", ObservationNoiseCovariance);
+	ObservationNoiseCovariance *= ObservationNoiseCovariance.transpose();
 	readMatlabArray(pmat, "K", K);
 	readMatlabArray(pmat, "L", L);
 	readMatlabArray(pmat, "R_tilde", R);
@@ -4204,8 +4206,58 @@ void loadPathsAsTrees(const string & path_log_file, state_lists_t & state_lists)
 	std::cout << std::endl;
 }
 
-void printExperimentProperties() {
+void printHelpMenu() {
+	std::cout << "h - This help menu." << std::endl;
+	std::cout << "l - Load tree from file." << std::endl;
+	std::cout << "r - Run kRRT*." << std::endl;
+	std::cout << "v - Visualize." << std::endl;
+	std::cout << "c - Clear visualization." << std::endl;
+	std::cout << "t - Test solution." << std::endl;
+	std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
+	std::cout << "a - Analyze a set of experiments." << std::endl;
+	std::cout << "p - Analyze all paths from the experiments." << std::endl;
+	std::cout << "x - Manage experiment properties such as the number of nodes to expand." << std::endl;
+}
+
+void printExperimentProperties(const string & experiment_name) {
+	std::cout << "Experiment name: " << experiment_name << std::endl;
+	std::cout << "TRAJECTORY_COUNT: " << TRAJECTORY_COUNT << std::endl;
 	std::cout << "TARGET_NODES: " << TARGET_NODES << std::endl;
+}
+
+void printThresholds()  {
+	std::cout << "Thresholds: " << std::endl;
+	for (int threshold_idx = 0; threshold_idx < all_distance_threshold_count; ++threshold_idx) {
+		std::cout << '\t' << threshold_idx << " - " << all_distance_thresholds[threshold_idx] << std::endl;
+	}
+}
+
+void setThresholds(bool limit_to_one=false) {
+	int temp = -1;
+	bool okay = false;
+	do {
+		printThresholds();
+		if (limit_to_one) {
+			std::cout << "Set threshold? ";
+		} else {
+			std::cout << all_distance_threshold_count << " for all." << std::endl << std::endl;
+			std::cout << "Set threshold(s)? ";
+		}
+		std::cin >> temp;
+
+		okay = !((temp < 0) || (temp > all_distance_threshold_count-1));
+		if (!limit_to_one && temp == all_distance_threshold_count) {
+			okay = true;
+		}
+	} while (!okay);
+
+	if (limit_to_one || temp != all_distance_threshold_count) {
+		distance_threshold_count = 1;
+		distance_thresholds[0] = all_distance_thresholds[temp];
+	} else {
+		distance_threshold_count = all_distance_threshold_count;
+		memcpy(distance_thresholds, all_distance_thresholds, sizeof(double)*all_distance_threshold_count);
+	}
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -4315,39 +4367,34 @@ x1[5] = 0;
 	ostringstream experiment_name_os;
 	experiment_name_os << dynamics_type_to_name(DYNAMICS) << "_M_" << MotionNoiseCovariance(0,0) << '_' << MotionNoiseCovariance(0,1) << '_' << MotionNoiseCovariance(1,1) << "_N_" << ObservationNoiseCovariance(0,0) << '_' << ObservationNoiseCovariance(0,1) << '_' << ObservationNoiseCovariance(1,1);
 	string experiment_name = experiment_name_os.str();
-	std::cout << "Experiment name: " << experiment_name << std::endl;
 	ostringstream experiment_base_name;
 
 	//string experiment_name = "test";
+	printExperimentProperties(experiment_name);
+	std::cout << std::endl;
+	printHelpMenu();
 	do {
 		std::cout << ">> ";
 		key = _getchar();
 
 		if (key == 'h') {
-			std::cout << "h - This help menu." << std::endl;
-			std::cout << "l - Load tree from file." << std::endl;
-			std::cout << "r - Run kRRT*." << std::endl;
-			std::cout << "v - Visualize." << std::endl;
-			std::cout << "c - Clear visualization." << std::endl;
-			std::cout << "t - Test solution." << std::endl;
-			std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
-			std::cout << "a - Analyze a set of experiments." << std::endl;
-			std::cout << "p - Analyze all paths from the experiments." << std::endl;
-			std::cout << "x - Manage experiment properties such as the number of nodes to expand." << std::endl;
+			printHelpMenu();
 		}
 
 		if (key == 'x') {
-			printExperimentProperties();
+			printExperimentProperties(experiment_name);
 
 			std::cout << std::endl;
-			std::cout << "e - Set the number of nodes to expand." << std::endl;
+			std::cout << "e - Set the number of nodes to expand: " << TARGET_NODES << std::endl;
+			std::cout << "t - Set the number of trajectories to plan: " << TRAJECTORY_COUNT << std::endl;
 			std::cout << ">> ";
 			key = _getchar();
 
+			int temp = -1;
+
 			if (key == 'e') {
-				int temp;
 				do {
-					std::cout << "Set TARGET_NODES (-1 to cancel)>> ";
+					std::cout << "Set TARGET_NODES (-1 to cancel) >> ";
 					std::cin >> temp;
 				} while(temp < 1 && temp != -1);
 				if (temp != -1) {
@@ -4356,7 +4403,17 @@ x1[5] = 0;
 				key = 'p';
 			}
 
-			printExperimentProperties();
+			if (key == 't') {
+				do {
+					std::cout << "Set TRAJECTORY_COUNT (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 1 && temp != -1);
+				if (temp != -1) {
+					TRAJECTORY_COUNT = temp;
+				}
+			}
+
+			printExperimentProperties(experiment_name);
 
 			key = NULL;
 		}
@@ -4378,15 +4435,8 @@ x1[5] = 0;
 			std::cin >> trajectory_id;
 			if (trajectory_id >= 0) {
 				experiment_base_name << "_trajectory_" << trajectory_id;
-				while ((threshold < 0) || (threshold > all_distance_threshold_count-1)) {
-					std::cout << "Thresholds: " << std::endl;
-					for (int threshold_idx = 0; threshold_idx < all_distance_threshold_count; ++threshold_idx) {
-						std::cout << '\t' << threshold_idx << " - " << all_distance_thresholds[threshold_idx] << std::endl;
-					}
-					std::cout << "? ";
-					std::cin >> threshold;
-				}
-				experiment_base_name << "_threshold_" << all_distance_thresholds[threshold];
+				setThresholds(true);
+				experiment_base_name << "_threshold_" << distance_thresholds[0];
 			}
 			read_tree(make_log_file_name(experiment_base_name.str(), "tree", "rrt"), &tree);
 			std::cout << "Number of nodes: " << tree.size() << std::endl;
@@ -4472,6 +4522,8 @@ x1[5] = 0;
 		}
 
 		if (key == 'e') {
+			setThresholds(false);
+
 			float average_probability_of_collision = 0.0f;
 
 			ostringstream current_experiment_name;
@@ -4487,7 +4539,7 @@ x1[5] = 0;
 				experiment_base_name << experiment_name << "_trajectory_" << trajectory_count;
 
 				// Iterate over thresholds
-				for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
+				for (size_t threshold_idx = distance_threshold_count-1; threshold_idx >= 0; --threshold_idx) {
 					paths = 0;
 
 					vis::clearPaths();
@@ -4501,7 +4553,9 @@ x1[5] = 0;
 					std::cout << "Planning for " << current_experiment_name.str() << "... ";
 
 					if (planTrajectory(current_experiment_name.str(), tree, radius, world->getDistanceThreshold(), FIND_FIRST_PATH_ONLY)) {
-						std::cout << "success." << std::endl << "Simulating... " << std::endl;
+						std::cout << "success." << std::endl;
+						/*
+						std::cout << "Simulating... " << std::endl;
 
 						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
 
@@ -4509,6 +4563,7 @@ x1[5] = 0;
 						simulation_record.str("");
 						simulation_record << current_experiment_name.str() << '\t' << NUM_SIMS << '\t' << good_runs << '\t' << trajectory_count << '\t' << world->getDistanceThreshold() << std::endl;
 						fputs(simulation_record.str().c_str(), simulation_log);
+						*/
 					} else {
 						std::cout << "failed" << std::endl;
 					}

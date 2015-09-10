@@ -633,7 +633,7 @@ private:
 
 public:
 	SPassage(int base_group)
-		: World(base_group), scaler(1.25)
+		: World(base_group), scaler(1.0)
 	{
 		this->width = 115;
 		this->height = 100;
