@@ -4068,6 +4068,10 @@ size_t testSolution(const dynamics_t &dynamics, tree_t &tree, int num_sims, floa
 	std::map<int, int> collision_stats;
 	nominal_trajectory_t nominal_trajectory;
 	createNominalTrajectory(tree, nominal_trajectory);
+	if (nominal_trajectory.path.size() == 0) {
+		std::cout << "No path found." << std::endl;
+		return 0;
+	}
 	for (int count = 1; count <= num_sims; ++count) {
 		collision_step = -1;
 		if (simulate(dynamics, tree, nominal_trajectory, collision_step, visualize_simulation, robot)) {
@@ -4200,6 +4204,10 @@ void loadPathsAsTrees(const string & path_log_file, state_lists_t & state_lists)
 	std::cout << std::endl;
 }
 
+void printExperimentProperties() {
+	std::cout << "TARGET_NODES: " << TARGET_NODES << std::endl;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	string parameters_file = "C:\\Users\\Dustin\\Documents\\GitHub\\krrtstar\\krrtstar\\krrtstar\\parameters.txt";
@@ -4325,10 +4333,38 @@ x1[5] = 0;
 			std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
 			std::cout << "a - Analyze a set of experiments." << std::endl;
 			std::cout << "p - Analyze all paths from the experiments." << std::endl;
+			std::cout << "x - Manage experiment properties such as the number of nodes to expand." << std::endl;
+		}
+
+		if (key == 'x') {
+			printExperimentProperties();
+
+			std::cout << std::endl;
+			std::cout << "e - Set the number of nodes to expand." << std::endl;
+			std::cout << ">> ";
+			key = _getchar();
+
+			if (key == 'e') {
+				int temp;
+				do {
+					std::cout << "Set TARGET_NODES (-1 to cancel)>> ";
+					std::cin >> temp;
+				} while(temp < 1 && temp != -1);
+				if (temp != -1) {
+					TARGET_NODES = temp;
+				}
+				key = 'p';
+			}
+
+			printExperimentProperties();
+
+			key = NULL;
 		}
 
 		if (key == 'r') {
 			planTrajectory(experiment_name, tree, radius, distance_thresholds[0], FIND_FIRST_PATH_ONLY);
+
+			key = NULL;
 		}
 
 		if (key == 'l') {
@@ -4368,6 +4404,8 @@ x1[5] = 0;
 			vis::visualizeFinalPath(tree, false, false, true);
 
 			tree_loaded = true;
+
+			key = NULL;
 		}
 
 		if (key == 'v') {
@@ -4407,6 +4445,8 @@ x1[5] = 0;
 
 		if (key == 'c') {
 			vis::clearAll();
+
+			key = NULL;
 		}
 
 		if (key == 's') {
@@ -4415,12 +4455,20 @@ x1[5] = 0;
 			robot->show_collision_checker();
 			nominal_trajectory_t nominal_trajectory;
 			createNominalTrajectory(tree, nominal_trajectory);
-			simulate(dynamics, tree, nominal_trajectory, collision_step, true, robot);
+			if (nominal_trajectory.path.size() != 0) {
+				simulate(dynamics, tree, nominal_trajectory, collision_step, true, robot);
+			} else {
+				std::cout << "No path found." << std::endl;
+			}
+
+			key = NULL;
 		}
 
 		if (key == 't') {
 			float average_probability_of_collision = 0.0f;
 			testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
+
+			key = NULL;
 		}
 
 		if (key == 'e') {
@@ -4470,6 +4518,8 @@ x1[5] = 0;
 			}
 
 			fclose(simulation_log);
+
+			key = NULL;
 		}
 
 		if (key == 'a') {
@@ -4529,6 +4579,8 @@ x1[5] = 0;
 			}
 
 			fclose(collision_probabilities_log);
+
+			key = NULL;
 		}
 
 		if (key == 'p') {
@@ -4602,6 +4654,8 @@ x1[5] = 0;
 			}
 
 			fclose(simulation_log);
+
+			key = NULL;
 		}
 	} while (key != 'q');
 

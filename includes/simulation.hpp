@@ -203,6 +203,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, nominal_trajectory_t &tr
 
 			x_pos = belief[0];
 			y_pos = belief[1];
+			std::cout << "pos: (" << x_pos << "," << y_pos << ")" << std::endl;
 #if POSITION_DIM == 3
 			z_pos = belief[2];
 #endif
@@ -210,7 +211,7 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, nominal_trajectory_t &tr
 			vis::markBelief(x_pos, y_pos, z_pos);
 
 			if (robot != NULL) {
-				robot->position(actual, true);
+				robot->position(actual, false);
 			}
 
 			Sleep(deltaT*50);

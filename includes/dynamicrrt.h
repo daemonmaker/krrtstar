@@ -177,7 +177,7 @@ const double all_distance_thresholds[all_distance_threshold_count] = {1.1774, 1.
 
 #define STILL_RATE 5
 #define USE_OBSTACLES 5 // Determines whether to create obstacles
-#define TARGET_NODES 10000 // Determines how many 2000s the tree should have
+#define DEFAULT_TARGET_NODES 10000 // Determines how many 2000s the tree should have
 #define START_RADIUS 100 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 10
 
@@ -190,7 +190,7 @@ const double all_distance_thresholds[all_distance_threshold_count] = {1.1774, 1.
 
 #elif (DYNAMICS == NONHOLONOMIC) // Car
 #define ROBOT Nonholonomic
-#define TARGET_NODES 25000
+#define DEFAULT_TARGET_NODES 25000
 #define START_RADIUS 20
 #define RADIUS_MULTIPLIER 1
 
@@ -204,7 +204,7 @@ const double all_distance_thresholds[all_distance_threshold_count] = {1.1774, 1.
 #define ROBOT Puck
 const size_t distance_threshold_count = 1;
 double distance_thresholds[distance_threshold_count] = {3.0132}; // {1.1774 - 50%, 1.6634 - 75%, 2.1493 - 90%, 2.4463 - 95%, 2.7972 - 98%, 3.0132 - 99%}
-#define TARGET_NODES 2000 // Determines how many nodes the tree should have
+#define DEFAULT_TARGET_NODES 500 // Determines how many nodes the tree should have
 #define START_RADIUS 10 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 1.01
 
@@ -223,7 +223,7 @@ double distance_thresholds[distance_threshold_count] = {3.0132}; // {1.1774 - 50
 #define ROBOT Puck
 const size_t distance_threshold_count = 1;
 double distance_thresholds[distance_threshold_count] = {3.0132};//3.0132}; //, 1.1774, 3.0335};
-#define TARGET_NODES 2000
+#define DEFAULT_TARGET_NODES 500
 #define START_RADIUS 200
 #define RADIUS_MULTIPLIER 1
 
@@ -235,7 +235,7 @@ double distance_thresholds[distance_threshold_count] = {3.0132};//3.0132}; //, 1
 
 #else // 1D double integrator
 #define ROBOT Puck
-#define TARGET_NODES 10000 // Determines how many nodes the tree should have
+#define DEFAULT_TARGET_NODES 10000 // Determines how many nodes the tree should have
 #define START_RADIUS 100 // Determines the starting radius - Ignored if REDUCE_RADIUS is set.
 #define RADIUS_MULTIPLIER 2.5
 
@@ -246,6 +246,8 @@ double distance_thresholds[distance_threshold_count] = {3.0132};//3.0132}; //, 1
 #define U_DIM 1
 
 #endif
+
+int TARGET_NODES = DEFAULT_TARGET_NODES;
 
 #if (DYNAMICS == QUADROTOR)
 	#define STATE_SPACE QuadrotorStateSpace

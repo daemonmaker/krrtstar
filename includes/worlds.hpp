@@ -633,7 +633,7 @@ private:
 
 public:
 	SPassage(int base_group)
-		: World(base_group), scaler(1)
+		: World(base_group), scaler(1.25)
 	{
 		this->width = 115;
 		this->height = 100;
@@ -673,7 +673,7 @@ protected:
 		Eigen::Matrix<double,3,1> camera = Eigen::Matrix<double,3,1>::Zero();
 		Eigen::Matrix<double,3,1> up = Eigen::Matrix<double,3,1>::Zero();
 
-		CAL_SetViewParams(0, 0*(this->scaler), 0*(this->scaler), 375*(this->scaler), 0*(this->scaler), 0*(this->scaler), 0, 0, 1, 0);
+		CAL_SetViewParams(0, 0*(this->scaler), 0*(this->scaler), 300*(this->scaler), 0*(this->scaler), 0*(this->scaler), 0, 0, 1, 0);
 
 		/*
 		CAL_ShowView(1);

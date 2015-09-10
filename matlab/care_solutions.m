@@ -10,7 +10,7 @@
 
 %% Select system and setup basic variables
 clear
-system = 'dblint2dpartiallyobservable'
+system = 'dblint2dfullyobservable'
 
 % Set dimensionality information for system
 if strcmp(system, 'snglint2dfullyobservable')
@@ -113,7 +113,7 @@ elseif strcmp(system, 'dblint2dfullyobservable')
 %     M(4,4) = 1;
  
     % Rotated & skewed - USED FOR EXPERIMENTS DBLINT2DFOv2
-    m_multiplier = 10;
+    m_multiplier = 1;
     M(1,1) = 0.1;
     M(2,2) = 1;
     M(3,3) = 1;
@@ -132,10 +132,6 @@ elseif strcmp(system, 'dblint2dfullyobservable')
 %     M(3,3) = 1;
 %     M(3,4) = 0.1;
 %     M(4,4) = 0.1;
-
-    M = M*m_multiplier;
-    M_orig = M
-    M = chol(M*transpose(M))
     
     %M(1,1) = 0.01;
     %M(1,2) = 0;
@@ -146,6 +142,7 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     %M = chol(M*transpose(M))
 
     %N = N*0.1;
+    n_multiplier = 1
     N(1,1) = 0.5;
     N(2,2) = 0.5
 
@@ -168,11 +165,11 @@ elseif strcmp(system, 'dblint2dpartiallyobservable')
 %     N(2,2) = 1;
 
     % Rotated & skewed - USED FOR EXPERIMENTS DBLINT2DFOv2
-    m_multiplier = 10;
+    m_multiplier = 100;
     M(1,1) = 0.1;
-    M(2,2) = 1;
-    M(3,3) = 0.1;
-    M(4,4) = 1;
+    M(2,2) = 0.1;
+    M(3,3) = 0.00001;
+    M(4,4) = 0.00001;
     n_multiplier = 0.01;
     N(1,1) = 1;
     N(2,2) = 1;
