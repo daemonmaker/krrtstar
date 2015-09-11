@@ -173,6 +173,8 @@ const double all_distance_thresholds[all_distance_threshold_count] = {1.1774, 1.
 size_t distance_threshold_count = 1;
 double distance_thresholds[all_distance_threshold_count] = {3.0132, 0, 0, 0, 0, 0};
 
+int start_experiments_from = 0;
+
 #if (DYNAMICS == QUADROTOR) // Quadrotor
 #define ROBOT Quadrotor
 #define POSITION_DIM 3

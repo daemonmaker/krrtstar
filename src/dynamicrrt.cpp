@@ -4387,6 +4387,7 @@ x1[5] = 0;
 			std::cout << std::endl;
 			std::cout << "e - Set the number of nodes to expand: " << TARGET_NODES << std::endl;
 			std::cout << "t - Set the number of trajectories to plan: " << TRAJECTORY_COUNT << std::endl;
+			std::cout << "s - Set the index of the first experiment (used to recover from failure part way through a batch of experiments): " << start_experiments_from << std::endl;
 			std::cout << ">> ";
 			key = _getchar();
 
@@ -4410,6 +4411,16 @@ x1[5] = 0;
 				} while(temp < 1 && temp != -1);
 				if (temp != -1) {
 					TRAJECTORY_COUNT = temp;
+				}
+			}
+
+			if (key == 's') {
+				do {
+					std::cout << "Set start_experiment_from (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 1 && temp >= TRAJECTORY_COUNT && temp != -1);
+				if (temp != -1) {
+					start_experiments_from = temp;
 				}
 			}
 
@@ -4524,6 +4535,10 @@ x1[5] = 0;
 		if (key == 'e') {
 			setThresholds(false);
 
+			for (int threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
+				std::cout << threshold_idx << " - " << distance_thresholds[threshold_idx] << std::endl;
+			}
+
 			float average_probability_of_collision = 0.0f;
 
 			ostringstream current_experiment_name;
@@ -4533,13 +4548,14 @@ x1[5] = 0;
 			WRITE_HEADER(simulation_record, "experiment\tsimulations\tsuccessful\ttrajectory\tthreshold", simulation_log);
 
 			// Plan multiple trajectories
-			for (size_t trajectory_count = 0; trajectory_count < TRAJECTORY_COUNT; ++trajectory_count) {
+			for (size_t trajectory_count = start_experiments_from; trajectory_count < TRAJECTORY_COUNT; ++trajectory_count) {
 				experiment_base_name.clear();
 				experiment_base_name.str("");
 				experiment_base_name << experiment_name << "_trajectory_" << trajectory_count;
 
 				// Iterate over thresholds
-				for (size_t threshold_idx = distance_threshold_count-1; threshold_idx >= 0; --threshold_idx) {
+				for (int threshold_idx = distance_threshold_count-1; threshold_idx >= 0; --threshold_idx) {
+					std::cout << "threshold_idx: " << threshold_idx << '\t' << distance_thresholds[threshold_idx] << std::endl;
 					paths = 0;
 
 					vis::clearPaths();
