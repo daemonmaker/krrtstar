@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <Eigen/Dense>
+#include <vector>
+#include <utility>
 
 #ifndef __WORLDS_HPP__
 #define __WORLDS_HPP__
@@ -50,10 +52,14 @@ protected:
 	BOUNDS x_bounds;
 	Eigen::Matrix<double,X_DIM,1> x0, x1;
 	double distance_threshold;
+	float scaler;
 
 public:
-	World(int base_group)
-		: base_group(base_group), distance_threshold(0.0)
+	typedef std::pair<double, double> point_t;
+	typedef std::vector< point_t > points_t;
+
+	World(int base_group, float scaler = 1.0f)
+		: base_group(base_group), distance_threshold(0.0), scaler(scaler)
 	{
 		CAL_CreateGroup(&(this->obstacle_group), base_group, true, "Obstacle");
 
@@ -82,6 +88,10 @@ public:
 		}
 	}
 	*/
+
+	float getScaler() {
+		return this->scaler;
+	}
 
 	void setDistanceThreshold(double distance_threshold) {
 		this->distance_threshold = distance_threshold;
@@ -142,14 +152,20 @@ public:
 		Eigen::Matrix<double,3,1> camera = Eigen::Matrix<double,3,1>::Zero();
 		Eigen::Matrix<double,3,1> up = Eigen::Matrix<double,3,1>::Zero();
 
-		camera[0] = eye[0] = (this->x_bounds[0].second - this->x_bounds[0].first)/2.0;
-		camera[1] = eye[1] = (this->x_bounds[1].second - this->x_bounds[1].first)/2.0;
+		if (this->x_bounds[0].second != -this->x_bounds[0].first) {
+			camera[0] = eye[0] = (this->x_bounds[0].second - this->x_bounds[0].first)/2.0;
+		}
+
+		if (this->x_bounds[1].second != - this->x_bounds[1].first) {
+			camera[1] = eye[1] = (this->x_bounds[1].second - this->x_bounds[1].first)/2.0;
+		}
+
 		eye[2] = 150;
 
 		up[1] = 1;
 		
 		CAL_SetViewParams(0, eye[0], eye[1], eye[2], camera[0], camera[1], camera[2], up[0], up[1], up[2]);
-
+		/*
 		CAL_ShowView(1);
 
 		camera = S*R*camera;
@@ -157,6 +173,7 @@ public:
 		up = S*R*up;
 		
 		CAL_SetViewParams(1, eye[0], eye[1], eye[2], camera[0], camera[1], camera[2], up[0], up[1], up[2]);
+		*/
 	}
 
 	virtual void randPosition(state& s) {
@@ -211,6 +228,8 @@ public:
 			CAL_CreateSphere(collision_free_group, 3*NODE_SIZE, x_pos, y_pos, z_pos);
 		}
 	}
+
+	virtual void getCorners(World::points_t & pts) {}
 
 protected:
 	void makeWall(float x, float y, float z, int length, double height, bool vertical, bool reverse) {
@@ -505,13 +524,12 @@ class StraightPassage
 	: public World
 {
 private:
-	float scaler;
 	float width;
 	float height;
 
 public:
 	StraightPassage(int base_group)
-		: World(base_group), scaler(1)
+		: World(base_group)
 	{
 		this->width = 400;
 		this->height = 20;
@@ -529,6 +547,13 @@ public:
 
 		this->x_bounds[0] = std::make_pair(-(this->width/2.0)*(this->scaler), (this->width/2.0)*(this->scaler));
 		this->x_bounds[1] = std::make_pair(-(this->height/2.0)*(this->scaler), (this->height/2.0)*(this->scaler));
+	}
+
+	virtual void getCorners(World::points_t & pts) {
+		pts.push_back( std::make_pair((0+this->width/2.0)*(this->scaler), (this->height/2.0)*(this->scaler)) );
+		pts.push_back( std::make_pair((0-this->width/2.0)*(this->scaler), (this->height/2.0)*(this->scaler)) );
+		pts.push_back( std::make_pair((0+this->width/2.0)*(this->scaler), (-this->height/2.0)*(this->scaler)) );
+		pts.push_back( std::make_pair((0-this->width/2.0)*(this->scaler), (-this->height/2.0)*(this->scaler)) );
 	}
 
 protected:
@@ -565,13 +590,12 @@ class UPassage
 	: public World
 {
 private:
-	float scaler;
 	float width;
 	float height;
 
 public:
 	UPassage(int base_group)
-		: World(base_group), scaler(1)
+		: World(base_group)
 	{
 		this->width = 200;
 		this->height = 40;
@@ -627,13 +651,12 @@ class SPassage
 	: public World
 {
 private:
-	float scaler;
 	float width;
 	float height;
 
 public:
 	SPassage(int base_group)
-		: World(base_group), scaler(1.0)
+		: World(base_group)
 	{
 		this->width = 115;
 		this->height = 100;
@@ -690,12 +713,9 @@ protected:
 class LudersBoxes
 	: public World
 {
-private:
-	float scaler;
-
 public:
 	LudersBoxes(int base_group)
-		: World(base_group), scaler(1.5)
+		: World(base_group)
 	{
 		this->x0[0] = 0;
 		this->x0[1] = -35*(this->scaler);
@@ -732,19 +752,16 @@ protected:
 	}
 
 	virtual void positionCamera() {
-		CAL_SetViewParams(0, 0, 0, 101*(this->scaler), 0, 0, 0, 0, 1, 0);
+		CAL_SetViewParams(0, -50*(this->scaler), -50*(this->scaler), 101*(this->scaler), 50*(this->scaler), 50*(this->scaler), 0, 0, 1, 0);
 	}
 };
 
 class VanDenBergPassages
 	: public World
 {
-private:
-	float scaler;
-
 public:
 	VanDenBergPassages(int base_group)
-		: World(base_group), scaler(2)
+		: World(base_group, 2.0)
 	{
 		this->x0[0] = 7.5*(this->scaler);
 		this->x0[1] = 7.5*(this->scaler);
@@ -761,22 +778,39 @@ public:
 		this->x_bounds[1] = std::make_pair(0*(this->scaler), 100*(this->scaler));
 	}
 
+	virtual void getCorners(World::points_t & pts) {
+		pts.push_back( std::make_pair((50+50)*(this->scaler), (-2.5+2.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((50-50)*(this->scaler), (-2.5+2.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((50+50)*(this->scaler), (102.5-2.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((50-50)*(this->scaler), (102.5-2.5)*(this->scaler)) );
+
+		pts.push_back( std::make_pair((1+1)*(this->scaler), (27+15)*(this->scaler)) );
+		pts.push_back( std::make_pair((1+1)*(this->scaler), (27-15)*(this->scaler)) );
+		pts.push_back( std::make_pair((27+15)*(this->scaler), (1+1)*(this->scaler)) );
+		pts.push_back( std::make_pair((27-15)*(this->scaler), (1+1)*(this->scaler)) );
+
+		pts.push_back( std::make_pair((27.5+15)*(this->scaler), (27.5+15)*(this->scaler)) );
+		pts.push_back( std::make_pair((27.5-15)*(this->scaler), (27.5+15)*(this->scaler)) );
+		pts.push_back( std::make_pair((27.5+15)*(this->scaler), (27.5-15)*(this->scaler)) );
+		pts.push_back( std::make_pair((27.5-15)*(this->scaler), (27.5-15)*(this->scaler)) );
+	}
+
 protected:
 	virtual void _buildEnvironment() {
 		int box_id = 0;
 
 		// Make outer walls
-		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 50*(this->scaler), -2.5*(this->scaler), 0*(this->scaler)); // Bottom
-		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 10*(this->scaler), -2.5*(this->scaler), 50*(this->scaler), 0*(this->scaler)); // Left
-		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 10*(this->scaler), 102.5*(this->scaler), 50*(this->scaler), 0*(this->scaler)); // Right
-		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 50*(this->scaler), 102.5*(this->scaler), 0*(this->scaler)); // Top
+		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 1*(this->scaler), 50*(this->scaler), -2.5*(this->scaler), 0*(this->scaler)); // Bottom
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 1*(this->scaler), -2.5*(this->scaler), 50*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), 100*(this->scaler), 1*(this->scaler), 102.5*(this->scaler), 50*(this->scaler), 0*(this->scaler)); // Right
+		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 1*(this->scaler), 50*(this->scaler), 102.5*(this->scaler), 0*(this->scaler)); // Top
 
 		// Make boxes
-		CAL_CreateBox(this->obstacle_group, 2*(this->scaler), 30*(this->scaler), 10*(this->scaler), 1*(this->scaler), 27*(this->scaler), 0*(this->scaler)); // Left
-		CAL_CreateBox(this->obstacle_group, 30*(this->scaler), 2*(this->scaler), 10*(this->scaler), 27*(this->scaler), 1*(this->scaler), 0*(this->scaler)); // Right
+		CAL_CreateBox(this->obstacle_group, 2*(this->scaler), 30*(this->scaler), 1*(this->scaler), 1*(this->scaler), 27*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 30*(this->scaler), 2*(this->scaler), 1*(this->scaler), 27*(this->scaler), 1*(this->scaler), 0*(this->scaler)); // Right
 
 		// Make large boxes
-		CAL_CreateBox(this->obstacle_group, 30*(this->scaler), 30*(this->scaler), 10*(this->scaler), 27.5*(this->scaler), 27.5*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 30*(this->scaler), 30*(this->scaler), 1*(this->scaler), 27.5*(this->scaler), 27.5*(this->scaler), 0*(this->scaler)); // Left
 		//CAL_CreateBox(this->obstacle_group, 12.5*(this->scaler), 20*(this->scaler), 10*(this->scaler), 15*(this->scaler), 15*(this->scaler), 0*(this->scaler)); // Right
 	}
 
@@ -788,12 +822,9 @@ protected:
 class VanDenBergPassagesExaggerated
 	: public World
 {
-private:
-	float scaler;
-
 public:
 	VanDenBergPassagesExaggerated(int base_group)
-		: World(base_group), scaler(2)
+		: World(base_group, 2.0)
 	{
 		this->x0[0] = 22.5*(this->scaler);
 		this->x0[1] = 22.5*(this->scaler);
@@ -808,6 +839,23 @@ public:
 
 		this->x_bounds[0] = std::make_pair(0*(this->scaler), 100*(this->scaler));
 		this->x_bounds[1] = std::make_pair(0*(this->scaler), 100*(this->scaler));
+	}
+
+	virtual void getCorners(World::points_t & pts) {
+		pts.push_back( std::make_pair((50+50)*(this->scaler), (-2.5+2.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((50-50)*(this->scaler), (-2.5+2.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((50+50)*(this->scaler), (102.5-2.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((50-50)*(this->scaler), (102.5-2.5)*(this->scaler)) );
+
+		pts.push_back( std::make_pair((7.5+7.5)*(this->scaler), (40+10)*(this->scaler)) );
+		pts.push_back( std::make_pair((7.5+7.5)*(this->scaler), (40-10)*(this->scaler)) );
+		pts.push_back( std::make_pair((40+10)*(this->scaler), (7.5+7.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((40-10)*(this->scaler), (7.5+7.5)*(this->scaler)) );
+
+		pts.push_back( std::make_pair((40+10)*(this->scaler), (40+10)*(this->scaler)) );
+		pts.push_back( std::make_pair((40-10)*(this->scaler), (40+10)*(this->scaler)) );
+		pts.push_back( std::make_pair((40+10)*(this->scaler), (40-10)*(this->scaler)) );
+		pts.push_back( std::make_pair((40-10)*(this->scaler), (40-10)*(this->scaler)) );
 	}
 
 protected:

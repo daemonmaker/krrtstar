@@ -43,7 +43,7 @@ TODO
 #include "rpoly.h"
 
 //#define _DEBUG_COMPUTE_COST
-#define SHOW_AXIS false
+bool SHOW_AXIS = false;
 
 // Optimization flags
 //#define FRONT_LOAD_RK4 // Forces the RK4 stuff to be loaded globally and initialized in the main as opposed to in the function calls where it's used
@@ -104,16 +104,21 @@ int TRAJECTORY_COUNT = 30; // Number of paths to plan duing experiments
 #define NUM_SIMS 100 // Number of times to simulate paths duing experiments
 #define USE_SET_CLEARANCE 0 // Whether to grow the obstacles using callisto's set clearance. Cannot be used with USE_THRESHOLDS.
 #define USE_THRESHOLDS 1 // Whether to use distance thresholds instead of collisions checks during trajectory planning. Cannot be used with USE_SET_CLEARANCE.
-#define NOISE_FREE false // Whether the simulation(s) should be noise free.
+bool NOISE_FREE = false; // Whether the simulation(s) should be noise free.
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
-//#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
-#define SKIP_CONNECTIONS 0
+#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
+#define SKIP_CONNECTIONS 1
 //#define RUN_COLLISION_TESTER // Runs a utility to allow for manual checking of collision functionality
 #define SHOW_ROBOT 0 // Determines whether the robot model should be shown
-#define SHOW_ROBOT_COLLISION_CHECKER 0 // Determines whether the robot collision checker should be displayed
-#define SHOW_COLLISION_SLEEP_TIME 10
+#if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
+#define SHOW_ROBOT_COLLISION_CHECKER 1 // Determines whether the robot collision checker should be displayed
+#else
+#define SHOW_ROBOT_COLLISION_CHECKER 
+#endif
+int SHOW_COLLISION_SLEEP_TIME = 0;
+bool PAUSE_ON_EACH_COLLISION_CHECK = false;
 #define USE_OBSTACLES 6 // Determines whether to create obstacles
 #define VISUALIZE_TREE
 #define VISUALIZE_PATHS
@@ -135,6 +140,7 @@ int TRAJECTORY_COUNT = 30; // Number of paths to plan duing experiments
 #define TIMING_FREQUENCY 0.1 // How often to record the time taken to expand nodes
 //#define WORLD EmptyWorld // Which world to use
 #define VISUALIZE_SIMULATION true
+#define SCALE_THEN_ROTATE true
 
 #if USE_THRESHOLDS && USE_SET_CLEARANCE
 	WTF? The comments say you cannot do that...
@@ -262,17 +268,18 @@ int TARGET_NODES = DEFAULT_TARGET_NODES;
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassages
+			#define WORLD worlds::VanDenBergPassagesExaggerated
 			//#define WORLD worlds::StraightPassage
 			//#define WORLD worlds::UPassage
-			#define WORLD worlds::SPassage
+			//#define WORLD worlds::SPassage
 		#else
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassagesExaggerated
-			#define WORLD worlds::StraightPassage
+			//#define WORLD worlds::StraightPassage
 			//#define WORLD worlds::UPassage
-			//#define WORLD worlds::SPassage
+			#define WORLD worlds::SPassage
 		#endif
 	#elif USE_OBSTACLES == 5
 		#define WORLD SimpleRaceTrack
@@ -354,6 +361,9 @@ typedef Eigen::Matrix<double,2*X_DIM,2*X_DIM> combined_natural_dynamics_t;
 typedef Eigen::Matrix<double,2*X_DIM,X_DIM+Z_DIM> combined_noise_covariance_t;
 typedef Eigen::Matrix<double,X_DIM,2*X_DIM> state_extractor_t;
 typedef Eigen::Matrix<double,U_DIM,2*X_DIM> control_extractor_t;
+typedef Eigen::Matrix<double,2*X_DIM,2*X_DIM> combined_sigma_t;
+typedef Eigen::Matrix<double,X_DIM,X_DIM> state_sigma_t;
+typedef Eigen::Matrix<double,U_DIM,U_DIM> control_sigma_t;
 
 natural_dynamics_t A = natural_dynamics_t::Zero();
 control_dynamics_t B = control_dynamics_t::Zero();
@@ -380,6 +390,9 @@ combined_noise_covariance_t G = combined_noise_covariance_t::Zero();
 state_extractor_t X = state_extractor_t::Zero();
 state_extractor_t Xhat = state_extractor_t::Zero();
 control_extractor_t U = control_extractor_t::Zero();
+combined_sigma_t Sigma = combined_sigma_t::Zero();
+state_sigma_t x_sigma = state_sigma_t::Zero();
+control_sigma_t u_sigma = control_sigma_t::Zero();
 
 struct dynamics_t {
 	natural_dynamics_t A;
@@ -396,6 +409,9 @@ struct dynamics_t {
 	state_extractor_t X;
 	state_extractor_t Xhat;
 	control_extractor_t U;
+	combined_sigma_t Sigma;
+	state_sigma_t x_sigma;
+	control_sigma_t u_sigma;
 } dynamics;
 
 struct Node {

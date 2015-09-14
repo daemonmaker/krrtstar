@@ -42,8 +42,13 @@ public:
 		CAL_SetGroupColor(this->robot_group, 0, 0, 0);
 
 		this->show_model();
-		//this->hide_collision_checker();
+
+#if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
 		this->show_collision_checker();
+#else
+		this->hide_collision_checker();
+#endif
+
 	}
 
 	~Robot() {
@@ -149,6 +154,8 @@ public:
 #endif
 	}
 
+	virtual float getLargestRadius() { return 0; }
+
 protected:
 	void _rotate(const Eigen::Quaternion<double>& q, bool model = false) {
 		int result = CAL_SetGroupQuaternion(this->robot_group,(float)q.x(),(float)q.y(),(float)q.z(),(float)q.w());
@@ -171,8 +178,11 @@ protected:
 class Puck
 	: public Robot
 {
+private:
+	double radius;
+
 public:
-	Puck(int base_group, double radius = 5) : Robot(base_group)
+	Puck(int base_group, double radius = 5) : Robot(base_group), radius(radius)
 	{
 		CAL_CreateCylinder(this->robot_group, radius, 1, 0, 0, 0, &(this->robot_collision_object));
 		CAL_CreateCylinder(this->robot_model, radius, 1, 0, 0, 0, &(this->robot_model_object));
@@ -183,6 +193,8 @@ public:
 		CAL_SetObjectOrientation(this->robot_collision_object, M_PI/2.0, 0, 0);
 		CAL_SetObjectOrientation(this->robot_model_object, M_PI/2.0, 0, 0);
 	}
+
+	virtual float getLargestRadius() { return this->radius; }
 };
 
 class Quadrotor : public Robot

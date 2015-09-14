@@ -24,14 +24,16 @@ Robot * robot = NULL;
 	fputs(os.str().c_str(), log_fh);	\
 	fflush(stats_log);
 
-#define WRITE_RECORD(os, label, value)	\
+#define WRITE_RECORD(os, label, value, write_to_file)	\
 	os.clear();	\
 	os.str(""); \
 	os << label << value << std::endl;	\
-	fputs(os.str().c_str(), experiment_log); \
+	if (write_to_file) {	\
+		fputs(os.str().c_str(), experiment_log); \
+	}	\
 	std::cout << label << value << std::endl;
 
-#define WRITE_MATRIX(os, label, matrix)	\
+#define WRITE_MATRIX(os, label, matrix, write_to_file)	\
 	os.clear(); \
 	os.str(""); \
 	os << label << ": " << std::endl; \
@@ -41,7 +43,9 @@ Robot * robot = NULL;
 		} \
 		os << std::endl; \
 	} \
-	fputs(os.str().c_str(), experiment_log); \
+	if (write_to_file) {	\
+		fputs(os.str().c_str(), experiment_log); \
+	}	\
 	std::cout << label << ": " << std::endl << matrix << std::endl;
 
 void dynamicsError() {
@@ -137,59 +141,68 @@ void read_tree(const string log_file, tree_t * tree) {
 	fclose(tree_log_fh);
 }
 
-void save_experiment(FILE * experiment_log) {
+void summarize_experiment(FILE * experiment_log, bool write_to_file) {
+	if (write_to_file && experiment_log == NULL) {
+		std::cout << "summarize_experiment: no log provided... skipping." << std::endl;
+		write_to_file = false;
+	}
+
 	ostringstream record;
 
-	WRITE_RECORD(record, "DYNAMICS: ", dynamics_type_to_name(DYNAMICS));
-	WRITE_RECORD(record, "ROBOT: ", typeid(ROBOT).name());
-	WRITE_RECORD(record, "STATE_SPACE: ", typeid(STATE_SPACE).name());
-	WRITE_RECORD(record, "WORLD: ", typeid(WORLD).name());
-	WRITE_RECORD(record, "USE_SET_CLEARANCE: ", USE_SET_CLEARANCE);
-	WRITE_RECORD(record, "USE_THRESHOLDS: ", USE_THRESHOLDS);
-	WRITE_RECORD(record, "distance_threshold: ", world->getDistanceThreshold());
-	WRITE_RECORD(record, "EPSILON: ", EPSILON);
-	WRITE_RECORD(record, "USE_OBSTACLES: ", USE_OBSTACLES);
+	WRITE_RECORD(record, "DYNAMICS: ", dynamics_type_to_name(DYNAMICS), write_to_file);
+	WRITE_RECORD(record, "ROBOT: ", typeid(ROBOT).name(), write_to_file);
+	WRITE_RECORD(record, "STATE_SPACE: ", typeid(STATE_SPACE).name(), write_to_file);
+	WRITE_RECORD(record, "WORLD: ", typeid(WORLD).name(), write_to_file);
+	WRITE_RECORD(record, "USE_SET_CLEARANCE: ", USE_SET_CLEARANCE, write_to_file);
+	WRITE_RECORD(record, "USE_THRESHOLDS: ", USE_THRESHOLDS, write_to_file);
+	WRITE_RECORD(record, "distance_threshold: ", world->getDistanceThreshold(), write_to_file);
+	WRITE_RECORD(record, "EPSILON: ", EPSILON, write_to_file);
+	WRITE_RECORD(record, "USE_OBSTACLES: ", USE_OBSTACLES, write_to_file);
 	bool reduce_radius = false;
 #if defined(REDUCE_RADIUS)
 	reduce_radius = true;
 #endif
-	WRITE_RECORD(record, "REDUCE_RADIUS: ", reduce_radius);
-	WRITE_RECORD(record, "TARGET_NODES: ", TARGET_NODES);
-	WRITE_RECORD(record, "START_RADIUS: ", START_RADIUS);
-	WRITE_RECORD(record, "RADIUS_MULTIPLIER: ", RADIUS_MULTIPLIER);
-	WRITE_RECORD(record, "deltaT: ", deltaT);
-	WRITE_RECORD(record, "control_penalty: ", control_penalty);
-	WRITE_RECORD(record, "control_penalty1: ", control_penalty1);
-	WRITE_RECORD(record, "REACHABILITY_CONSTANT: ", REACHABILITY_CONSTANT);
-	WRITE_RECORD(record, "sphere_volume: ", sphere_volume);
-	WRITE_RECORD(record, "statespace_volume: ", statespace_volume);
-	WRITE_RECORD(record, "NOISE_FREE: ", NOISE_FREE);
+	WRITE_RECORD(record, "REDUCE_RADIUS: ", reduce_radius, write_to_file);
+	WRITE_RECORD(record, "TARGET_NODES: ", TARGET_NODES, write_to_file);
+	WRITE_RECORD(record, "START_RADIUS: ", START_RADIUS, write_to_file);
+	WRITE_RECORD(record, "RADIUS_MULTIPLIER: ", RADIUS_MULTIPLIER, write_to_file);
+	WRITE_RECORD(record, "deltaT: ", deltaT, write_to_file);
+	WRITE_RECORD(record, "control_penalty: ", control_penalty, write_to_file);
+	WRITE_RECORD(record, "control_penalty1: ", control_penalty1, write_to_file);
+	WRITE_RECORD(record, "REACHABILITY_CONSTANT: ", REACHABILITY_CONSTANT, write_to_file);
+	WRITE_RECORD(record, "sphere_volume: ", sphere_volume, write_to_file);
+	WRITE_RECORD(record, "statespace_volume: ", statespace_volume, write_to_file);
+	WRITE_RECORD(record, "NOISE_FREE: ", NOISE_FREE, write_to_file);
 
-	WRITE_MATRIX(record, "A", A);
-	WRITE_MATRIX(record, "B", B);
-	WRITE_MATRIX(record, "C", C);
-	WRITE_MATRIX(record, "MotionNoiseCovariance", MotionNoiseCovariance);
-	WRITE_MATRIX(record, "ObservationNoiseCovariance", ObservationNoiseCovariance);
-	WRITE_MATRIX(record, "K", K);
-	WRITE_MATRIX(record, "L", L);
-	WRITE_MATRIX(record, "R", R);
-	WRITE_MATRIX(record, "Rotation", Rotation);
-	WRITE_MATRIX(record, "Scale", Scale);
+	WRITE_MATRIX(record, "A", A, write_to_file);
+	WRITE_MATRIX(record, "B", B, write_to_file);
+	WRITE_MATRIX(record, "C", C, write_to_file);
+	WRITE_MATRIX(record, "MotionNoiseCovariance", MotionNoiseCovariance, write_to_file);
+	WRITE_MATRIX(record, "ObservationNoiseCovariance", ObservationNoiseCovariance, write_to_file);
+	WRITE_MATRIX(record, "K", K, write_to_file);
+	WRITE_MATRIX(record, "L", L, write_to_file);
+	WRITE_MATRIX(record, "R", R, write_to_file);
+	WRITE_MATRIX(record, "Rotation", Rotation, write_to_file);
+	WRITE_MATRIX(record, "Scale", Scale, write_to_file);
 
 	generic_matrix_t matrix = -B*L;
-	WRITE_MATRIX(record, "-BL", matrix);
+	WRITE_MATRIX(record, "-BL", matrix, write_to_file);
 
 	matrix = K*C;
-	WRITE_MATRIX(record, "KC", matrix);
+	WRITE_MATRIX(record, "KC", matrix, write_to_file);
 
 	matrix = A - B*L - K*C;
-	WRITE_MATRIX(record, "A - BL - KC", matrix);
+	WRITE_MATRIX(record, "A - BL - KC", matrix, write_to_file);
 
-	WRITE_MATRIX(record, "F", F);
-	WRITE_MATRIX(record, "G", G);
-	WRITE_MATRIX(record, "X", X);
-	WRITE_MATRIX(record, "Xhat", Xhat);
-	WRITE_MATRIX(record, "U", U);
+	WRITE_MATRIX(record, "F", F, write_to_file);
+	WRITE_MATRIX(record, "G", G, write_to_file);
+	WRITE_MATRIX(record, "X", X, write_to_file);
+	WRITE_MATRIX(record, "Xhat", Xhat, write_to_file);
+	WRITE_MATRIX(record, "U", U, write_to_file);
+
+	WRITE_MATRIX(record, "Sigma", Sigma, write_to_file);
+	WRITE_MATRIX(record, "x_sigma", x_sigma, write_to_file);
+	WRITE_MATRIX(record, "u_sigma", u_sigma, write_to_file);
 
 	fflush(experiment_log);
 }
@@ -333,7 +346,13 @@ void setupParameters(string parameters_file) {
 	ObservationNoiseCovariance(2,2) = 0.0001;
 	ObservationNoiseCovariance(3,3) = 0.0001;
 	*/
+
+	// ROTATE & SCALE
+#if (SCALE_THEN_ROTATE)
 	robot = new ROBOT(vis::cal_rotate);
+#else
+	robot = new ROBOT(vis::cal_scale);
+#endif
 
 	control_penalty = 1;
 
@@ -454,17 +473,14 @@ void setupParameters(string parameters_file) {
 	readMatlabArray(pmat, "R_tilde", R);
 	readMatlabArray(pmat, "S", Scale);
 	readMatlabArray(pmat, "V", Rotation);
+	readMatlabArray(pmat, "Sigma", Sigma);
+	readMatlabArray(pmat, "x_sigma", x_sigma);
+	readMatlabArray(pmat, "u_sigma", u_sigma);
 
 #if SHOW_ROBOT
 	robot->show_model();
 #else
 	robot->hide_model();
-#endif
-
-#if SHOW_ROBOT_COLLISION_CHECKER
-	robot->show_collision_checker();
-#else
-	robot->hide_collision_checker();
 #endif
 }
 
@@ -722,8 +738,20 @@ inline bool collision_free(const state& s, bool distance_check = USE_THRESHOLDS,
 	int result = 0;
 	int collisions = 0;
 
-	robot->rotate(s, model);
+	// ROTATE & SCALE?
 	robot->position(s, model);
+	robot->rotate(s, model);
+
+#if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
+	std::cout << "state: " << s << std::endl;
+
+	if (PAUSE_ON_EACH_COLLISION_CHECK) {
+		std::cout << "Enter value to continue: ";
+		_getchar();
+	} else {
+		Sleep(SHOW_COLLISION_SLEEP_TIME);
+	}
+#endif
 
 	// Sloppy! Refactor this to properly handle the two different types of possible collision checks
 	if (distance_check) {
@@ -3534,9 +3562,6 @@ void rrtstar(const state& x_init, const state& x_final, int n, double radius, tr
 		n = 100000; // HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACK!
 	}
 	for (int idx = 1; idx <= n;) {
-#if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
-		Sleep(SHOW_COLLISION_SLEEP_TIME);
-#endif
 #ifndef EXPERIMENT
 		draw_path = false;
 #endif
@@ -4015,7 +4040,7 @@ bool planTrajectory(const string &experiment_name, tree_t & tree, double radius,
 #endif
 
 	open_logs(experiment_name);
-	save_experiment(experiment_log);
+	summarize_experiment(experiment_log, true);
 
 	start_time = clock();
 
@@ -4206,23 +4231,46 @@ void loadPathsAsTrees(const string & path_log_file, state_lists_t & state_lists)
 	std::cout << std::endl;
 }
 
-void printHelpMenu() {
-	std::cout << "h - This help menu." << std::endl;
-	std::cout << "l - Load tree from file." << std::endl;
-	std::cout << "r - Run kRRT*." << std::endl;
-	std::cout << "v - Visualize." << std::endl;
-	std::cout << "c - Clear visualization." << std::endl;
-	std::cout << "t - Test solution." << std::endl;
-	std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
-	std::cout << "a - Analyze a set of experiments." << std::endl;
-	std::cout << "p - Analyze all paths from the experiments." << std::endl;
-	std::cout << "x - Manage experiment properties such as the number of nodes to expand." << std::endl;
+void printSettingsMenu() {
+	std::cout << "\te - Set the number of nodes to expand: " << TARGET_NODES << std::endl;
+	std::cout << "\tl - List current settings." << std::endl;
+	std::cout << "\tn - Toggle noise in simulation: " << NOISE_FREE << std::endl;
+	std::cout << "\tt - Set the number of trajectories to plan: " << TRAJECTORY_COUNT << std::endl;
+	std::cout << "\ts - Set the index of the first experiment (used to recover from failure part way through a batch of experiments): " << start_experiments_from << std::endl;
+	std::cout << "\td - Set the current safety factor: " << distance_thresholds[0] << std::endl;
 }
 
-void printExperimentProperties(const string & experiment_name) {
-	std::cout << "Experiment name: " << experiment_name << std::endl;
-	std::cout << "TRAJECTORY_COUNT: " << TRAJECTORY_COUNT << std::endl;
-	std::cout << "TARGET_NODES: " << TARGET_NODES << std::endl;
+void printVisualizationMenu() {
+	std::cout << "\ta - Show axis. " << std::endl;
+	std::cout << "\tc - Clear visualization." << std::endl;
+	std::cout << "\tp - Visualize paths." << std::endl;
+	std::cout << "\tr - Restore environment." << std::endl;
+	std::cout << "\ts - Visualize solution." << std::endl;
+	std::cout << "\tt - Visualize tree." << std::endl;
+	std::cout << "\tu - Visualize uncertainty." << std::endl;
+	std::cout << "\tw - Warp environment." << std::endl;
+}
+
+void printCollisionDebugMenu() {
+	std::cout << "\tp - Toggle pausing between collision checks (" << PAUSE_ON_EACH_COLLISION_CHECK << "). Overrides sleeping between collision checkts." << std::endl;
+	std::cout << "\ts - Set sleep time between collision checks: " << float(SHOW_COLLISION_SLEEP_TIME)/1000.0f << " second(s)" << std::endl;
+}
+
+void printHelpMenu() {
+	std::cout << "a - Analyze a set of experiments." << std::endl;
+	std::cout << "c - Manage collision debug properties." << std::endl;
+	printCollisionDebugMenu();
+	std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
+	std::cout << "h - This help menu." << std::endl;
+	std::cout << "l - Load tree from file." << std::endl;
+	std::cout << "p - Analyze all paths from the experiments." << std::endl;
+	std::cout << "r - Run kRRT*." << std::endl;
+	std::cout << "s - Run simulation with current state." << std::endl;
+	std::cout << "t - Test solution." << std::endl;
+	std::cout << "v - Visualize." << std::endl;
+	printVisualizationMenu();
+	std::cout << "x - Manage experiment properties such as the number of nodes to expand." << std::endl;
+	printSettingsMenu();
 }
 
 void printThresholds()  {
@@ -4230,6 +4278,20 @@ void printThresholds()  {
 	for (int threshold_idx = 0; threshold_idx < all_distance_threshold_count; ++threshold_idx) {
 		std::cout << '\t' << threshold_idx << " - " << all_distance_thresholds[threshold_idx] << std::endl;
 	}
+}
+
+void printCurrentThresholds() {
+	std::cout << "Thresholds: " << std::endl;
+	for (int threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
+		std::cout << '\t' << threshold_idx << " - " << distance_thresholds[threshold_idx] << std::endl;
+	}
+}
+
+void printExperimentProperties(const string & experiment_name) {
+	std::cout << "Experiment name: " << experiment_name << std::endl;
+	std::cout << "TRAJECTORY_COUNT: " << TRAJECTORY_COUNT << std::endl;
+	std::cout << "TARGET_NODES: " << TARGET_NODES << std::endl;
+	printCurrentThresholds();
 }
 
 void setThresholds(bool limit_to_one=false) {
@@ -4359,6 +4421,9 @@ x1[5] = 0;
 	dynamics.X = X;
 	dynamics.Xhat = Xhat;
 	dynamics.U = U;
+	dynamics.Sigma = Sigma;
+	dynamics.x_sigma = x_sigma;
+	dynamics.u_sigma = u_sigma;
 
 	tree_t tree;
 
@@ -4377,157 +4442,94 @@ x1[5] = 0;
 		std::cout << ">> ";
 		key = _getchar();
 
-		if (key == 'h') {
-			printHelpMenu();
-		}
+		if (key == 'a') {
+			ostringstream current_experiment_name;
+			ostringstream collision_probabilities_record;
 
-		if (key == 'x') {
-			printExperimentProperties(experiment_name);
+			FILE * collision_probabilities_log = fopen(make_log_file_name(experiment_name, "collision_probabilities", "txt").c_str(), "w");
+			WRITE_HEADER(collision_probabilities_record, "experiment\tthreshold\tmean average probability of collision\tmean average probability of success", collision_probabilities_log);
 
-			std::cout << std::endl;
-			std::cout << "e - Set the number of nodes to expand: " << TARGET_NODES << std::endl;
-			std::cout << "t - Set the number of trajectories to plan: " << TRAJECTORY_COUNT << std::endl;
-			std::cout << "s - Set the index of the first experiment (used to recover from failure part way through a batch of experiments): " << start_experiments_from << std::endl;
-			std::cout << ">> ";
-			key = _getchar();
+			int trajectories_found = 0;
 
-			int temp = -1;
+			// Iterate over thresholds
+			for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
+				float average_probability_of_collision = 0.0f;
+				float mean_average_probability_of_collision = 0.0f;
 
-			if (key == 'e') {
-				do {
-					std::cout << "Set TARGET_NODES (-1 to cancel) >> ";
-					std::cin >> temp;
-				} while(temp < 1 && temp != -1);
-				if (temp != -1) {
-					TARGET_NODES = temp;
+				// Load each trajectory
+				for (size_t trajectory_count = 0; trajectory_count < TRAJECTORY_COUNT; ++trajectory_count) {
+					paths = 0;
+
+					vis::clearPaths();
+					vis::clearSimulation();
+
+					world->setDistanceThreshold(distance_thresholds[threshold_idx]);
+					current_experiment_name.clear();
+					current_experiment_name.str("");
+					current_experiment_name << experiment_name << "_trajectory_" << trajectory_count << "_threshold_" << world->getDistanceThreshold();
+
+					string tree_file_name = make_log_file_name(current_experiment_name.str(), "tree", "rrt");
+					std::cout << "Reading " << current_experiment_name.str() << " tree from (" << tree_file_name << ")." << std::endl;
+					read_tree(tree_file_name, &tree);
+
+					// If no trajectory was found move on
+					if (!(tree[0].cost_from_start < DBL_MAX)) {
+						std::cout << "No trajectory found... skipping.";
+						continue;
+					} else {
+						++trajectories_found;
+					}
+
+					average_probability_of_collision = 0.0f;
+					size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
+					mean_average_probability_of_collision += average_probability_of_collision;
+
+					fflush(collision_probabilities_log);
 				}
-				key = 'p';
+
+				mean_average_probability_of_collision /= float(TRAJECTORY_COUNT);
+
+				std::cout << "Mean average probability of collision: " << std::fixed << std::setw(10) << std::setprecision(10) << mean_average_probability_of_collision << std::endl;
+				std::cout << "Mean average probability of success: " << (1.0f - mean_average_probability_of_collision) << std::endl;
+
+				collision_probabilities_record.clear();
+				collision_probabilities_record.str("");
+				collision_probabilities_record << std::fixed << std::setw(10) << std::setprecision(10) << experiment_name << '\t' << world->getDistanceThreshold()  << '\t' << mean_average_probability_of_collision << '\t' << (1.0f - mean_average_probability_of_collision) << std::endl;
+				fputs(collision_probabilities_record.str().c_str(), collision_probabilities_log);
 			}
 
-			if (key == 't') {
-				do {
-					std::cout << "Set TRAJECTORY_COUNT (-1 to cancel) >> ";
-					std::cin >> temp;
-				} while(temp < 1 && temp != -1);
-				if (temp != -1) {
-					TRAJECTORY_COUNT = temp;
-				}
-			}
-
-			if (key == 's') {
-				do {
-					std::cout << "Set start_experiment_from (-1 to cancel) >> ";
-					std::cin >> temp;
-				} while(temp < 1 && temp >= TRAJECTORY_COUNT && temp != -1);
-				if (temp != -1) {
-					start_experiments_from = temp;
-				}
-			}
-
-			printExperimentProperties(experiment_name);
-
-			key = NULL;
-		}
-
-		if (key == 'r') {
-			planTrajectory(experiment_name, tree, radius, distance_thresholds[0], FIND_FIRST_PATH_ONLY);
-
-			key = NULL;
-		}
-
-		if (key == 'l') {
-			int trajectory_id = -1;
-			int threshold = -1;
-			experiment_base_name.clear();
-			experiment_base_name.str("");
-			experiment_base_name << experiment_name;
-
-			std::cout << "Trajectory id? ";
-			std::cin >> trajectory_id;
-			if (trajectory_id >= 0) {
-				experiment_base_name << "_trajectory_" << trajectory_id;
-				setThresholds(true);
-				experiment_base_name << "_threshold_" << distance_thresholds[0];
-			}
-			read_tree(make_log_file_name(experiment_base_name.str(), "tree", "rrt"), &tree);
-			std::cout << "Number of nodes: " << tree.size() << std::endl;
-			std::cout << "Solution found? ";
-			if (tree[0].cost_from_start < DBL_MAX) {
-				std::cout << "Yes\tCost to goal: " << tree[0].cost_from_start;
-			} else {
-				std::cout << "No";
-			}
-			std::cout << std::endl;
-
-			vis::RestoreEnvironment<3>();
-			world->positionCamera();
-
-			vis::visualizeFinalPath(tree, false, false, true);
-
-			tree_loaded = true;
-
-			key = NULL;
-		}
-
-		if (key == 'v') {
-			std::cout << "Select one:" << std::endl;
-			std::cout << "\tt - Visualize tree." << std::endl;
-			std::cout << "\tp - Visualize paths." << std::endl;
-			std::cout << "\ts - Visualize solution." << std::endl;
-			std::cout << "\tw - Warp environment." << std::endl;
-			std::cout << "\tw - Restore environment." << std::endl;
-			std::cout << "\tq - Cancel." << std::endl;
-			std::cout << ">> ";
-
-			key = _getchar();
-
-			if (key == 't') {
-				vis::drawTree(tree);
-			}
-
-			if (key == 's') {
-				vis::visualizeFinalPath(tree, true, false);
-			}
-
-			if (key == 'p') {
-				vis::visualizeTree(tree);
-			}
-
-			if (key == 'w') {
-				vis::WarpEnvironment<3>(Rotation, Scale);
-			}
-
-			if (key == 'r') {
-				vis::RestoreEnvironment<3>();
-			}
+			fclose(collision_probabilities_log);
 
 			key = NULL;
 		}
 
 		if (key == 'c') {
-			vis::clearAll();
+			std::cout << "Select one: (any other input cancels)" << std::endl;
+			printCollisionDebugMenu();
+			std::cout << ">> ";
 
-			key = NULL;
-		}
+			key = _getchar();
 
-		if (key == 's') {
-			int collision_step = -1;
-			robot->hide_model();
-			robot->show_collision_checker();
-			nominal_trajectory_t nominal_trajectory;
-			createNominalTrajectory(tree, nominal_trajectory);
-			if (nominal_trajectory.path.size() != 0) {
-				simulate(dynamics, tree, nominal_trajectory, collision_step, true, robot);
-			} else {
-				std::cout << "No path found." << std::endl;
+			if (key == 'p') {
+				int temp;
+				do {
+					std::cout << "Set PAUSE_ON_EACH_COLLISION_CHECK (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp != 0 && temp != 1 && temp != -1);
+				if (temp != -1) {
+					PAUSE_ON_EACH_COLLISION_CHECK = temp;
+				}
 			}
 
-			key = NULL;
-		}
-
-		if (key == 't') {
-			float average_probability_of_collision = 0.0f;
-			testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
+			if (key == 's') {
+				do {
+					std::cout << "Set SHOW_COLLISION_SLEEP_TIME (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 0 && temp != -1);
+				if (temp != -1) {
+					SHOW_COLLISION_SLEEP_TIME = temp;
+				}
+			}
 
 			key = NULL;
 		}
@@ -4593,63 +4595,40 @@ x1[5] = 0;
 			key = NULL;
 		}
 
-		if (key == 'a') {
-			ostringstream current_experiment_name;
-			ostringstream collision_probabilities_record;
+		if (key == 'h') {
+			printHelpMenu();
+		}
 
-			FILE * collision_probabilities_log = fopen(make_log_file_name(experiment_name, "collision_probabilities", "txt").c_str(), "w");
-			WRITE_HEADER(collision_probabilities_record, "experiment\tthreshold\tmean average probability of collision\tmean average probability of success", collision_probabilities_log);
+		if (key == 'l') {
+			int trajectory_id = -1;
+			int threshold = -1;
+			experiment_base_name.clear();
+			experiment_base_name.str("");
+			experiment_base_name << experiment_name;
 
-			int trajectories_found = 0;
-
-			// Iterate over thresholds
-			for (size_t threshold_idx = 0; threshold_idx < distance_threshold_count; ++threshold_idx) {
-				float average_probability_of_collision = 0.0f;
-				float mean_average_probability_of_collision = 0.0f;
-
-				// Load each trajectory
-				for (size_t trajectory_count = 0; trajectory_count < TRAJECTORY_COUNT; ++trajectory_count) {
-					paths = 0;
-
-					vis::clearPaths();
-					vis::clearSimulation();
-
-					world->setDistanceThreshold(distance_thresholds[threshold_idx]);
-					current_experiment_name.clear();
-					current_experiment_name.str("");
-					current_experiment_name << experiment_name << "_trajectory_" << trajectory_count << "_threshold_" << world->getDistanceThreshold();
-
-					string tree_file_name = make_log_file_name(current_experiment_name.str(), "tree", "rrt");
-					std::cout << "Reading " << current_experiment_name.str() << " tree from (" << tree_file_name << ")." << std::endl;
-					read_tree(tree_file_name, &tree);
-
-					// If no trajectory was found move on
-					if (!(tree[0].cost_from_start < DBL_MAX)) {
-						std::cout << "No trajectory found... skipping.";
-						continue;
-					} else {
-						++trajectories_found;
-					}
-
-					average_probability_of_collision = 0.0f;
-					size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
-					mean_average_probability_of_collision += average_probability_of_collision;
-
-					fflush(collision_probabilities_log);
-				}
-
-				mean_average_probability_of_collision /= float(TRAJECTORY_COUNT);
-
-				std::cout << "Mean average probability of collision: " << std::fixed << std::setw(10) << std::setprecision(10) << mean_average_probability_of_collision << std::endl;
-				std::cout << "Mean average probability of success: " << (1.0f - mean_average_probability_of_collision) << std::endl;
-
-				collision_probabilities_record.clear();
-				collision_probabilities_record.str("");
-				collision_probabilities_record << std::fixed << std::setw(10) << std::setprecision(10) << experiment_name << '\t' << world->getDistanceThreshold()  << '\t' << mean_average_probability_of_collision << '\t' << (1.0f - mean_average_probability_of_collision) << std::endl;
-				fputs(collision_probabilities_record.str().c_str(), collision_probabilities_log);
+			std::cout << "Trajectory id? ";
+			std::cin >> trajectory_id;
+			if (trajectory_id >= 0) {
+				experiment_base_name << "_trajectory_" << trajectory_id;
+				setThresholds(true);
+				experiment_base_name << "_threshold_" << distance_thresholds[0];
 			}
+			read_tree(make_log_file_name(experiment_base_name.str(), "tree", "rrt"), &tree);
+			std::cout << "Number of nodes: " << tree.size() << std::endl;
+			std::cout << "Solution found? ";
+			if (tree[0].cost_from_start < DBL_MAX) {
+				std::cout << "Yes\tCost to goal: " << tree[0].cost_from_start;
+			} else {
+				std::cout << "No";
+			}
+			std::cout << std::endl;
 
-			fclose(collision_probabilities_log);
+			vis::RestoreEnvironment<3>();
+			world->positionCamera();
+
+			vis::visualizeFinalPath(tree, false, false, true);
+
+			tree_loaded = true;
 
 			key = NULL;
 		}
@@ -4676,7 +4655,7 @@ x1[5] = 0;
 			for (size_t threshold_idx = 0; threshold_idx < all_distance_threshold_count; ++threshold_idx) {
 				current_threshold = all_distance_thresholds[threshold_idx];
 
-				for (size_t trajectory_idx = 0; trajectory_idx < TRAJECTORY_COUNT; ++trajectory_idx) {
+				for (size_t trajectory_idx = start_experiments_from; trajectory_idx < TRAJECTORY_COUNT; ++trajectory_idx) {
 					current_experiment_name.clear();
 					current_experiment_name.str("");
 					current_experiment_name << experiment_name << "_trajectory_" << trajectory_idx << "_threshold_" << current_threshold;
@@ -4728,6 +4707,139 @@ x1[5] = 0;
 
 			key = NULL;
 		}
+
+		if (key == 'r') {
+			planTrajectory(experiment_name, tree, radius, distance_thresholds[0], FIND_FIRST_PATH_ONLY);
+
+			key = NULL;
+		}
+
+		if (key == 's') {
+			int collision_step = -1;
+			robot->hide_model();
+			robot->show_collision_checker();
+			nominal_trajectory_t nominal_trajectory;
+			createNominalTrajectory(tree, nominal_trajectory);
+			if (nominal_trajectory.path.size() != 0) {
+				simulate(dynamics, tree, nominal_trajectory, collision_step, true, robot);
+			} else {
+				std::cout << "No path found." << std::endl;
+			}
+
+			key = NULL;
+		}
+
+		if (key == 't') {
+			float average_probability_of_collision = 0.0f;
+			testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, false);
+
+			key = NULL;
+		}
+
+		if (key == 'v') {
+			std::cout << "Select one: (any other input cancels)" << std::endl;
+			printVisualizationMenu();
+			std::cout << ">> ";
+
+			key = _getchar();
+
+			if (key == 'a') {
+				vis::showAxis();
+			}
+
+			if (key == 'c') {
+				vis::clearAll();
+			}
+
+			if (key == 'p') {
+				vis::visualizeTree(tree);
+			}
+
+			if (key == 'r') {
+				vis::RestoreEnvironment<3>();
+			}
+
+			if (key == 's') {
+				vis::visualizeFinalPath(tree, true, false);
+			}
+
+			if (key == 't') {
+				vis::drawTree(tree);
+			}
+
+			if (key == 'u') {
+				//vis::showUncertainty(x_sigma);
+				vis::ShowUncertainty<3>(world, robot, Rotation, Scale, distance_thresholds[0]);
+			}
+
+			if (key == 'w') {
+				vis::WarpEnvironment<3>(Rotation, Scale);
+			}
+
+			key = NULL;
+		}
+
+		if (key == 'x') {
+			printExperimentProperties(experiment_name);
+
+			std::cout << std::endl;
+
+			std::cout << "Select one: (any other input cancels)" << std::endl;
+			printSettingsMenu();
+			std::cout << ">> ";
+			key = _getchar();
+
+			int temp = -1;
+
+			if (key == 'e') {
+				do {
+					std::cout << "Set TARGET_NODES (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 1 && temp != -1);
+				if (temp != -1) {
+					TARGET_NODES = temp;
+				}
+			}
+
+			if (key == 'l') {
+				summarize_experiment(NULL, false);
+			}
+
+			if (key == 'n') {
+				do {
+					std::cout << "Set NOISE_FREE (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp != 0 && temp != 1 && temp != -1);
+				if (temp != -1) {
+					NOISE_FREE = temp;
+				}
+			}
+
+			if (key == 't') {
+				do {
+					std::cout << "Set TRAJECTORY_COUNT (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 1 && temp != -1);
+				if (temp != -1) {
+					TRAJECTORY_COUNT = temp;
+				}
+			}
+
+			if (key == 's') {
+				do {
+					std::cout << "Set start_experiment_from (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 1 && temp >= TRAJECTORY_COUNT && temp != -1);
+				if (temp != -1) {
+					start_experiments_from = temp;
+				}
+			}
+
+			printExperimentProperties(experiment_name);
+
+			key = NULL;
+		}
+
 	} while (key != 'q');
 
 	std::cout << "Quitting." << std::endl;
