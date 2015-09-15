@@ -132,7 +132,7 @@ void visualizeBelief(const state & state_nominal, const state &state_belief) {
 	vis::markBelief(x_pos, y_pos, z_pos);
 }
 */
-bool simulate(const dynamics_t &dynamics, tree_t &tree, nominal_trajectory_t &traj, int &collision_step, bool visualize_simulation = VISUALIZE_SIMULATION, Robot * robot = NULL) {
+bool simulate(const bool stop_on_collision, const dynamics_t &dynamics, tree_t &tree, nominal_trajectory_t &traj, collision_steps_t &collision_steps, bool visualize_simulation = VISUALIZE_SIMULATION, Robot * robot = NULL) {
 	double sqrt_deltaT = sqrt(deltaT);
 
 	double x_pos = 0, y_pos = 0, z_pos = 0;
@@ -182,8 +182,12 @@ bool simulate(const dynamics_t &dynamics, tree_t &tree, nominal_trajectory_t &tr
 		actual = (dynamics.X)*y + traj.path[current_step].second;
 		if (!collision_free(actual, false, false)) {
 			free_path = false;
-			collision_step = current_step;
-			break;
+			++collision_steps[current_step];
+			if (stop_on_collision) {
+				break;
+			}
+		} else {
+			++collision_steps[current_step];
 		}
 
 		if (visualize_simulation) {

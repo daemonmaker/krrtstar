@@ -71,6 +71,8 @@ bool SHOW_AXIS = false;
 #define NONHOLONOMIC 5
 #define DYNAMICS DOUBLE_INTEGRATOR_2D
 
+#define FULLY_OBSERVABLE 1
+
 std::string dynamics_type_to_name(const int id) {
 	std::string name = "UNKNOWN";
 
@@ -221,7 +223,11 @@ int start_experiments_from = 0;
 #define POLY_DEGREE 4
 #define DIM 2
 #define X_DIM 4
+#if (FULLY_OBSERVABLE == 1)
 #define Z_DIM 4
+#else
+#define Z_DIM 2
+#endif
 #define U_DIM 2
 
 #define X_COORD 0
@@ -327,6 +333,8 @@ typedef std::pair<double, control> control_time_t;
 typedef std::vector< state_time_t, Eigen::aligned_allocator<state_time_t> > state_time_list_t;
 typedef std::vector< control_time_t, Eigen::aligned_allocator<control_time_t> > control_time_list_t;
 typedef std::vector< node_id_t > path_t;
+typedef std::map<int, int> collision_steps_t;
+typedef std::map<int, int> collision_stats_t;
 
 struct nominal_trajectory_t {
 	state_time_list_t path;

@@ -10,7 +10,7 @@
 
 %% Select system and setup basic variables
 clear
-system = 'snglint2dfullyobservable'
+system = 'dblint2dpartiallyobservable'
 
 % Set dimensionality information for system
 if strcmp(system, 'snglint2dfullyobservable')
@@ -38,11 +38,6 @@ elseif strcmp(system, 'dblint2dpartiallyobservable')
     X_DIM = 4
     U_DIM = 2
     Z_DIM = 2
-elseif strcmp(system, 'dblint2din3dfullyobservable')
-    % Double integrator 2D - embedded in 3D
-    X_DIM = 5
-    U_DIM = 2
-    Z_DIM = 5
 end
 
 % Setup space for system
@@ -111,7 +106,7 @@ elseif strcmp(system, 'dblint2dfullyobservable')
 % Used in
 % Visualization of vandenberg map
 if false
-    % X noise - skewed
+    % X noise
     m_multiplier = 1;
     M(1,1) = 1;
     M(2,2) = 0.1;
@@ -119,7 +114,7 @@ if false
     M(4,4) = 0.1;
     n_multiplier = 0.1
 elseif false
-    % Y noise - skewed
+    % Y noise
     m_multiplier = 1;
     M(1,1) = 0.1;
     M(2,2) = 1;
@@ -127,7 +122,7 @@ elseif false
     M(4,4) = 1;
     n_multiplier = 0.1
 elseif false
-    % Y noise - skewed
+    % XY noise
     m_multiplier = 2;
     M(1,1) = 0.25;
     M(1,2) = 0.5;
@@ -142,7 +137,7 @@ end
 % Used in
 % Simulations for DBLINT2D_FO
 if false
-    % X noise - skewed
+    % X noise
     m_multiplier = 1;
     M(1,1) = 0.5;
     M(2,2) = 0.1;
@@ -150,7 +145,7 @@ if false
     M(4,4) = 0.1;
     n_multiplier = 0.1
 elseif false
-    % Y noise - skewed
+    % Y noise
     m_multiplier = 1;
     M(1,1) = 0.1;
     M(2,2) = 0.5;
@@ -158,7 +153,7 @@ elseif false
     M(4,4) = 0.5;
     n_multiplier = 0.1
 elseif true
-    % Y noise - skewed
+    % XY noise
     m_multiplier = 1;
     M(1,1) = 0.25;
     M(1,2) = 0.5;
@@ -177,81 +172,36 @@ elseif strcmp(system, 'dblint2dpartiallyobservable')
     B(4, 2) = 1
     C(1, 1) = 1;
     C(2, 2) = 1
- 
-    % Enlarged uniformly - USED FOR EXPERIMENTS DBLINT2DPOv1
-%     m_multiplier = 1;
-%     M(1,1) = 1;
-%     M(2,2) = 1;
-%     M(3,3) = 1;
-%     M(4,4) = 1;
-%     n_multiplier = 0.01;
-%     N(1,1) = 1;
-%     N(2,2) = 1;
-
-    % Rotated & skewed - USED FOR EXPERIMENTS DBLINT2DFOv2
-    m_multiplier = 100;
-    M(1,1) = 0.1;
-    M(2,2) = 0.1;
-    M(3,3) = 0.00001;
-    M(4,4) = 0.00001;
-    n_multiplier = 0.01;
-    N(1,1) = 1;
-    N(2,2) = 1;
-
-%     M(1,1) = 0.01;
-%     M(1,2) = 0.001;
-%     M(1,3) = 0.00001;
-%     M(3,1) = 0.00001;
-%     M(1,4) = 0.000001;
-%     M(4,1) = 0.000001;
-%     M(2,1) = 0.001;
-%     M(2,2) = 0.01;
-%     M(2,3) = 0.0001;
-%     M(3,2) = 0.0001;
-%     M(2,4) = 0.00001;
-%     M(4,2) = 0.00001;
-%     M(3,3) = 0.001;
-%     M(3,4) = 0.0001;
-%     M(4,3) = 0.0001;
-%     M(4,4) = 0.001;
-    %[M,p] = chol(M*transpose(M)) % p = (positive value) indicates M is NOT positive semidefinite
-
     
-    %N = N*0.1;
-
-%     N(1,1) = 0.00005;
-%     N(1,2) = 0.0000025;
-%     N(2,1) = 0.0000025;
-%     N(2,2) = 0.00005
-elseif strcmp(system, 'dblint2din3dfullyobservable')
-    A(1, 3) = 1;
-    A(2, 4) = 1;
-    A(3, 5) = 1
-    B(4, 1) = 1;
-    B(5, 2) = 1
-    C = eye(Z_DIM)
-
-    % X noise - skewed
-    % Uwsed in
-    % Visualization of vandenberg map
-    m_multiplier = 1;
-    M(1,1) = 1;
+% Used in
+% Simulations for DBLINT2D_PO_StraightPassage
+if true
+    % X noise
+    m_multiplier = 3;
+    M(1,1) = 0.5;
     M(2,2) = 0.1;
-    M(3,3) = 1;
-    M(4,4) = 0.1;
-    n_multiplier = 0.001
-    
-    % Y noise - skewed
-    % Uwsed in
-    % Visualization of vandenberg map
-    m_multiplier = 1;
-    M(1,1) = 0.1;
-    M(2,2) = 1;
     M(3,3) = 0.1;
-    M(4,4) = 1;
-    n_multiplier = 0.001
-%     N(1,1) = 0.1;
-%     N(3,3) = 0.1;
+    M(4,4) = 0.01;
+    n_multiplier = 0.1;
+elseif false
+     % Y noise
+    m_multiplier = 2;
+    M(1,1) = 0.1;
+    M(2,2) = 0.5;
+    M(3,3) = 0.01;
+    M(4,4) = 0.1;
+    n_multiplier = 0.1;
+elseif false
+     % XY noise
+    m_multiplier = 2;
+    M(1,1) = 0.25;
+    M(1,2) = 0.5;
+    M(2,2) = 0.25;
+    M(3,3) = 0.01;
+    M(3,4) = 0.1;
+    M(4,4) = 0.01;
+    n_multiplier = 0.1;
+end
 
 end
 
