@@ -194,11 +194,13 @@ void ShowUncertainty(World * world, Robot * robot, const Eigen::Matrix<double,_d
 
 	int result;
 
+	/*
 	int temp;
 	CAL_CreateGroup(&temp, 0, false, "Original Uncertainty");
 	result = CAL_CreateSphere(temp, 1, 0.0f, 0.0f, 0.0f);
 	CAL_SetGroupColor(temp, 0, 1, 0, 0.25);
 	CAL_SetGroupVisibility(temp, 1, true);
+	*/
 
 	for (World::points_t::const_iterator pt = pts.cbegin(); pt != pts.cend(); ++pt) {
 		int cal_uncertainty_scale, cal_uncertainty_rotate, cal_uncertainty;
@@ -218,7 +220,7 @@ void ShowUncertainty(World * world, Robot * robot, const Eigen::Matrix<double,_d
 		result = CAL_CreateSphere(cal_uncertainty, scaler*distance_threshold, 0.0f, 0.0f, 0.0f);
 		//result = CAL_CreateSphere(cal_uncertainty, distance_threshold, 0.0f, 0.0f, 0.0f);
 
-		CAL_SetGroupColor(cal_uncertainty, 0.5, 0.5, 0.5, 0.25);
+		CAL_SetGroupColor(cal_uncertainty, 0.25, 0.75, 0.25, 0.25);
 
 		RotateAndScaleGroup<_dim>(cal_uncertainty_rotate, cal_uncertainty_scale, V, S, USE_INVERSE_SCALE, !USE_INVERSE_ROTATE);
 
@@ -338,7 +340,7 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	//setupRobot();
 
 #if defined(MAKE_STILLS) && (DYNAMICS != QUADROTOR)
-	world->set_obstacle_color(0.1, 0.1, 0.1, 1);
+	world->set_obstacle_color(0.15, 0.15, 0.15, 1);
 #else
 	world->set_obstacle_color(0.1, 0.1, 0.1, 0.1);
 #endif

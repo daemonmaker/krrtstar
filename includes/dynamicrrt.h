@@ -270,8 +270,8 @@ int TARGET_NODES = DEFAULT_TARGET_NODES;
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassages
-			#define WORLD worlds::VanDenBergPassagesExaggerated
-			//#define WORLD worlds::StraightPassage
+			//#define WORLD worlds::VanDenBergPassagesExaggerated
+			#define WORLD worlds::StraightPassage
 			//#define WORLD worlds::UPassage
 			//#define WORLD worlds::SPassage
 		#else
@@ -279,9 +279,9 @@ int TARGET_NODES = DEFAULT_TARGET_NODES;
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassagesExaggerated
-			//#define WORLD worlds::StraightPassage
+			#define WORLD worlds::StraightPassage
 			//#define WORLD worlds::UPassage
-			#define WORLD worlds::SPassage
+			//#define WORLD worlds::SPassage
 		#endif
 	#elif USE_OBSTACLES == 5
 		#define WORLD SimpleRaceTrack

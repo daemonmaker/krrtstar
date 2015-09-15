@@ -561,10 +561,10 @@ protected:
 		int box_id = 0;
 
 		// Make outer walls
-		CAL_CreateBox(this->obstacle_group, (this->width)*(this->scaler), 5*(this->scaler), 10*(this->scaler), 0*(this->scaler), -((this->height/2.0)+2.5)*(this->scaler), 0*(this->scaler)); // Bottom
-		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), (this->height)*(this->scaler), 10*(this->scaler), -((this->width/2.0)+2.5)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Left
-		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), (this->height)*(this->scaler), 10*(this->scaler), ((this->width/2.0)+2.5)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Right
-		CAL_CreateBox(this->obstacle_group, (this->width)*(this->scaler), 5*(this->scaler), 10*(this->scaler), 0*(this->scaler), ((this->height/2.0)+2.5)*(this->scaler), 0*(this->scaler)); // Top
+		CAL_CreateBox(this->obstacle_group, (this->width)*(this->scaler), 5*(this->scaler), 1*(this->scaler), 0*(this->scaler), -((this->height/2.0)+2.5)*(this->scaler), 0*(this->scaler)); // Bottom
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), (this->height)*(this->scaler), 1*(this->scaler), -((this->width/2.0)+2.5)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), (this->height)*(this->scaler), 1*(this->scaler), ((this->width/2.0)+2.5)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Right
+		CAL_CreateBox(this->obstacle_group, (this->width)*(this->scaler), 5*(this->scaler), 1*(this->scaler), 0*(this->scaler), ((this->height/2.0)+2.5)*(this->scaler), 0*(this->scaler)); // Top
 	}
 
 	virtual void positionCamera(const Eigen::Matrix<double,3,3>& R = Eigen::Matrix<double,3,3>::Identity(), const Eigen::Matrix<double,3,3>& S = Eigen::Matrix<double,3,3>::Identity()) {
@@ -615,17 +615,26 @@ public:
 		this->x_bounds[1] = std::make_pair(-(this->height/2.0)*(this->scaler), (this->height/2.0)*(this->scaler));
 	}
 
+	virtual void getCorners(World::points_t & pts) {
+		pts.push_back( std::make_pair((0+(this->width/2.0 + 2.5))*(this->scaler), (this->height/2.0 + 2.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((0-(this->width/2.0 + 2.5))*(this->scaler), (this->height/2.0 + 2.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((0+(this->width/2.0 + 2.5))*(this->scaler), (-(this->height/2.0 + 2.5))*(this->scaler)) );
+		pts.push_back( std::make_pair((0-(this->width/2.0 + 2.5))*(this->scaler), (-(this->height/2.0 + 2.5))*(this->scaler)) );
+
+		pts.push_back( std::make_pair((9.0*this->width/20.0-this->width/20.0)*(this->scaler), (0.0)*(this->scaler)) );
+	}
+
 protected:
 	virtual void _buildEnvironment() {
 		int box_id = 0;
 
 		// Make outer walls
-		CAL_CreateBox(this->obstacle_group, (this->width+5)*(this->scaler), 5*(this->scaler), 10*(this->scaler), 0*(this->scaler), -(this->height/2.0 + 5)*(this->scaler), 0*(this->scaler)); // Bottom
-		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), (this->height+5)*(this->scaler), 10*(this->scaler), -(this->width/2.0 + 5)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Left
-		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), (this->height+5)*(this->scaler), 10*(this->scaler), (this->width/2.0 + 5)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Right
-		CAL_CreateBox(this->obstacle_group, (this->width+5)*(this->scaler), 5*(this->scaler), 10*(this->scaler), 0*(this->scaler), (this->height/2.0 + 5)*(this->scaler), 0*(this->scaler)); // Top
+		CAL_CreateBox(this->obstacle_group, (this->width+5)*(this->scaler), 5*(this->scaler), 1*(this->scaler), 0*(this->scaler), -(this->height/2.0 + 5)*(this->scaler), 0*(this->scaler)); // Bottom
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), (this->height+5)*(this->scaler), 1*(this->scaler), -(this->width/2.0 + 5)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 5*(this->scaler), (this->height+5)*(this->scaler), 1*(this->scaler), (this->width/2.0 + 5)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Right
+		CAL_CreateBox(this->obstacle_group, (this->width+5)*(this->scaler), 5*(this->scaler), 1*(this->scaler), 0*(this->scaler), (this->height/2.0 + 5)*(this->scaler), 0*(this->scaler)); // Top
 
-		CAL_CreateBox(this->obstacle_group, (9.0*this->width/10.0)*(this->scaler), 5*(this->scaler), 10*(this->scaler), -(this->width/20.0)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Middle
+		CAL_CreateBox(this->obstacle_group, (9.0*this->width/10.0)*(this->scaler), 5*(this->scaler), 1*(this->scaler), -(this->width/20.0)*(this->scaler), 0*(this->scaler), 0*(this->scaler)); // Middle
 	}
 
 	virtual void positionCamera(const Eigen::Matrix<double,3,3>& R = Eigen::Matrix<double,3,3>::Identity(), const Eigen::Matrix<double,3,3>& S = Eigen::Matrix<double,3,3>::Identity()) {

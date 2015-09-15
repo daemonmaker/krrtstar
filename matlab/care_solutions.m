@@ -10,7 +10,7 @@
 
 %% Select system and setup basic variables
 clear
-system = 'dblint2dfullyobservable'
+system = 'snglint2dfullyobservable'
 
 % Set dimensionality information for system
 if strcmp(system, 'snglint2dfullyobservable')
@@ -67,11 +67,9 @@ if strcmp(system, 'snglint2dfullyobservable')
     
     % Enlarged uniformly - USED FOR EXPERIMENTS SNGLINT2DFOv1
     m_multiplier = 1
-    M(1,1) = 1;
-    M(2,2) = 1;
-    n_multiplier = 1
-    N = N*0.5;
-    N(1,1) = 0.25;
+    M(1,1) = 0.25;
+    M(2,2) = 0.5;
+    n_multiplier = 0.1
     
     % Skewed - USED FOR EXPERIMENTS SNGLINT2DFOv2
 %     m_multiplier = 0.01
@@ -110,10 +108,10 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     B(4, 2) = 1
     C = eye(Z_DIM)
 
+% Used in
+% Visualization of vandenberg map
 if false
     % X noise - skewed
-    % Used in
-    % Visualization of vandenberg map
     m_multiplier = 1;
     M(1,1) = 1;
     M(2,2) = 0.1;
@@ -122,19 +120,46 @@ if false
     n_multiplier = 0.1
 elseif false
     % Y noise - skewed
-    % Used in
-    % Visualization of vandenberg map
     m_multiplier = 1;
     M(1,1) = 0.1;
     M(2,2) = 1;
     M(3,3) = 0.1;
     M(4,4) = 1;
     n_multiplier = 0.1
-else
+elseif false
     % Y noise - skewed
-    % Used in
-    % Visualization of vandenberg map
     m_multiplier = 2;
+    M(1,1) = 0.25;
+    M(1,2) = 0.5;
+    M(2,2) = 0.25;
+    M(3,3) = 0.1;
+    M(4,4) = 0.1;
+    n_multiplier = 0.5
+%     N(1,1) = 0.1;
+%     N(3,3) = 0.1;
+end
+
+% Used in
+% Simulations for DBLINT2D_FO
+if false
+    % X noise - skewed
+    m_multiplier = 1;
+    M(1,1) = 0.5;
+    M(2,2) = 0.1;
+    M(3,3) = 0.5;
+    M(4,4) = 0.1;
+    n_multiplier = 0.1
+elseif false
+    % Y noise - skewed
+    m_multiplier = 1;
+    M(1,1) = 0.1;
+    M(2,2) = 0.5;
+    M(3,3) = 0.1;
+    M(4,4) = 0.5;
+    n_multiplier = 0.1
+elseif true
+    % Y noise - skewed
+    m_multiplier = 1;
     M(1,1) = 0.25;
     M(1,2) = 0.5;
     M(2,2) = 0.25;
