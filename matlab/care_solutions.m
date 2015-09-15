@@ -109,185 +109,41 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     B(3, 1) = 1;
     B(4, 2) = 1
     C = eye(Z_DIM)
-    
-    % Enlarged uniformly
-    % Used in:
-    % DBLINT2D_FO_SPassage_20000_XYnoise
-%     m_multiplier = 0.1;
-%     M(1,1) = 1;
-%     M(2,2) = 1;
-%     M(3,3) = 1;
-%     M(4,4) = 1;
-%     n_multiplier = 1
-
-%     N(1,1) = 0.5;
-%     N(1,2) = 0.01;
-%     N(1,3) = 0.001;
-%     N(1,4) = 0.0001;
-%     N(2,2) = 0.1
-%     N(2,3) = 0.1;
-%     N(2,4) = 0.0001;
-%     N(3,3) = 0.001;
-%     N(3,4) = 0.0001;
-%     N(4,4) = 0.001;
-    
-    % Used in
-    % Visualization
-%     m_multiplier = 0.75;
-%     M(1,1) = 0.25;
-%     M(2,2) = 1;
-%     M(3,3) = 0.001;
-%     M(4,4) = 0.001;
-%     n_multiplier = 1
-%     N(1,1) = 0.5;
-%     N(1,2) = 0.01;
-%     N(1,3) = 0.001;
-%     N(1,4) = 0.0001;
-%     N(2,2) = 0.1
-%     N(2,3) = 0.1;
-%     N(2,4) = 0.0001;
-%     N(3,3) = 0.001;
-%     N(3,4) = 0.0001;
-%     N(4,4) = 0.001;
-    
-    % Rotated & skewed
-    % Uwsed in
-    % DBLINT2D_FO_SPassage_20000_Xnoise
-%     m_multiplier = 0.75;
-%     M(1,1) = 0.25;
-%     M(1,2) = 1;
-%     M(2,2) = 0.001;
-%     M(3,3) = 0.001;
-%     M(4,4) = 0.001;
-%     n_multiplier = 1;
-%     N(1,1) = 0.5;
-%     N(1,2) = 0.01;
-%     N(1,3) = 0.001;
-%     N(1,4) = 0.0001;
-%     N(2,2) = 0.1
-%     N(2,3) = 0.1;
-%     N(2,4) = 0.0001;
-%     N(3,3) = 0.001;
-%     N(3,4) = 0.0001;
-%     N(4,4) = 0.001;
 
 if false
     % X noise - skewed
     % Used in
     % Visualization of vandenberg map
-    m_multiplier = 3;
+    m_multiplier = 1;
     M(1,1) = 1;
     M(2,2) = 0.1;
     M(3,3) = 1;
     M(4,4) = 0.1;
-    n_multiplier = 0.001
-elseif true
+    n_multiplier = 0.1
+elseif false
     % Y noise - skewed
     % Used in
     % Visualization of vandenberg map
-    m_multiplier = 3;
+    m_multiplier = 1;
     M(1,1) = 0.1;
     M(2,2) = 1;
     M(3,3) = 0.1;
     M(4,4) = 1;
-    n_multiplier = 0.001
+    n_multiplier = 0.1
 else
     % Y noise - skewed
     % Used in
     % Visualization of vandenberg map
-    m_multiplier = 0.1;
-    M(1,1) = 0.1;
-    M(2,2) = 1;
-    M(3,3) = 1;
+    m_multiplier = 2;
+    M(1,1) = 0.25;
+    M(1,2) = 0.5;
+    M(2,2) = 0.25;
+    M(3,3) = 0.1;
     M(4,4) = 0.1;
-    n_multiplier = 0.001
+    n_multiplier = 0.5
 %     N(1,1) = 0.1;
 %     N(3,3) = 0.1;
 end
-    
-    % High noise
-    % Uwsed in
-    % Visualization of vandenberg map
-%     m_multiplier = 1.25;
-%     M(1,1) = 1;
-%     M(2,2) = 1;
-%     M(3,3) = 1;
-%     M(4,4) = 1;
-%     n_multiplier = 0.1
-    
-    % Rotated & skewed
-    % Uwsed in
-    % Visualization of vandenberg map
-%     m_multiplier = 1;
-%     M(1,1) = 0.25;
-%     M(1,2) = 1;
-%     M(2,2) = 0.5;
-%     M(3,3) = 0.25;
-%     M(3,4) = 0.01;
-%     M(4,4) = 0.5;
-%     n_multiplier = 0.1;
-%     N(1,1) = 0.5;
-%     N(1,2) = 0.01;
-%     N(1,3) = 0.001;
-%     N(1,4) = 0.0001;
-%     N(2,2) = 0.1
-%     N(2,3) = 0.1;
-%     N(2,4) = 0.0001;
-%     N(3,3) = 0.001;
-%     N(3,4) = 0.0001;
-%     N(4,4) = 0.001;
-
-%     m_multiplier = 0.01;
-%     M(1,1) = 0.1;
-%     M(2,2) = 1;
-%     M(3,3) = 0.1;
-%     M(4,4) = 1;
- 
-    % Rotated & skewed - NOT USED
-%     m_multiplier = 5;
-%     M(1,1) = 1;
-%     M(1,2) = 0.1;
-%     M(2,1) = M(1,2);
-%     M(1,3) = 0.01;
-%     M(3,1) = M(1,3);
-%     M(1,4) = 0.001;
-%     M(4,1) = M(1,4);
-%     M(2,2) = 0.5;
-%     M(2,3) = 0.1;
-%     M(3,2) = M(2,3);
-%     M(2,4) = 0.001;
-%     M(4,2) = M(2,4);
-%     M(3,3) = 1;
-%     M(3,4) = 0.1;
-%     M(4,3) = M(3,4);
-%     M(4,4) = 0.1;
-
-%     M(1,1) = 1;
-%     M(1,2) = 0.1;
-%     %M(2,1) = M(1,2);
-%     M(1,3) = 0.01;
-%     %M(3,1) = M(1,3);
-%     M(1,4) = 0.00001;
-%     %M(4,1) = M(1,4);
-%     M(2,2) = 0.25;
-%     M(2,3) = 0.1;
-%     %M(3,2) = M(2,3);
-%     M(2,4) = 0.00001;
-%     %M(4,2) = M(2,4);
-%     M(3,3) = 0.0001;
-%     M(3,4) = 0.00001;
-%     %M(4,3) = M(3,4);
-%     M(4,4) = 0.0001;
- 
-    %M(1,1) = 0.01;
-    %M(1,2) = 0;
-    %M(2,2) = 1;
-    %M(3,3) = 0.0001;
-    %M(3,4) = 0.1;
-    %M(4,4) = 0.0001;
-    %M = chol(M*transpose(M))
-
-    %N = N*0.1;
 
 elseif strcmp(system, 'dblint2dpartiallyobservable')
     A(1, 3) = 1;

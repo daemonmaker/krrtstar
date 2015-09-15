@@ -826,8 +826,8 @@ public:
 	VanDenBergPassagesExaggerated(int base_group)
 		: World(base_group, 2.0)
 	{
-		this->x0[0] = 22.5*(this->scaler);
-		this->x0[1] = 22.5*(this->scaler);
+		this->x0[0] = 12.5*(this->scaler);
+		this->x0[1] = 12.5*(this->scaler);
 		this->x1[0] = 75*(this->scaler);
 		this->x1[1] = 75*(this->scaler);
 
@@ -847,15 +847,15 @@ public:
 		pts.push_back( std::make_pair((50+50)*(this->scaler), (102.5-2.5)*(this->scaler)) );
 		pts.push_back( std::make_pair((50-50)*(this->scaler), (102.5-2.5)*(this->scaler)) );
 
-		pts.push_back( std::make_pair((7.5+7.5)*(this->scaler), (40+10)*(this->scaler)) );
-		pts.push_back( std::make_pair((7.5+7.5)*(this->scaler), (40-10)*(this->scaler)) );
-		pts.push_back( std::make_pair((40+10)*(this->scaler), (7.5+7.5)*(this->scaler)) );
-		pts.push_back( std::make_pair((40-10)*(this->scaler), (7.5+7.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((7.5+7.5)*(this->scaler), (40+15)*(this->scaler)) );
+		pts.push_back( std::make_pair((7.5+7.5)*(this->scaler), (40-15)*(this->scaler)) );
+		pts.push_back( std::make_pair((40+15)*(this->scaler), (7.5+7.5)*(this->scaler)) );
+		pts.push_back( std::make_pair((40-15)*(this->scaler), (7.5+7.5)*(this->scaler)) );
 
-		pts.push_back( std::make_pair((40+10)*(this->scaler), (40+10)*(this->scaler)) );
-		pts.push_back( std::make_pair((40-10)*(this->scaler), (40+10)*(this->scaler)) );
-		pts.push_back( std::make_pair((40+10)*(this->scaler), (40-10)*(this->scaler)) );
-		pts.push_back( std::make_pair((40-10)*(this->scaler), (40-10)*(this->scaler)) );
+		pts.push_back( std::make_pair((40+15)*(this->scaler), (40+15)*(this->scaler)) );
+		pts.push_back( std::make_pair((40-15)*(this->scaler), (40+15)*(this->scaler)) );
+		pts.push_back( std::make_pair((40+15)*(this->scaler), (40-15)*(this->scaler)) );
+		pts.push_back( std::make_pair((40-15)*(this->scaler), (40-15)*(this->scaler)) );
 	}
 
 protected:
@@ -869,11 +869,11 @@ protected:
 		CAL_CreateBox(this->obstacle_group, 100*(this->scaler), 5*(this->scaler), 10*(this->scaler), 50*(this->scaler), 102.5*(this->scaler), 0*(this->scaler)); // Top
 
 		// Make boxes
-		CAL_CreateBox(this->obstacle_group, 15*(this->scaler), 20*(this->scaler), 10*(this->scaler), 7.5*(this->scaler), 40*(this->scaler), 0*(this->scaler)); // Left
-		CAL_CreateBox(this->obstacle_group, 20*(this->scaler), 15*(this->scaler), 10*(this->scaler), 40*(this->scaler), 7.5*(this->scaler), 0*(this->scaler)); // Right
+		CAL_CreateBox(this->obstacle_group, 15*(this->scaler), 30*(this->scaler), 10*(this->scaler), 7.5*(this->scaler), 40*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 30*(this->scaler), 15*(this->scaler), 10*(this->scaler), 40*(this->scaler), 7.5*(this->scaler), 0*(this->scaler)); // Right
 
 		// Make large boxes
-		CAL_CreateBox(this->obstacle_group, 20*(this->scaler), 20*(this->scaler), 10*(this->scaler), 40*(this->scaler), 40*(this->scaler), 0*(this->scaler)); // Left
+		CAL_CreateBox(this->obstacle_group, 30*(this->scaler), 30*(this->scaler), 10*(this->scaler), 40*(this->scaler), 40*(this->scaler), 0*(this->scaler)); // Left
 		//CAL_CreateBox(this->obstacle_group, 12.5*(this->scaler), 20*(this->scaler), 10*(this->scaler), 15*(this->scaler), 15*(this->scaler), 0*(this->scaler)); // Right
 	}
 
@@ -953,7 +953,7 @@ public:
 protected:
 	virtual void _buildEnvironment() {
 		CAL_CreateGroup(&border_group, this->base_group, false, "Borders");
-		CAL_SetGroupColor(border_group, 0.25, 0.25, 0.25);
+		CAL_SetGroupColor(border_group, 0.5, 0.5, 0.5);
 
 		int nl = 1;
 		int np[1] = {2};

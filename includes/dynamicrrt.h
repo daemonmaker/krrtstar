@@ -108,14 +108,14 @@ bool NOISE_FREE = false; // Whether the simulation(s) should be noise free.
 #define REDUCE_RADIUS 0 // Determines whether the radius should be reduced as the tree grows - This misses solutions and saves very little time. Observe the 1D double integrator. -- to be used in conjunction with USE_RANGE
 //#define SHOW_COLLISION_CHECKS // Determines whether to show the collision checks
 //#define SHOW_COLLISIONS // Determines whether to show the collisions
-#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
-#define SKIP_CONNECTIONS 1
+//#define SHOW_THRESHOLD_CHECKS // Determines whether to show the states that were distance checked
+#define SKIP_CONNECTIONS 0
 //#define RUN_COLLISION_TESTER // Runs a utility to allow for manual checking of collision functionality
 #define SHOW_ROBOT 0 // Determines whether the robot model should be shown
 #if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
 #define SHOW_ROBOT_COLLISION_CHECKER 1 // Determines whether the robot collision checker should be displayed
 #else
-#define SHOW_ROBOT_COLLISION_CHECKER 
+#define SHOW_ROBOT_COLLISION_CHECKER 0
 #endif
 int SHOW_COLLISION_SLEEP_TIME = 0;
 bool PAUSE_ON_EACH_COLLISION_CHECK = false;
