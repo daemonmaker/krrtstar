@@ -175,21 +175,31 @@ if false
     % X noise - skewed
     % Used in
     % Visualization of vandenberg map
-    m_multiplier = 1;
+    m_multiplier = 3;
     M(1,1) = 1;
     M(2,2) = 0.1;
     M(3,3) = 1;
     M(4,4) = 0.1;
     n_multiplier = 0.001
-else
+elseif true
     % Y noise - skewed
     % Used in
     % Visualization of vandenberg map
-    m_multiplier = 1;
+    m_multiplier = 3;
     M(1,1) = 0.1;
     M(2,2) = 1;
     M(3,3) = 0.1;
     M(4,4) = 1;
+    n_multiplier = 0.001
+else
+    % Y noise - skewed
+    % Used in
+    % Visualization of vandenberg map
+    m_multiplier = 0.1;
+    M(1,1) = 0.1;
+    M(2,2) = 1;
+    M(3,3) = 1;
+    M(4,4) = 0.1;
     n_multiplier = 0.001
 %     N(1,1) = 0.1;
 %     N(3,3) = 0.1;
@@ -365,11 +375,11 @@ elseif strcmp(system, 'dblint2din3dfullyobservable')
 end
 
 % Only needed if M & N are covariance matrices
-M = M*m_multiplier;
+M = M*m_multiplier
 %M_orig = M
 %M = chol(M*transpose(M))
 % 
-N = N*n_multiplier;
+N = N*n_multiplier
 % N_orig = N
 % N = chol(N*transpose(N))
 
@@ -428,7 +438,7 @@ R_tilde = R/k
 %final = chol(x_sigma, 'lower')
 final = chol(x_sigma(1:2, 1:2), 'lower')
 %final = final(1:2, 1:2)
-% final = x_sigma(1:2, 1:2)
+%final = x_sigma(1:2, 1:2)
 
 [U, S, V] = svd(final);
 
@@ -447,6 +457,8 @@ V
 det(V)
 U
 det(U)
+
+V = U
 
 det_of_rot = int8(det(V))
 
@@ -483,3 +495,6 @@ det(V)
 %% Save the parameters
 file_path = '../krrtstar/krrtstar/parameters.txt'
 save(file_path, 'A', 'B', 'C', 'M', 'N', 'K', 'L', 'R_tilde', 'S', 'V', 'Sigma', 'x_sigma', 'u_sigma', '-mat')
+
+S
+V

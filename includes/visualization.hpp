@@ -153,10 +153,16 @@ void initVisulization() {
 }
 
 template <size_t _dim>
-void RotateAndScaleGroup(const int rotate_group_id, const int scale_group_id, const Eigen::Matrix<double,_dim,_dim>& V, const Eigen::Matrix<double,_dim,_dim>& S) {
+void RotateAndScaleGroup(const int rotate_group_id, const int scale_group_id, const Eigen::Matrix<double,_dim,_dim>& V, const Eigen::Matrix<double,_dim,_dim>& S, bool use_inverse_scale = false, bool use_inverse_rotate = false) {
 	int result;
-
-	Eigen::Quaternion<double> q(V);
+	
+	Eigen::Matrix<double,_dim,_dim> V_inverse = V;
+	if (use_inverse_rotate) {
+		V_inverse = V.transpose();
+	}
+	Eigen::Quaternion<double> q(V_inverse);
+	
+	//Eigen::Quaternion<double> q(V);
 	result = CAL_SetGroupQuaternion(rotate_group_id, (CAL_scalar)q.x(), (CAL_scalar)q.y(), (CAL_scalar)q.z(), (CAL_scalar)q.w());
 	if (result != CAL_SUCCESS) {
 		std::cout << "CAL_SetGroupQuaternion failed (" << result << ")." << std::endl;
@@ -164,8 +170,11 @@ void RotateAndScaleGroup(const int rotate_group_id, const int scale_group_id, co
 		exit(1);
 	}
 
-	//result = CAL_SetGroupScaling(scale_group_id, 1.0/(S(0, 0)), 1.0/(S(1, 1)), 1.0/(S(2, 2)));
-	result = CAL_SetGroupScaling(scale_group_id, S(0, 0), S(1, 1), S(2, 2));
+	if (use_inverse_scale) {
+		result = CAL_SetGroupScaling(scale_group_id, 1.0/(S(0, 0)), 1.0/(S(1, 1)), 1.0/(S(2, 2)));
+	} else {
+		result = CAL_SetGroupScaling(scale_group_id, S(0, 0), S(1, 1), S(2, 2));
+	}
 	if (result != CAL_SUCCESS) {
 		std::cout << "CAL_SetGroupScaling failed (" << result << ")." << std::endl;
 		_getchar();
@@ -187,7 +196,7 @@ void ShowUncertainty(World * world, Robot * robot, const Eigen::Matrix<double,_d
 
 	int temp;
 	CAL_CreateGroup(&temp, 0, false, "Original Uncertainty");
-	result = CAL_CreateSphere(temp, 1, 50.0f, 50.0f, 0.0f);
+	result = CAL_CreateSphere(temp, 1, 0.0f, 0.0f, 0.0f);
 	CAL_SetGroupColor(temp, 0, 1, 0, 0.25);
 	CAL_SetGroupVisibility(temp, 1, true);
 
@@ -195,7 +204,7 @@ void ShowUncertainty(World * world, Robot * robot, const Eigen::Matrix<double,_d
 		int cal_uncertainty_scale, cal_uncertainty_rotate, cal_uncertainty;
 
 		// ROTATE & SCALE
-#if (SCALE_THEN_ROTATE == 1)
+#if (SCALE_THEN_ROTATE == 0)
 		CAL_CreateGroup(&cal_uncertainty_scale, 0, false);
 		CAL_CreateGroup(&cal_uncertainty_rotate, cal_uncertainty_scale, false);
 		CAL_CreateGroup(&cal_uncertainty, cal_uncertainty_rotate, false);
@@ -205,14 +214,19 @@ void ShowUncertainty(World * world, Robot * robot, const Eigen::Matrix<double,_d
 		CAL_CreateGroup(&cal_uncertainty, cal_uncertainty_scale, false);
 #endif
 
-		result = CAL_CreateSphere(cal_uncertainty, scaler*(distance_threshold+robot->getLargestRadius()), 0.0f, 0.0f, 0.0f);
-	
+		//result = CAL_CreateSphere(cal_uncertainty, scaler*distance_threshold+robot->getLargestRadius(), 0.0f, 0.0f, 0.0f);
+		result = CAL_CreateSphere(cal_uncertainty, scaler*distance_threshold, 0.0f, 0.0f, 0.0f);
+		//result = CAL_CreateSphere(cal_uncertainty, distance_threshold, 0.0f, 0.0f, 0.0f);
+
 		CAL_SetGroupColor(cal_uncertainty, 0.5, 0.5, 0.5, 0.25);
 
-		RotateAndScaleGroup<_dim>(cal_uncertainty_rotate, cal_uncertainty_scale, V, S);
+		RotateAndScaleGroup<_dim>(cal_uncertainty_rotate, cal_uncertainty_scale, V, S, USE_INVERSE_SCALE, !USE_INVERSE_ROTATE);
 
-		//CAL_SetGroupPosition(cal_uncertainty_scale, pt->first, pt->second, 0.0f);
+#if (SCALE_THEN_ROTATE == 0)
+		CAL_SetGroupPosition(cal_uncertainty_scale, pt->first, pt->second, 0.0f);
+#else
 		CAL_SetGroupPosition(cal_uncertainty_rotate, pt->first, pt->second, 0.0f);
+#endif
 	}
 }
 
@@ -226,7 +240,7 @@ void WarpEnvironment(const Eigen::Matrix<double,_dim,_dim>& V, const Eigen::Matr
 	//const Eigen::JacobiSVD< Eigen::Matrix<double,_dim,_dim> >::MatrixUType& U = svd.matrixU();
 	//const Eigen::JacobiSVD< Eigen::Matrix<double,_dim,_dim> >::SingularValuesType& S = svd.singularValues();
 
-	RotateAndScaleGroup<_dim>(cal_rotate, cal_scale, V, S);
+	RotateAndScaleGroup<_dim>(cal_rotate, cal_scale, V, S, !USE_INVERSE_SCALE, USE_INVERSE_ROTATE);
 
 	/*
 	q = Eigen::Quaternion<double>(V.transpose());

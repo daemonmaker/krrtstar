@@ -140,7 +140,9 @@ bool PAUSE_ON_EACH_COLLISION_CHECK = false;
 #define TIMING_FREQUENCY 0.1 // How often to record the time taken to expand nodes
 //#define WORLD EmptyWorld // Which world to use
 #define VISUALIZE_SIMULATION true
-#define SCALE_THEN_ROTATE true
+#define SCALE_THEN_ROTATE 1
+#define USE_INVERSE_SCALE false
+#define USE_INVERSE_ROTATE false
 
 #if USE_THRESHOLDS && USE_SET_CLEARANCE
 	WTF? The comments say you cannot do that...

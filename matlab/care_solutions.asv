@@ -171,8 +171,9 @@ elseif strcmp(system, 'dblint2dfullyobservable')
 %     N(3,4) = 0.0001;
 %     N(4,4) = 0.001;
 
+if true
     % X noise - skewed
-    % Uwsed in
+    % Used in
     % Visualization of vandenberg map
     m_multiplier = 1;
     M(1,1) = 1;
@@ -180,19 +181,30 @@ elseif strcmp(system, 'dblint2dfullyobservable')
     M(3,3) = 1;
     M(4,4) = 0.1;
     n_multiplier = 0.001
-    
+elif true
     % Y noise - skewed
-    % Uwsed in
+    % Used in
     % Visualization of vandenberg map
     m_multiplier = 1;
+    M(1,1) = 1;
+    M(2,2) = 0.1;
+    M(3,3) = 1;
+    M(4,4) = 0.1;
+    n_multiplier = 0.001
+else
+    % Y noise - skewed
+    % Used in
+    % Visualization of vandenberg map
+    m_multiplier = 0.1;
     M(1,1) = 0.1;
     M(2,2) = 1;
-    M(3,3) = 0.1;
-    M(4,4) = 1;
+    M(3,3) = 1;
+    M(4,4) = 0.1;
     n_multiplier = 0.001
 %     N(1,1) = 0.1;
 %     N(3,3) = 0.1;
-
+end
+    
     % High noise
     % Uwsed in
     % Visualization of vandenberg map
@@ -424,11 +436,31 @@ R_tilde = R/k
 % swapped to make it the case. However doing so requires that the
 % associated rows of the scale matrix be swapped too.
 %final = chol(x_sigma, 'lower')
-final = chol(x_sigma(1:2, 1:2), 'lower')
+%final = chol(x_sigma(1:2, 1:2), 'lower')
+%final = final(1:2, 1:2)
+final = x_sigma(1:2, 1:2)
 
 [U, S, V] = svd(final);
 
-if (int8(det(V)) == -1)
+% R = transpose(V)*transpose(U)
+% d = sign(det(R))
+% if (d == -1)
+%     a = R(:, 1);
+%     R(:, 1) = R(:, 2);
+%     R(:, 2) = a;
+% end
+% R
+
+x_sigma(1:2, 1:2)
+S
+V
+det(V)
+U
+det(U)
+
+det_of_rot = int8(det(V))
+
+if (det_of_rot == -1)
     a = S(1, 1);
     S(1, 1) = S(2, 2);
     S(2, 2) = a;
@@ -436,7 +468,20 @@ if (int8(det(V)) == -1)
     a = V(:, 1);
     V(:, 1) = V(:, 2);
     V(:, 2) = a;
+
+%     a = V(1, :);
+%     V(1, :) = V(2, :);
+%     V(2, :) = a;
+
+    a = U(:, 1);
+    U(:, 1) = U(:, 2);
+    U(:, 2) = a;
 end
+S
+V
+transpose(U)
+U
+
 % S = S(1:2, 1:2)
 % V = V(1:2, 1:2)
 
@@ -448,3 +493,5 @@ det(V)
 %% Save the parameters
 file_path = '../krrtstar/krrtstar/parameters.txt'
 save(file_path, 'A', 'B', 'C', 'M', 'N', 'K', 'L', 'R_tilde', 'S', 'V', 'Sigma', 'x_sigma', 'u_sigma', '-mat')
+
+S
