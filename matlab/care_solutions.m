@@ -175,6 +175,36 @@ elseif strcmp(system, 'dblint2dpartiallyobservable')
     
 % Used in
 % Simulations for DBLINT2D_PO_StraightPassage
+if false
+    % X noise
+    m_multiplier = 3;
+    M(1,1) = 0.5;
+    M(2,2) = 0.1;
+    M(3,3) = 0.1;
+    M(4,4) = 0.01;
+    n_multiplier = 0.1;
+elseif false
+     % Y noise
+    m_multiplier = 2;
+    M(1,1) = 0.1;
+    M(2,2) = 0.5;
+    M(3,3) = 0.01;
+    M(4,4) = 0.1;
+    n_multiplier = 0.1;
+elseif false
+     % XY noise
+    m_multiplier = 2;
+    M(1,1) = 0.25;
+    M(1,2) = 0.5;
+    M(2,2) = 0.25;
+    M(3,3) = 0.01;
+    M(3,4) = 0.1;
+    M(4,4) = 0.01;
+    n_multiplier = 0.1;
+end
+
+% Used in
+% Simulations for DBLINT2D_PO_UPassage
 if true
     % X noise
     m_multiplier = 3;
