@@ -740,34 +740,6 @@ public:
 		this->x_bounds[0] = std::make_pair(-50*(this->scaler), 50*(this->scaler));
 		this->x_bounds[1] = std::make_pair(-50*(this->scaler), 50*(this->scaler));
 	}
-			
-	virtual void getCorners(World::points_t & pts) {
-		pts.push_back( std::make_pair((0+50)*(this->scaler), (-52.5+2.5)*(this->scaler)) );
-		pts.push_back( std::make_pair((0-50)*(this->scaler), (-52.5+2.5)*(this->scaler)) );
-		pts.push_back( std::make_pair((0+50)*(this->scaler), (52.5-2.5)*(this->scaler)) );
-		pts.push_back( std::make_pair((0-50)*(this->scaler), (52.5-2.5)*(this->scaler)) );
-
-		pts.push_back( std::make_pair((-10-5)*(this->scaler), (-15-5)*(this->scaler)) );
-		pts.push_back( std::make_pair((-10-5)*(this->scaler), (-15+5)*(this->scaler)) );
-		pts.push_back( std::make_pair((-10+5)*(this->scaler), (-15+5)*(this->scaler)) );
-		pts.push_back( std::make_pair((-10+5)*(this->scaler), (-15-5)*(this->scaler)) );
-
-		pts.push_back( std::make_pair((10-5)*(this->scaler), (-15-5)*(this->scaler)) );
-		pts.push_back( std::make_pair((10-5)*(this->scaler), (-15+5)*(this->scaler)) );
-		pts.push_back( std::make_pair((10+5)*(this->scaler), (-15+5)*(this->scaler)) );
-		pts.push_back( std::make_pair((10+5)*(this->scaler), (-15-5)*(this->scaler)) );
-		
-		pts.push_back( std::make_pair((-15-6.25)*(this->scaler), (15-10)*(this->scaler)) );
-		pts.push_back( std::make_pair((-15-6.25)*(this->scaler), (15+10)*(this->scaler)) );
-		pts.push_back( std::make_pair((-15+6.25)*(this->scaler), (15+10)*(this->scaler)) );
-		pts.push_back( std::make_pair((-15+6.25)*(this->scaler), (15-10)*(this->scaler)) );
-
-		pts.push_back( std::make_pair((15-6.25)*(this->scaler), (15-10)*(this->scaler)) );
-		pts.push_back( std::make_pair((15-6.25)*(this->scaler), (15+10)*(this->scaler)) );
-		pts.push_back( std::make_pair((15+6.25)*(this->scaler), (15+10)*(this->scaler)) );
-		pts.push_back( std::make_pair((15+6.25)*(this->scaler), (15-10)*(this->scaler)) );
-		
-	}
 
 protected:
 	virtual void _buildEnvironment() {
