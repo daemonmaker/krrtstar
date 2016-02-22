@@ -186,8 +186,6 @@ bool simulate(const bool stop_on_collision, const dynamics_t &dynamics, tree_t &
 			if (stop_on_collision) {
 				break;
 			}
-		} else {
-			++collision_steps[current_step];
 		}
 
 		if (visualize_simulation) {
@@ -218,7 +216,7 @@ bool simulate(const bool stop_on_collision, const dynamics_t &dynamics, tree_t &
 				robot->position(actual, false);
 			}
 
-			Sleep(deltaT*50);
+			Sleep(deltaT*10);
 		}
 	}
 

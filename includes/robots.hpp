@@ -182,7 +182,7 @@ private:
 	double radius;
 
 public:
-	Puck(int base_group, double radius = 5) : Robot(base_group), radius(radius)
+	Puck(int base_group, double radius = 0.001) : Robot(base_group), radius(radius)
 	{
 		CAL_CreateCylinder(this->robot_group, radius, 1, 0, 0, 0, &(this->robot_collision_object));
 		CAL_CreateCylinder(this->robot_model, radius, 1, 0, 0, 0, &(this->robot_model_object));

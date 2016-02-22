@@ -4088,7 +4088,7 @@ bool planTrajectory(const string &experiment_name, tree_t & tree, double radius,
 	return result;
 }
 
-size_t testSolution(const dynamics_t &dynamics, tree_t &tree, int num_sims, float &average_probability_of_collision, collision_stats_t & collision_stats, bool visualize_simulation = VISUALIZE_SIMULATION) {
+size_t testSolution(const dynamics_t &dynamics, tree_t &tree, int num_sims, float &average_probability_of_collision, collision_steps_t & collision_steps, bool visualize_simulation = VISUALIZE_SIMULATION) {
 	// Extract the nominal trajectory from the tree
 	nominal_trajectory_t nominal_trajectory;
 	createNominalTrajectory(tree, nominal_trajectory);
@@ -4099,7 +4099,6 @@ size_t testSolution(const dynamics_t &dynamics, tree_t &tree, int num_sims, floa
 
 	// Attempt to follow the trajectory the specified number of times.
 	size_t good_runs = 0;
-	collision_steps_t collision_steps;
 	for (int count = 1; count <= num_sims; ++count) {
 		if (simulate(false, dynamics, tree, nominal_trajectory, collision_steps, visualize_simulation, robot)) {
 			++good_runs;
@@ -4238,6 +4237,7 @@ void loadPathsAsTrees(const string & path_log_file, state_lists_t & state_lists)
 }
 
 void printSettingsMenu() {
+	std::cout << "\tc - Set the number of simulations: " << NUM_SIMS << std::endl;
 	std::cout << "\te - Set the number of nodes to expand: " << TARGET_NODES << std::endl;
 	std::cout << "\tl - List current settings." << std::endl;
 	std::cout << "\tn - Toggle noise in simulation: " << NOISE_FREE << std::endl;
@@ -4433,7 +4433,6 @@ x1[5] = 0;
 
 	tree_t tree;
 	collision_steps_t collision_steps;
-	collision_stats_t collision_stats;
 
 	char key;
 	bool tree_loaded = false;
@@ -4489,8 +4488,8 @@ x1[5] = 0;
 					}
 
 					average_probability_of_collision = 0.0f;
-					collision_stats.clear();
-					size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, collision_stats, false);
+					collision_steps.clear();
+					size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, collision_steps, false);
 					mean_average_probability_of_collision += average_probability_of_collision;
 
 					fflush(collision_probabilities_log);
@@ -4584,8 +4583,8 @@ x1[5] = 0;
 						/*
 						std::cout << "Simulating... " << std::endl;
 
-						collision_stats.clear();
-						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, collision_stats, false);
+						collision_steps.clear();
+						size_t good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, collision_steps, false);
 
 						simulation_record.clear();
 						simulation_record.str("");
@@ -4706,8 +4705,8 @@ x1[5] = 0;
 						createNominalTrajectory(tree, nominal_trajectory);
 
 						average_probability_of_collision = 0.0f;
-						collision_stats.clear();
-						good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, collision_stats, false);
+						collision_steps.clear();
+						good_runs = testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, collision_steps, false);
 
 						WRITE_SIMULATION_RECORD(current_threshold, trajectory_idx, state_lists.size(), current_path_idx, tree.size(), NUM_SIMS, good_runs, average_probability_of_collision);
 
@@ -4783,18 +4782,18 @@ x1[5] = 0;
 						FILE * simulation_log = fopen(make_log_file_name(current_experiment_results_name.str(), "simulation_results", "tab").c_str(), "w");
 						for (int sim_idx = 0; sim_idx < NUM_SIMS; ++sim_idx) {
 							average_probability_of_collision = 0.0f;
-							collision_stats.clear();
-							good_runs = testSolution(dynamics, tree, 1, average_probability_of_collision, collision_stats, false);
+							collision_steps.clear();
+							good_runs = testSolution(dynamics, tree, 1, average_probability_of_collision, collision_steps, false);
 
 							// Build histogram
 							simulation_record.clear();
-							simulation_record.str("");
+							simulation_record.str("");	
 							int collision_count = 0;
 							int nominal_trajectory_path_size = nominal_trajectory.path.size();
 							for (int step_idx = 0; step_idx < nominal_trajectory_path_size; ++step_idx) {
 								collision_count = 0;
-								collision_stats_t::const_iterator elem_pos = collision_stats.find(step_idx);
-								if (elem_pos != collision_stats.end()) {
+								collision_steps_t::const_iterator elem_pos = collision_steps.find(step_idx);
+								if (elem_pos != collision_steps.end()) {
 									collision_count = elem_pos->second;
 								}
 								simulation_record << collision_count;
@@ -4810,7 +4809,6 @@ x1[5] = 0;
 						fclose(simulation_log);
 					}
 				}
-				break;
 			}
 
 			key = NULL;
@@ -4839,8 +4837,8 @@ x1[5] = 0;
 
 		if (key == 't') {
 			float average_probability_of_collision = 0.0f;
-			collision_stats.clear();
-			testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, collision_stats, false);
+			collision_steps.clear();
+			testSolution(dynamics, tree, NUM_SIMS, average_probability_of_collision, collision_steps, false);
 
 			key = NULL;
 		}
@@ -4877,8 +4875,7 @@ x1[5] = 0;
 			}
 
 			if (key == 'u') {
-				//vis::showUncertainty(x_sigma);
-				vis::ShowUncertainty<3>(world, robot, Rotation, Scale, distance_thresholds[0]);
+				vis::ShowUncertainty<3>(world, Rotation, Scale, distance_thresholds[0]);
 			}
 
 			if (key == 'w') {
@@ -4899,6 +4896,16 @@ x1[5] = 0;
 			key = _getchar();
 
 			int temp = -1;
+
+			if (key == 'c') {
+				do {
+					std::cout << "Set NUM_SIMS (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 1 && temp != -1);
+				if (temp != -1) {
+					NUM_SIMS = temp;
+				}
+			}
 
 			if (key == 'e') {
 				do {
