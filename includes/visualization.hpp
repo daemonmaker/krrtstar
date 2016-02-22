@@ -1,18 +1,12 @@
 #ifndef __VISUALIZATION_HPP__
 #define __VISUALIZATION_HPP__
 
-#include <list>
-
 namespace vis
 {
-typedef list<int> callisto_groups_t;
-
-int cal_scale, cal_rotate, global_uncertainty_group, cal_uncertainty, cal_uncertainty_scale, cal_uncertainty_rotate, axis_group, collision_hit_group, collision_free_group, threshold_hit_group, threshold_free_group
+int cal_scale, cal_rotate, cal_uncertainty, cal_uncertainty_scale, cal_uncertainty_rotate, axis_group, collision_hit_group, collision_free_group, threshold_hit_group, threshold_free_group
 	, start_node_group, goal_node_group, node_group, edge_group, paths_group, velocity_group, solution_group
 	, solution_marker_group, simulation_belief_group, simulation_actual_group;
 int robot_base, robot_group, robot_collision_object, robot_model, robot_model_object;
-
-callisto_groups_t uncertainty_groups;
 
 void clearSolution() {
 	CAL_EmptyGroup(solution_group);
@@ -40,13 +34,6 @@ void clearSimulation() {
 	CAL_EmptyGroup(simulation_actual_group);
 }
 
-void clearUncertaintyGroup() {
-	for (callisto_groups_t::const_iterator uncertainty_group = uncertainty_groups.cbegin(); uncertainty_group != uncertainty_groups.cend(); ++uncertainty_group) {
-		CAL_EmptyGroup(*uncertainty_group, true);
-	}
-	uncertainty_groups.clear();
-}
-
 void clearAll() {
 	clearSolution();
 	clearEdges();
@@ -54,7 +41,6 @@ void clearAll() {
 	clearPaths();
 	clearVelocities();
 	clearSimulation();
-	clearUncertaintyGroup();
 }
 
 void buildKeyframe(const double& t, const state& x, bool still = false, double alpha = 0.0, double offset = 0.0) {
@@ -198,15 +184,24 @@ void RotateAndScaleGroup(const int rotate_group_id, const int scale_group_id, co
 }
 
 template <size_t _dim>
-void ShowUncertainty(World * world, const Eigen::Matrix<double,_dim,_dim>& V, const Eigen::Matrix<double,_dim,_dim>& S, float distance_threshold) {
+void ShowUncertainty(World * world, Robot * robot, const Eigen::Matrix<double,_dim,_dim>& V, const Eigen::Matrix<double,_dim,_dim>& S, double distance_threshold, double x = 0.0f, double y = 0.0f, double z = 0.0f) {
 	std::cout << "V: " << V << std::endl;
 	std::cout << "S: " << S << std::endl;
 
 	World::points_t pts;
+	float scaler = world->getScaler();
 	world->getCorners(pts);
 
 	int result;
-	CAL_CreateGroup(&global_uncertainty_group, 0, false);
+
+	/*
+	int temp;
+	CAL_CreateGroup(&temp, 0, false, "Original Uncertainty");
+	result = CAL_CreateSphere(temp, 1, 0.0f, 0.0f, 0.0f);
+	CAL_SetGroupColor(temp, 0, 1, 0, 0.25);
+	CAL_SetGroupVisibility(temp, 1, true);
+	*/
+
 	for (World::points_t::const_iterator pt = pts.cbegin(); pt != pts.cend(); ++pt) {
 		int cal_uncertainty_scale, cal_uncertainty_rotate, cal_uncertainty;
 
@@ -215,21 +210,19 @@ void ShowUncertainty(World * world, const Eigen::Matrix<double,_dim,_dim>& V, co
 		CAL_CreateGroup(&cal_uncertainty_scale, 0, false);
 		CAL_CreateGroup(&cal_uncertainty_rotate, cal_uncertainty_scale, false);
 		CAL_CreateGroup(&cal_uncertainty, cal_uncertainty_rotate, false);
-
-		uncertainty_groups.push_back(cal_uncertainty_scale);
 #else
-		CAL_CreateGroup(&cal_uncertainty_rotate, global_uncertainty_group, false);
+		CAL_CreateGroup(&cal_uncertainty_rotate, 0, false);
 		CAL_CreateGroup(&cal_uncertainty_scale, cal_uncertainty_rotate, false);
 		CAL_CreateGroup(&cal_uncertainty, cal_uncertainty_scale, false);
-
-		uncertainty_groups.push_back(cal_uncertainty_rotate);
 #endif
 
-		result = CAL_CreateSphere(cal_uncertainty, distance_threshold, 0.0f, 0.0f, 0.0f);
+		//result = CAL_CreateSphere(cal_uncertainty, scaler*distance_threshold+robot->getLargestRadius(), 0.0f, 0.0f, 0.0f);
+		result = CAL_CreateSphere(cal_uncertainty, scaler*distance_threshold, 0.0f, 0.0f, 0.0f);
+		//result = CAL_CreateSphere(cal_uncertainty, distance_threshold, 0.0f, 0.0f, 0.0f);
 
 		CAL_SetGroupColor(cal_uncertainty, 0.25, 0.75, 0.25, 0.25);
 
-		RotateAndScaleGroup<_dim>(cal_uncertainty_rotate, cal_uncertainty_scale, V, S, USE_INVERSE_SCALE, USE_INVERSE_ROTATE);
+		RotateAndScaleGroup<_dim>(cal_uncertainty_rotate, cal_uncertainty_scale, V, S, USE_INVERSE_SCALE, !USE_INVERSE_ROTATE);
 
 #if (SCALE_THEN_ROTATE == 0)
 		CAL_SetGroupPosition(cal_uncertainty_scale, pt->first, pt->second, 0.0f);
@@ -237,7 +230,6 @@ void ShowUncertainty(World * world, const Eigen::Matrix<double,_dim,_dim>& V, co
 		CAL_SetGroupPosition(cal_uncertainty_rotate, pt->first, pt->second, 0.0f);
 #endif
 	}
-	std::cout << "uncertainty_groups: " << uncertainty_groups.size() << std::endl;
 }
 
 template <size_t _dim>

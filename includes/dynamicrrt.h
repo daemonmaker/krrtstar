@@ -71,7 +71,7 @@ bool SHOW_AXIS = false;
 #define NONHOLONOMIC 5
 #define DYNAMICS DOUBLE_INTEGRATOR_2D
 
-#define FULLY_OBSERVABLE 0
+#define FULLY_OBSERVABLE 1
 
 std::string dynamics_type_to_name(const int id) {
 	std::string name = "UNKNOWN";
@@ -103,7 +103,7 @@ std::string dynamics_type_to_name(const int id) {
 //#define EXPERIMENT
 #define FIND_FIRST_PATH_ONLY false
 int TRAJECTORY_COUNT = 30; // Number of paths to plan duing experiments
-int NUM_SIMS = 1000; // Number of times to simulate paths duing experiments
+#define NUM_SIMS 100 // Number of times to simulate paths duing experiments
 #define USE_SET_CLEARANCE 0 // Whether to grow the obstacles using callisto's set clearance. Cannot be used with USE_THRESHOLDS.
 #define USE_THRESHOLDS 1 // Whether to use distance thresholds instead of collisions checks during trajectory planning. Cannot be used with USE_SET_CLEARANCE.
 bool NOISE_FREE = false; // Whether the simulation(s) should be noise free.
@@ -274,10 +274,10 @@ int TARGET_NODES = DEFAULT_TARGET_NODES;
 		#elif (DYNAMICS == DOUBLE_INTEGRATOR_2D)
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
-			#define WORLD worlds::LudersBoxes
+			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassages
 			//#define WORLD worlds::VanDenBergPassagesExaggerated
-			//#define WORLD worlds::StraightPassage
+			#define WORLD worlds::StraightPassage
 			//#define WORLD worlds::UPassage
 			//#define WORLD worlds::SPassage
 		#else
