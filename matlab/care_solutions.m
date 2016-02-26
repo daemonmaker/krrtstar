@@ -10,7 +10,7 @@
 
 %% Select system and setup basic variables
 clear
-system = 'dblint2dpartiallyobservable'
+system = 'snglint2dfullyobservable'
 
 % Set dimensionality information for system
 if strcmp(system, 'snglint2dfullyobservable')

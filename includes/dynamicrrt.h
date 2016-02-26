@@ -69,7 +69,7 @@ bool SHOW_AXIS = false;
 #define DOUBLE_INTEGRATOR_2D 3
 #define QUADROTOR 4
 #define NONHOLONOMIC 5
-#define DYNAMICS DOUBLE_INTEGRATOR_2D
+#define DYNAMICS SINGLE_INTEGRATOR_2D
 
 #define FULLY_OBSERVABLE 1
 
@@ -169,6 +169,7 @@ bool PAUSE_ON_EACH_COLLISION_CHECK = false;
 #endif
 
 const double deltaT = 0.03125;
+//const double deltaT = 0.03125/10.0;
 const double gravity = 9.81;
 const double mass = 0.5;
 const double inertia = 0.1;
@@ -237,7 +238,7 @@ int start_experiments_from = 0;
 
 #elif (DYNAMICS == SINGLE_INTEGRATOR_2D) // 2D single integrator
 #define ROBOT Puck
-#define DEFAULT_TARGET_NODES 500
+#define DEFAULT_TARGET_NODES 5000
 #define START_RADIUS 200
 #define RADIUS_MULTIPLIER 1
 
@@ -276,16 +277,16 @@ int TARGET_NODES = DEFAULT_TARGET_NODES;
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
 			//#define WORLD worlds::VanDenBergPassages
-			//#define WORLD worlds::VanDenBergPassagesExaggerated
-			#define WORLD worlds::StraightPassage
+			#define WORLD worlds::VanDenBergPassagesExaggerated
+			//#define WORLD worlds::StraightPassage
 			//#define WORLD worlds::UPassage
 			//#define WORLD worlds::SPassage
 		#else
 			#define STATE_SPACE StateSpace
 			//#define WORLD TwoPathMaze
 			//#define WORLD worlds::LudersBoxes
-			//#define WORLD worlds::VanDenBergPassagesExaggerated
-			#define WORLD worlds::StraightPassage
+			#define WORLD worlds::VanDenBergPassagesExaggerated
+			//#define WORLD worlds::StraightPassage
 			//#define WORLD worlds::UPassage
 			//#define WORLD worlds::SPassage
 		#endif

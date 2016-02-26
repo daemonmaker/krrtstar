@@ -220,7 +220,7 @@ void ShowUncertainty(World * world, Robot * robot, const Eigen::Matrix<double,_d
 		result = CAL_CreateSphere(cal_uncertainty, scaler*distance_threshold, 0.0f, 0.0f, 0.0f);
 		//result = CAL_CreateSphere(cal_uncertainty, distance_threshold, 0.0f, 0.0f, 0.0f);
 
-		CAL_SetGroupColor(cal_uncertainty, 0.25, 0.75, 0.25, 0.25);
+		CAL_SetGroupColor(cal_uncertainty, 0.95, 0.15, 0.15, 0.75);
 
 		RotateAndScaleGroup<_dim>(cal_uncertainty_rotate, cal_uncertainty_scale, V, S, USE_INVERSE_SCALE, !USE_INVERSE_ROTATE);
 
@@ -322,7 +322,7 @@ void setupVisualization(const state& x0, const state& x1, void (*buildEnvironmen
 	CAL_SetGroupColor(velocity_group, 0, 0, 1);
 	CAL_SetGroupColor(edge_group, 0, 0.5, 0);
 	CAL_SetGroupColor(paths_group, 0, 0.75, 0);
-	CAL_SetGroupColor(start_node_group, 1, 0, 0);
+	CAL_SetGroupColor(start_node_group, 0, 0, 1);
 	CAL_SetGroupColor(goal_node_group, 0, 1, 0);
 	CAL_SetGroupColor(simulation_belief_group, 1, 0, 0);
 	CAL_SetGroupColor(simulation_actual_group, 0, 0, 1);
@@ -484,9 +484,73 @@ void markActual(CAL_scalar x, CAL_scalar y, CAL_scalar z) {
 }
 
 /**
+Draws a single node in the tree.
+*/
+void visualizeTreeNode(const tree_t& tree, node_id_t node_idx) {
+	CAL_SuspendVisualisation();
+
+	CAL_SetGroupVisibility(node_group, 0, true, true);
+
+	//CAL_EmptyGroup(node_group);
+	//CAL_EmptyGroup(node_group);
+	//CAL_SetGroupColor(node_group, 1, 0, 0);
+	CAL_SetGroupColor(node_group, 1, 0, 0);
+
+#if POSITION_DIM == 3
+	CAL_CreateSphere(node_group, 3*NODE_SIZE, tree[node_idx].x[0], tree[node_idx].x[1], tree[node_idx].x[2]);
+#else
+	CAL_CreateSphere(node_group, 3*NODE_SIZE, tree[node_idx].x[0], tree[node_idx].x[1], 0);
+#endif
+
+	CAL_ResumeVisualisation();
+}
+
+/**
+Draws a single node in the tree.
+*/
+void visualizeTreePath(const tree_t& tree, const node_id_t start_node_idx, const node_id_t end_node_idx) {
+	CAL_SuspendVisualisation();
+
+	CAL_SetGroupVisibility(node_group, 0, true, true);
+
+	CAL_EmptyGroup(node_group);
+	CAL_SetGroupColor(node_group, 0, 1, 0);
+
+	double cost, tau;
+	double actual_deltaT = 0.0;
+	state_time_list_t segment;
+	segment.clear();
+	connect(tree[start_node_idx].x, tree[end_node_idx].x, DBL_MAX, cost, tau, &actual_deltaT, &segment, NULL);
+	sort(segment.begin(), segment.end(), temporal_order<state_time_t>);
+
+	size_t segment_length = segment.size();
+	size_t max_length = 500000; // TODO This needs to be a function of the distance between neighboring nodes in the tree and deltaT.
+	CAL_scalar * points = new CAL_scalar[max_length];
+	if (segment_length*3 > max_length) {
+		max_length = segment_length;
+		delete[] points;
+		points = new CAL_scalar[max_length];
+	}
+
+	for (size_t idx = 0; idx < segment_length; ++idx) {
+		float x_pos = segment[idx].second[0];
+		float y_pos = segment[idx].second[1];
+		float z_pos = 0;
+#if POSITION_DIM == 3
+		z_pos = segment[idx].second[2];
+#endif
+
+
+		CAL_CreateSphere(node_group, 0.1, x_pos, y_pos, z_pos);
+	}
+
+	CAL_ResumeVisualisation();
+}
+
+/**
 Draws the tree as a set of curves representing the real paths between nodes.
 */
-void visualizeTree(const tree_t& tree, bool prune = false) {
+void visualizeTree(const tree_t& tree, bool prune = false, bool vertices_only = false) {
 	CAL_SuspendVisualisation();
 
 	CAL_SetGroupVisibility(paths_group, 0, true, true);
@@ -507,7 +571,7 @@ void visualizeTree(const tree_t& tree, bool prune = false) {
 	state_time_list_t segment;
 	double actual_deltaT = 0.0;
 	int node_counter = 0, nodes_skipped = 0;
-	size_t max_length = 10000;
+	size_t max_length = 500000; // TODO This needs to be a function of the distance between neighboring nodes in the tree and deltaT.
 	CAL_scalar * points = new CAL_scalar[max_length];
 	size_t segment_length = 0;
 	for (tree_t::const_iterator parent = tree.begin(); parent != tree.end(); ++parent) {
@@ -526,15 +590,24 @@ void visualizeTree(const tree_t& tree, bool prune = false) {
 			}
 
 			for (size_t idx = 0; idx < segment_length; ++idx) {
-				points[3*idx] = segment[idx].second[0];
-				points[3*idx+1] = segment[idx].second[1];
+				float x_pos = segment[idx].second[0];
+				float y_pos = segment[idx].second[1];
+				float z_pos = 0;
 #if POSITION_DIM == 3
-				points[3*idx+2] = segment[idx].second[2];
-#else
-				points[3*idx+2] = 0;
+				z_pos = segment[idx].second[2];
 #endif
+
+				points[3*idx] = x_pos;
+				points[3*idx+1] = y_pos;
+				points[3*idx+2] = z_pos;
+
+				if (vertices_only == true) {
+					CAL_CreateSphere(node_group, 3*NODE_SIZE, x_pos, y_pos, z_pos);
+				}
 			}
-			CAL_CreatePolyline(paths_group, 1, (int *)&segment_length, points);
+			if (vertices_only == false) {
+				CAL_CreatePolyline(paths_group, 1, (int *)&segment_length, points);
+			}
 		}
 	}
 
@@ -546,7 +619,7 @@ void visualizeTree(const tree_t& tree, bool prune = false) {
 /**
 Draws the tree as a set of straight lines.
 */
-void drawTree(const tree_t& tree) {
+void drawTree(const tree_t& tree, bool vertices_only = false) {
 	CAL_SuspendVisualisation();
 
 	CAL_SetGroupVisibility(edge_group, 0, true, true);
@@ -669,7 +742,11 @@ void drawTree(const tree_t& tree) {
 			p[4] = y_parent;
 			p[5] = z_parent;
 
-			CAL_CreatePolyline(edge_group, 1, np, p);
+			if (vertices_only == true) {
+				CAL_CreateSphere(node_group, 3*NODE_SIZE, x, y, z);
+			} else {
+				CAL_CreatePolyline(edge_group, 1, np, p);
+			}
 		}
 	}
 

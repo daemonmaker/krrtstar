@@ -743,7 +743,7 @@ inline bool collision_free(const state& s, bool distance_check = USE_THRESHOLDS,
 	robot->rotate(s, model);
 
 #if defined(SHOW_COLLISION_CHECKS) || defined(SHOW_COLLISIONS) || defined(SHOW_THRESHOLD_CHECKS)
-	std::cout << "state: " << s << std::endl;
+	//std::cout << "state: " << s << std::endl;
 
 	if (PAUSE_ON_EACH_COLLISION_CHECK) {
 		std::cout << "Enter value to continue: ";
@@ -4246,9 +4246,17 @@ void printSettingsMenu() {
 	std::cout << "\td - Set the current safety factor: " << distance_thresholds[0] << std::endl;
 }
 
+void printInspectTreeMenu() {
+	std::cout << "\tc - Show children of specified node. " << std::endl;
+	std::cout << "\tp - Show parent of specified node. " << std::endl;
+	std::cout << "\ts - Show nodes that are part of the solution. " << std::endl;
+}
+
 void printVisualizationMenu() {
 	std::cout << "\ta - Show axis. " << std::endl;
 	std::cout << "\tc - Clear visualization." << std::endl;
+	std::cout << "\td - Visualize nodes along path that would be checked for collision." << std::endl;
+	std::cout << "\tn - Visualize specified node of the tree." << std::endl;
 	std::cout << "\tp - Visualize paths." << std::endl;
 	std::cout << "\tr - Restore environment." << std::endl;
 	std::cout << "\ts - Visualize solution." << std::endl;
@@ -4268,6 +4276,8 @@ void printHelpMenu() {
 	printCollisionDebugMenu();
 	std::cout << "e - Run multiple experiments. Requires EXPERIMENT to be defined at compile time." << std::endl;
 	std::cout << "h - This help menu." << std::endl;
+	std::cout << "i - Inspect tree." << std::endl;
+	printInspectTreeMenu();
 	std::cout << "l - Load tree from file." << std::endl;
 	std::cout << "p - Analyze all paths from the experiments." << std::endl;
 	std::cout << "r - Run kRRT*." << std::endl;
@@ -4298,6 +4308,15 @@ void printExperimentProperties(const string & experiment_name) {
 	std::cout << "TRAJECTORY_COUNT: " << TRAJECTORY_COUNT << std::endl;
 	std::cout << "TARGET_NODES: " << TARGET_NODES << std::endl;
 	printCurrentThresholds();
+}
+
+int queryTreeNode(const tree_t& tree) {
+	int temp = -1;
+	do {
+		std::cout << "Select Tree node [" << 0 <<", " << tree.size()-1 << "] (-1 to cancel) >> ";
+		std::cin >> temp;
+	} while(temp < 1 && temp != -1);
+	return temp;
 }
 
 void setThresholds(bool limit_to_one=false) {
@@ -4609,6 +4628,48 @@ x1[5] = 0;
 			printHelpMenu();
 		}
 
+		if (key == 'i') {
+			std::cout << "Select one: (any other input cancels)" << std::endl;
+			printInspectTreeMenu();
+			std::cout << ">> ";
+
+			key = _getchar();
+
+			if (key == 'c') {
+				int temp = -1;
+				do {
+					std::cout << "Select Tree node [" << 0 <<", " << tree.size()-1 << "] (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 0 && (temp > tree.size() - 1) && temp != -1);
+				cout << "Children: ";
+				for (node_list_t::const_iterator child = tree[temp].children.begin(); child != tree[temp].children.end(); ++child) {
+					cout << *child << " ";
+				}
+				cout << std::endl;
+			}
+
+			if (key == 'p') {
+				int temp = -1;
+				do {
+					std::cout << "Select Tree node [" << 0 <<", " << tree.size()-1 << "] (-1 to cancel) >> ";
+					std::cin >> temp;
+				} while(temp < 0 && (temp > tree.size() - 1) && temp != -1);
+				cout << "Parent: " << tree[temp].parent << std::endl;
+			}
+
+			if (key == 's') {
+				int current_idx = 0;
+				cout << "Path from end to beginning: ";
+				do {
+					cout << current_idx << " ";
+					current_idx = tree[current_idx].parent;
+				} while(current_idx != -1);
+				cout << std::endl;
+			}
+
+			key = NULL;
+		}
+
 		if (key == 'l') {
 			int trajectory_id = -1;
 			int threshold = -1;
@@ -4860,6 +4921,36 @@ x1[5] = 0;
 				vis::clearAll();
 			}
 
+			if (key == 'd') {
+				int start_node_idx = queryTreeNode(tree);
+				const node_list_t children = tree[start_node_idx].children;
+				int end_node_idx = -1;
+				bool end_idx_found = false;
+				do {
+					std::cout << "Select child node [";
+					for (node_list_t::const_iterator child = children.begin(); child != children.end(); ++child) {
+						std::cout << (*child) << ", ";
+					}
+					std::cout << "] (-1 to cancel) >> ";
+					std::cin >> end_node_idx;
+					for (node_list_t::const_iterator child = children.begin(); child != children.end(); ++child) {
+						if (end_node_idx == (*child)) {
+							end_idx_found = true;
+						}
+					}
+				} while(!end_idx_found && end_node_idx != -1);
+				if (end_node_idx != -1) {
+					vis::visualizeTreePath(tree, start_node_idx, end_node_idx);
+				}
+			}
+
+			if (key == 'n') {
+				int temp = queryTreeNode(tree);
+				if (temp != -1) {
+					vis::visualizeTreeNode(tree, temp);
+				}
+			}
+
 			if (key == 'p') {
 				vis::visualizeTree(tree);
 			}
@@ -4875,7 +4966,6 @@ x1[5] = 0;
 			if (key == 't') {
 				vis::drawTree(tree);
 			}
-
 			if (key == 'u') {
 				//vis::showUncertainty(x_sigma);
 				vis::ShowUncertainty<3>(world, robot, Rotation, Scale, distance_thresholds[0]);
