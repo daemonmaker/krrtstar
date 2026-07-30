@@ -14,6 +14,7 @@ from typing import Callable, List, Optional
 
 import numpy as np
 
+from . import accel
 from .dynamics.base import Dynamics, Trajectory
 from .geometry import CollisionChecker
 
@@ -114,14 +115,16 @@ class KRRTStar:
         return self._sampler.sample()
 
     def _candidate_indices(self, x: np.ndarray) -> np.ndarray:
-        """Euclidean pre-filter of tree nodes before costly connect calls."""
+        """Euclidean pre-filter of tree nodes before costly connect calls.
+
+        Delegates to the Rust core when available (see :mod:`krrtstar.accel`).
+        """
         states = self.tree.states
         if states.shape[0] == 0:
             return np.zeros(0, dtype=int)
         if self.euclidean_gate is None:
             return np.arange(states.shape[0])
-        dists = np.linalg.norm(states - x, axis=1)
-        return np.nonzero(dists <= self.euclidean_gate)[0]
+        return accel.euclidean_neighbors(states, x, self.euclidean_gate)
 
     def _collision_free(self, traj: Optional[Trajectory]) -> bool:
         if traj is None or not traj.feasible:
@@ -131,20 +134,27 @@ class KRRTStar:
         return not self.collision.trajectory_in_collision(traj.states)
 
     def _choose_parent(self, x_new: np.ndarray):
-        """Return ``(parent_idx, trajectory, cost_from_start)`` or ``None``."""
-        best = None
+        """Return ``(parent_idx, trajectory, cost_from_start)`` or ``None``.
+
+        Uses the cheap (Rust-accelerated) ``cost`` query to rank candidates,
+        then invokes the expensive ``connect`` only in increasing cost order
+        until a collision-free connection is found.
+        """
+        ranked = []
         for i in self._candidate_indices(x_new):
             node = self.tree.nodes[i]
+            c = self.dyn.cost(node.state, x_new)
+            if c is None or c > self.radius:
+                continue
+            ranked.append((node.cost_from_start + c, i))
+        ranked.sort(key=lambda t: t[0])
+        for _, i in ranked:
+            node = self.tree.nodes[i]
             traj = self.dyn.connect(node.state, x_new)
-            if traj is None or traj.cost > self.radius:
+            if traj is None or traj.cost > self.radius or not self._collision_free(traj):
                 continue
-            total = node.cost_from_start + traj.cost
-            if best is not None and total >= best[2]:
-                continue
-            if not self._collision_free(traj):
-                continue
-            best = (i, traj, total)
-        return best
+            return (i, traj, node.cost_from_start + traj.cost)
+        return None
 
     def _rewire(self, new_idx: int) -> None:
         new_node = self.tree.nodes[new_idx]
@@ -153,6 +163,11 @@ class KRRTStar:
             if i == new_idx:
                 continue
             node = self.tree.nodes[i]
+            c = self.dyn.cost(x_new, node.state)
+            if c is None or c > self.radius:
+                continue
+            if new_node.cost_from_start + c + 1e-9 >= node.cost_from_start:
+                continue
             traj = self.dyn.connect(x_new, node.state)
             if traj is None or traj.cost > self.radius:
                 continue

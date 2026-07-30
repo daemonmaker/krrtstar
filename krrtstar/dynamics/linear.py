@@ -27,6 +27,7 @@ import numpy as np
 from scipy.linalg import expm
 from scipy.optimize import minimize_scalar
 
+from .. import accel
 from .base import ControlBounds, Trajectory
 
 
@@ -128,17 +129,30 @@ class AnalyticLinearDynamics:
                 return np.inf
             return cost
 
-        res = minimize_scalar(
-            objective, bounds=(eps, self.tau_max), method="bounded",
-            options={"xatol": 1e-4},
-        )
-        if not res.success or not np.isfinite(res.fun):
+        # Coarse scan to seed a robust bracket (the cost curve can have local
+        # minima; a global-ish scan avoids the bounded solver getting stuck).
+        grid = np.linspace(eps, self.tau_max, 48)
+        vals = np.array([objective(float(t)) for t in grid])
+        if not np.any(np.isfinite(vals)):
             return None
-        return float(res.x), float(res.fun)
+        k = int(np.argmin(vals))
+        lo = grid[max(k - 1, 0)]
+        hi = grid[min(k + 1, len(grid) - 1)]
+        res = minimize_scalar(
+            objective, bounds=(lo, hi), method="bounded",
+            options={"xatol": 1e-5},
+        )
+        if res.success and np.isfinite(res.fun) and res.fun <= vals[k]:
+            return float(res.x), float(res.fun)
+        return float(grid[k]), float(vals[k])
 
     def cost(self, x0: np.ndarray, x1: np.ndarray) -> Optional[float]:
         x0 = np.asarray(x0, dtype=float).reshape(-1)
         x1 = np.asarray(x1, dtype=float).reshape(-1)
+        # Prefer the native (Rust) solver for the hot-path cost query.
+        rust = accel.linear_cost(self.A, self.Q, self.c, x0, x1, self.tau_max)
+        if rust is not None and np.isfinite(rust):
+            return float(rust)
         result = self._optimal_tau(x0, x1)
         if result is None:
             return None
