@@ -363,3 +363,30 @@ requirement set incrementally.
 The legacy `src/`, `includes/`, `krrtstar/`, `callisto2.20/`, `matlab/`, and
 `maple/` trees are retained as reference during the port and removed once parity
 is established.
+
+---
+
+## 12. Implementation status
+
+An initial working implementation of the full stack has landed (see the
+`krrtstar/` Python package, `rust/` crate, `examples/`, and `tests/`):
+
+| Requirement | Status |
+|-------------|--------|
+| Define linear model matrices via config | Done — `[dynamics]` TOML, `AnalyticLinearDynamics` |
+| General optimal-time connect (no MATLAB/Maple) | Done — controllability Gramian + arrival-time optimization; verified against numerical quadrature and control-effort cost |
+| Define 3D robot + obstacle objects | Done — `geometry.py` (sphere/box) + config |
+| Collision checking between 3D objects | Done — broad + narrow phase |
+| Visualize trees/trajectories/robot/obstacles in 3D | Done — `viz.py` (PyVista), offscreen render verified |
+| Save/load experiment (tree, refs, hyper-params) | Done — `experiment.py` bundle (`tree.npz` + `config.toml` + `meta.json`) |
+| Tree growth with/without visualization | Done — headless by default; live `progress_cb` |
+| Rust for the hot path | Done — `krrtstar_core` (neighbor pre-filter + linear cost), wired into the planner, pure-Python fallback |
+| Learned models best-effort | Done — `TorchDynamics` (gradient/shooting), best-effort |
+
+Tests: 20 passing + 1 skipped (Torch, when PyTorch is not installed). The Rust
+core accelerates the planner (example: ~24s → ~15s; test suite ~42s → ~10s).
+
+Follow-on work (not yet done): moving the full `connect` trajectory
+reconstruction into Rust (currently Python), richer geometry (meshes, oriented
+boxes, capsules), and asymptotic-optimality tuning of the connection radius
+schedule.
