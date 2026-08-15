@@ -48,3 +48,5 @@ live = false
 show_tree = true
 show_robot = true
 show_obstacles = true
+# Hold the window open after planning so the result can be inspected.
+keep_open = true

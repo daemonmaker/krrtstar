@@ -22,6 +22,12 @@ See [`docs/rewrite-plan.md`](docs/rewrite-plan.md) for the design and
   self-describing bundle.
 - **Visualization** — 3D rendering of the tree, trajectories, robot, and
   obstacles, with optional live updates during tree growth (headless supported).
+  The window opens in the foreground and stays open after planning finishes so
+  the result can be inspected; press `q` (or close the window) to exit. Set
+  `[visualization] keep_open = false` (or pass `--no-keep-open`) for unattended
+  runs.
+- **Timing** — planning duration and throughput are reported and stored in the
+  saved experiment metadata.
 - **Rust hot path (optional)** — a `krrtstar_core` extension runs the whole
   connection in native code: the Euclidean neighbor pre-filter, batched
   connection costs (sharing a precomputed time grid), and full trajectory
@@ -47,6 +53,21 @@ poetry run maturin develop --manifest-path rust/Cargo.toml --release
 
 ```bash
 poetry run python -m krrtstar.cli examples/double_integrator_2d.toml --out /tmp/exp
+```
+
+Watch the tree grow in 3D and inspect the result when it finishes:
+
+```bash
+poetry run python -m krrtstar.cli examples/double_integrator_2d.toml --live
+```
+
+which reports, for example:
+
+```
+[krrtstar] backend=rust dynamics=linear x_dim=4 target_nodes=300
+[krrtstar] nodes=236 found=True cost=15.6876
+[krrtstar] planning time: 1.42 s (166.2 nodes/s)
+[krrtstar] total time: 1.51 s
 ```
 
 Or from Python:

@@ -69,6 +69,8 @@ def save_experiment(
         "goal_index": result.goal_index,
         "solution_cost": result.cost,
         "found": result.found,
+        "elapsed_seconds": result.elapsed,
+        "iterations": result.iterations,
         "config": os.path.basename(config_path) if config_path else None,
     }
     if meta_extra:

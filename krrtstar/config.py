@@ -58,6 +58,9 @@ class VisualizationConfig:
     show_nodes: bool = False
     show_robot: bool = True
     show_obstacles: bool = True
+    # Hold the window open after planning finishes so the result can be
+    # inspected; disable for unattended runs.
+    keep_open: bool = True
 
 
 @dataclass
@@ -143,6 +146,7 @@ def _parse_visualization(data: Dict[str, Any]) -> VisualizationConfig:
         show_nodes=bool(data.get("show_nodes", False)),
         show_robot=bool(data.get("show_robot", True)),
         show_obstacles=bool(data.get("show_obstacles", True)),
+        keep_open=bool(data.get("keep_open", True)),
     )
 
 

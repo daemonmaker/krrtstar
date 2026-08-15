@@ -9,6 +9,7 @@ Euclidean nearest-neighbor pre-filter.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
@@ -60,10 +61,18 @@ class PlanResult:
     goal_index: Optional[int]
     solution: Optional[List[Trajectory]]
     cost: Optional[float]
+    elapsed: Optional[float] = None
+    iterations: Optional[int] = None
 
     @property
     def found(self) -> bool:
         return self.goal_index is not None
+
+    @property
+    def nodes_per_second(self) -> Optional[float]:
+        if not self.elapsed:
+            return None
+        return len(self.tree.nodes) / self.elapsed
 
 
 class UniformSampler:
@@ -107,6 +116,8 @@ class KRRTStar:
         self.tree.add(Node(self.x_init, parent=-1, cost_from_start=0.0))
         self.goal_index: Optional[int] = None
         self._sampler = UniformSampler(self.state_bounds, self.rng)
+        self.elapsed: Optional[float] = None
+        self.iterations: Optional[int] = None
 
     # ------------------------------------------------------------------ #
     def _sample(self) -> np.ndarray:
@@ -224,6 +235,7 @@ class KRRTStar:
         progress_cb: Optional[ProgressCallback] = None,
         progress_every: int = 50,
     ) -> PlanResult:
+        started = time.perf_counter()
         for it in range(n):
             x_new = self._sample()
             parent = self._choose_parent(x_new)
@@ -239,12 +251,20 @@ class KRRTStar:
                 progress_cb(it, self.tree)
         if progress_cb is not None:
             progress_cb(n, self.tree)
+        self.elapsed = time.perf_counter() - started
+        self.iterations = n
         return self.result()
 
     def result(self) -> PlanResult:
         if self.goal_index is None:
-            return PlanResult(self.tree, None, None, None)
+            return PlanResult(
+                self.tree, None, None, None,
+                elapsed=self.elapsed, iterations=self.iterations,
+            )
         path = self.tree.path_to(self.goal_index)
         trajs = [self.tree.nodes[i].traj_from_parent for i in path if self.tree.nodes[i].traj_from_parent]
         cost = self.tree.nodes[self.goal_index].cost_from_start
-        return PlanResult(self.tree, self.goal_index, trajs, cost)
+        return PlanResult(
+            self.tree, self.goal_index, trajs, cost,
+            elapsed=self.elapsed, iterations=self.iterations,
+        )
