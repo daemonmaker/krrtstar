@@ -43,6 +43,7 @@ class AnalyticLinearDynamics:
         u_bounds: Optional[np.ndarray] = None,
         tau_max: float = 20.0,
         n_traj_samples: int = 32,
+        use_accel: bool = True,
     ) -> None:
         A = np.asarray(A, dtype=float)
         B = np.asarray(B, dtype=float)
@@ -64,6 +65,8 @@ class AnalyticLinearDynamics:
         )
         self.tau_max = float(tau_max)
         self.n_traj_samples = int(n_traj_samples)
+        # Allows forcing the pure-Python reference path (used for parity tests).
+        self.use_accel = bool(use_accel)
 
         # Precompute the augmented generator used for the drift integral
         # expm([[A, I],[0,0]] t) -> top-left = e^{A t}, top-right = int_0^t e^{A s} ds
@@ -79,6 +82,15 @@ class AnalyticLinearDynamics:
         self._gram_gen[:n, :n] = -A
         self._gram_gen[:n, n:] = self.Q
         self._gram_gen[n:, n:] = A.T
+
+        # Reusable native connector (precomputed time-grid exponentials).
+        self._connector = (
+            accel.make_connector(
+                self.A, self.B, self.Rinv, self.c, self.tau_max, self.n_traj_samples
+            )
+            if self.use_accel
+            else None
+        )
 
     # ------------------------------------------------------------------ #
     # Core matrix integrals
@@ -150,9 +162,14 @@ class AnalyticLinearDynamics:
         x0 = np.asarray(x0, dtype=float).reshape(-1)
         x1 = np.asarray(x1, dtype=float).reshape(-1)
         # Prefer the native (Rust) solver for the hot-path cost query.
-        rust = accel.linear_cost(self.A, self.Q, self.c, x0, x1, self.tau_max)
-        if rust is not None and np.isfinite(rust):
-            return float(rust)
+        if self._connector is not None:
+            rust = self._connector.cost(x0, x1)
+            if rust is not None and np.isfinite(rust):
+                return float(rust)
+        elif self.use_accel:
+            rust = accel.linear_cost(self.A, self.Q, self.c, x0, x1, self.tau_max)
+            if rust is not None and np.isfinite(rust):
+                return float(rust)
         result = self._optimal_tau(x0, x1)
         if result is None:
             return None
@@ -161,12 +178,35 @@ class AnalyticLinearDynamics:
     def connect(self, x0: np.ndarray, x1: np.ndarray) -> Optional[Trajectory]:
         x0 = np.asarray(x0, dtype=float).reshape(-1)
         x1 = np.asarray(x1, dtype=float).reshape(-1)
+
+        # Full connection (arrival time, cost, and sampled trajectory) in Rust.
+        if self.use_accel:
+            if self._connector is not None:
+                native = accel.unpack_connect(
+                    self._connector.connect(x0, x1), self.x_dim, self.u_dim
+                )
+            else:
+                native = accel.linear_connect(
+                    self.A, self.B, self.Rinv, self.c, x0, x1,
+                    self.tau_max, self.n_traj_samples,
+                )
+            if native is not None:
+                tau, cost, times, states, controls = native
+                if np.isfinite(cost) and np.all(np.isfinite(states)):
+                    return Trajectory(
+                        tau=tau,
+                        cost=cost,
+                        times=times,
+                        states=states,
+                        controls=controls,
+                        feasible=self._bounds.satisfied(controls),
+                    )
+
         result = self._optimal_tau(x0, x1)
         if result is None:
             return None
         tau, cost = result
-        traj = self._reconstruct(tau, cost, x0, x1)
-        return traj
+        return self._reconstruct(tau, cost, x0, x1)
 
     # ------------------------------------------------------------------ #
     # Trajectory reconstruction
@@ -214,6 +254,38 @@ class AnalyticLinearDynamics:
             controls=controls,
             feasible=feasible,
         )
+
+    # ------------------------------------------------------------------ #
+    # Batched cost queries (planner ranking / filtering)
+    # ------------------------------------------------------------------ #
+    def cost_batch_to(self, states: np.ndarray, x1: np.ndarray) -> np.ndarray:
+        """Costs from each row of ``states`` to ``x1``.
+
+        Uses the native connector's precomputed time grid when available, which
+        avoids recomputing matrix exponentials per query. Unreachable pairs come
+        back as ``inf``.
+        """
+        states = np.ascontiguousarray(states, dtype=float)
+        x1 = np.asarray(x1, dtype=float).reshape(-1)
+        if self._connector is not None and states.shape[0] > 0:
+            return np.asarray(self._connector.cost_batch_to(states, x1), dtype=float)
+        return self._cost_loop(states, x1, reverse=False)
+
+    def cost_batch_from(self, x0: np.ndarray, states: np.ndarray) -> np.ndarray:
+        """Costs from ``x0`` to each row of ``states``."""
+        states = np.ascontiguousarray(states, dtype=float)
+        x0 = np.asarray(x0, dtype=float).reshape(-1)
+        if self._connector is not None and states.shape[0] > 0:
+            return np.asarray(self._connector.cost_batch_from(x0, states), dtype=float)
+        return self._cost_loop(states, x0, reverse=True)
+
+    def _cost_loop(self, states: np.ndarray, other: np.ndarray, reverse: bool) -> np.ndarray:
+        out = np.full(states.shape[0], np.inf)
+        for i, s in enumerate(states):
+            c = self.cost(other, s) if reverse else self.cost(s, other)
+            if c is not None and np.isfinite(c):
+                out[i] = c
+        return out
 
     def u_bounds(self) -> Optional[np.ndarray]:
         return self._bounds.bounds

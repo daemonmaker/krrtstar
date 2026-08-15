@@ -140,13 +140,15 @@ class KRRTStar:
         then invokes the expensive ``connect`` only in increasing cost order
         until a collision-free connection is found.
         """
+        idxs = self._candidate_indices(x_new)
+        if len(idxs) == 0:
+            return None
+        costs = self._batch_costs(idxs, x_new, to_target=True)
         ranked = []
-        for i in self._candidate_indices(x_new):
-            node = self.tree.nodes[i]
-            c = self.dyn.cost(node.state, x_new)
-            if c is None or c > self.radius:
+        for i, c in zip(idxs, costs):
+            if not np.isfinite(c) or c > self.radius:
                 continue
-            ranked.append((node.cost_from_start + c, i))
+            ranked.append((self.tree.nodes[i].cost_from_start + c, i))
         ranked.sort(key=lambda t: t[0])
         for _, i in ranked:
             node = self.tree.nodes[i]
@@ -156,15 +158,34 @@ class KRRTStar:
             return (i, traj, node.cost_from_start + traj.cost)
         return None
 
+    def _batch_costs(self, idxs, x, to_target: bool) -> np.ndarray:
+        """Connection costs between ``x`` and the given tree nodes.
+
+        Prefers the dynamics' batched query (native, shared time grid) and
+        falls back to per-pair ``cost`` calls for backends that lack it.
+        """
+        states = np.array([self.tree.nodes[i].state for i in idxs], dtype=float)
+        if to_target and hasattr(self.dyn, "cost_batch_to"):
+            return self.dyn.cost_batch_to(states, x)
+        if not to_target and hasattr(self.dyn, "cost_batch_from"):
+            return self.dyn.cost_batch_from(x, states)
+        out = np.full(len(idxs), np.inf)
+        for k, s in enumerate(states):
+            c = self.dyn.cost(s, x) if to_target else self.dyn.cost(x, s)
+            if c is not None and np.isfinite(c):
+                out[k] = c
+        return out
+
     def _rewire(self, new_idx: int) -> None:
         new_node = self.tree.nodes[new_idx]
         x_new = new_node.state
-        for i in self._candidate_indices(x_new):
-            if i == new_idx:
-                continue
+        idxs = [i for i in self._candidate_indices(x_new) if i != new_idx]
+        if not idxs:
+            return
+        costs = self._batch_costs(idxs, x_new, to_target=False)
+        for i, c in zip(idxs, costs):
             node = self.tree.nodes[i]
-            c = self.dyn.cost(x_new, node.state)
-            if c is None or c > self.radius:
+            if not np.isfinite(c) or c > self.radius:
                 continue
             if new_node.cost_from_start + c + 1e-9 >= node.cost_from_start:
                 continue

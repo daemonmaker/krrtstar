@@ -22,9 +22,10 @@ See [`docs/rewrite-plan.md`](docs/rewrite-plan.md) for the design and
   self-describing bundle.
 - **Visualization** — 3D rendering of the tree, trajectories, robot, and
   obstacles, with optional live updates during tree growth (headless supported).
-- **Rust hot path (optional)** — a `krrtstar_core` extension accelerates the
-  Euclidean neighbor pre-filter and linear connection cost; the package falls
-  back to pure Python when it is not built.
+- **Rust hot path (optional)** — a `krrtstar_core` extension runs the whole
+  connection in native code: the Euclidean neighbor pre-filter, batched
+  connection costs (sharing a precomputed time grid), and full trajectory
+  reconstruction. The package falls back to pure Python when it is not built.
 - **Learned dynamics (best-effort)** — an optional PyTorch backend steers via
   gradient/shooting and is treated as best-effort.
 

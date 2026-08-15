@@ -380,13 +380,34 @@ An initial working implementation of the full stack has landed (see the
 | Visualize trees/trajectories/robot/obstacles in 3D | Done — `viz.py` (PyVista), offscreen render verified |
 | Save/load experiment (tree, refs, hyper-params) | Done — `experiment.py` bundle (`tree.npz` + `config.toml` + `meta.json`) |
 | Tree growth with/without visualization | Done — headless by default; live `progress_cb` |
-| Rust for the hot path | Done — `krrtstar_core` (neighbor pre-filter + linear cost), wired into the planner, pure-Python fallback |
+| Rust for the hot path | Done — `krrtstar_core`: neighbor pre-filter, batched connection costs, and full trajectory reconstruction; wired into the planner with a pure-Python fallback |
 | Learned models best-effort | Done — `TorchDynamics` (gradient/shooting), best-effort |
 
-Tests: 20 passing + 1 skipped (Torch, when PyTorch is not installed). The Rust
-core accelerates the planner (example: ~24s → ~15s; test suite ~42s → ~10s).
+Tests: 26 passing + 1 skipped (Torch, when PyTorch is not installed).
 
-Follow-on work (not yet done): moving the full `connect` trajectory
-reconstruction into Rust (currently Python), richer geometry (meshes, oriented
-boxes, capsules), and asymptotic-optimality tuning of the connection radius
-schedule.
+### Hot-path performance
+
+The whole connection now runs natively. Two things mattered most:
+
+1. **Trajectory reconstruction in Rust.** The costate/state pair is propagated
+   through the composite affine system. Because sample times are uniform, one
+   matrix exponential of the per-step generator is computed and applied
+   repeatedly, instead of one exponential per sample (~7.5x faster `connect`).
+2. **Batched cost queries with a shared time grid.** `Phi(t)`, `Ad(t)` and the
+   Gramian `G(t)` depend only on `(A, Q, t)` — never on the endpoint states — so
+   `LinearConnector` precomputes them once per system and reuses them for every
+   query. Profiling showed cost queries (24k calls) dominated at ~89% of
+   runtime; batching removed nearly all of it.
+
+End-to-end on `examples/double_integrator_2d.toml` (identical solution cost):
+
+| Stage | Wall time |
+|-------|-----------|
+| Pure Python | ~24s |
+| Rust cost + Python reconstruction | ~15s |
+| Rust reconstruction | ~10s |
+| Rust batched cost + reconstruction | **~1.5s** |
+
+Follow-on work (not yet done): richer geometry (meshes, oriented boxes,
+capsules), moving collision checking into Rust, and asymptotic-optimality tuning
+of the connection-radius schedule.
