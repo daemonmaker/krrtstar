@@ -61,7 +61,11 @@ def _state_bounds(cfg: ExperimentConfig) -> np.ndarray:
 
 
 def run_experiment(cfg: ExperimentConfig, live_callback=None) -> PlanResult:
-    """Build and grow a planner from a config, optionally visualizing live."""
+    """Build and grow a planner from a config, optionally visualizing live.
+
+    When live visualization is enabled the viewer is finalized after growth so
+    the solution is drawn and the window stays open for inspection.
+    """
     planner = build_planner(cfg)
     progress_cb = None
     if cfg.visualization.live:
@@ -70,8 +74,16 @@ def run_experiment(cfg: ExperimentConfig, live_callback=None) -> PlanResult:
         else:
             from .viz import make_live_callback
 
-            progress_cb = make_live_callback(cfg)
-    return planner.grow(cfg.planner.target_nodes, progress_cb=progress_cb)
+            progress_cb = make_live_callback(
+                cfg, keep_open=cfg.visualization.keep_open
+            )
+    result = planner.grow(cfg.planner.target_nodes, progress_cb=progress_cb)
+
+    # Viewers expose finish() to draw the solution and hold the window open.
+    finish = getattr(progress_cb, "finish", None)
+    if callable(finish):
+        finish(result)
+    return result
 
 
 def run_from_file(path: str, live_callback=None) -> PlanResult:
