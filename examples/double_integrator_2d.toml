@@ -1,0 +1,50 @@
+# 2D double integrator: state = [x, y, vx, vy], control = [ax, ay].
+# A puck accelerates in the plane and must reach a goal while avoiding a wall.
+
+[dynamics]
+kind = "linear"
+x_dim = 4
+u_dim = 2
+A = [[0, 0, 1, 0],
+     [0, 0, 0, 1],
+     [0, 0, 0, 0],
+     [0, 0, 0, 0]]
+B = [[0, 0],
+     [0, 0],
+     [1, 0],
+     [0, 1]]
+c = [0, 0, 0, 0]
+R = [[1, 0], [0, 1]]
+u_bounds = [[-5, 5], [-5, 5]]
+
+[planner]
+target_nodes = 300
+connection_radius = 12.0
+goal_bias = 0.1
+goal_tolerance = 1.0
+rewire = true
+euclidean_gate = 6.0
+seed = 7
+x_init = [-4, -4, 0, 0]
+x_goal = [4, 4, 0, 0]
+state_bounds = [[-5, -5, -3, -3], [5, 5, 3, 3]]
+
+[robot]
+pose_from_state = { x = 0, y = 1 }
+[[robot.geometry]]
+type = "sphere"
+center = [0, 0, 0]
+radius = 0.25
+
+[environment]
+bounds = [[-5, -5, -1], [5, 5, 1]]
+[[environment.obstacles]]
+type = "box"
+center = [0, 0, 0]
+extents = [1.0, 6.0, 2.0]
+
+[visualization]
+live = false
+show_tree = true
+show_robot = true
+show_obstacles = true

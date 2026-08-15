@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "krrtstar"
+version = "0.1.0"
+description = "Hybrid Python + Rust kinodynamic RRT* motion planner with config-driven dynamics."
+authors = ["krrtstar contributors"]
+readme = "README.md"
+license = "MIT"
+packages = [{ include = "krrtstar" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = ">=1.24"
+scipy = ">=1.10"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.0"
+
+[tool.poetry.group.viz]
+optional = true
+
+[tool.poetry.group.viz.dependencies]
+pyvista = ">=0.43"
+
+[tool.poetry.group.torch]
+optional = true
+
+[tool.poetry.group.torch.dependencies]
+torch = ">=2.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[build-system]
+requires = ["poetry-core>=1.5.0"]
+build-backend = "poetry.core.masonry.api"

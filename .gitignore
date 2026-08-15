@@ -231,3 +231,9 @@ krrtstar/krrtstar/stats_log.txt
 krrtstar/krrtstar/path_log.txt
 krrtstar/krrtstar/test_path.path
 *.rrt
+# krrtstar build/dev artifacts
+.venv/
+__pycache__/
+*.pyc
+rust/target/
+poetry.lock

@@ -1,0 +1,52 @@
+# 3D double integrator: state = [x, y, z, vx, vy, vz], control = [ax, ay, az].
+# Demonstrates full 3D planning and rendering with a box obstacle to fly around.
+
+[dynamics]
+kind = "linear"
+x_dim = 6
+u_dim = 3
+A = [[0, 0, 0, 1, 0, 0],
+     [0, 0, 0, 0, 1, 0],
+     [0, 0, 0, 0, 0, 1],
+     [0, 0, 0, 0, 0, 0],
+     [0, 0, 0, 0, 0, 0],
+     [0, 0, 0, 0, 0, 0]]
+B = [[0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [1, 0, 0],
+     [0, 1, 0],
+     [0, 0, 1]]
+R = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+u_bounds = [[-5, 5], [-5, 5], [-5, 5]]
+
+[planner]
+target_nodes = 400
+connection_radius = 14.0
+goal_bias = 0.1
+goal_tolerance = 1.0
+rewire = true
+euclidean_gate = 8.0
+seed = 11
+x_init = [-4, -4, -4, 0, 0, 0]
+x_goal = [4, 4, 4, 0, 0, 0]
+state_bounds = [[-5, -5, -5, -3, -3, -3], [5, 5, 5, 3, 3, 3]]
+
+[robot]
+pose_from_state = { x = 0, y = 1, z = 2 }
+[[robot.geometry]]
+type = "sphere"
+center = [0, 0, 0]
+radius = 0.3
+
+[environment]
+bounds = [[-5, -5, -5], [5, 5, 5]]
+[[environment.obstacles]]
+type = "box"
+center = [0, 0, 0]
+extents = [3.0, 3.0, 3.0]
+
+[visualization]
+live = false
+show_robot = true
+show_obstacles = true
