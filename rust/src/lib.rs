@@ -3,7 +3,7 @@
 //! Provides the optimal-time connection for linear systems
 //!     x_dot = A x + B u + c,   cost = integral_0^tau (1 + u^T R u) dt
 //! including full trajectory reconstruction, plus a Euclidean neighbour
-//! pre-filter.
+//! pre-filter and the parry3d-backed collision scene in [`collision`].
 //!
 //! The key performance property exploited here: the matrix integrals
 //! `Phi(t) = e^{A t}`, `Ad(t) = int_0^t e^{A s} ds` and the weighted
@@ -12,9 +12,13 @@
 //! fixed time grid and reuses them for every cost query, which turns each
 //! query into a handful of matrix-vector products.
 
+mod collision;
+
 use nalgebra::{DMatrix, DVector};
 use numpy::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
+
+use collision::CollisionScene;
 
 /// Convert a numpy 2D float64 array view into an nalgebra DMatrix.
 fn to_dmatrix(arr: &PyReadonlyArray2<f64>) -> DMatrix<f64> {
@@ -583,5 +587,6 @@ fn krrtstar_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(linear_cost, m)?)?;
     m.add_function(wrap_pyfunction!(linear_connect, m)?)?;
     m.add_class::<LinearConnector>()?;
+    m.add_class::<CollisionScene>()?;
     Ok(())
 }

@@ -14,8 +14,13 @@ See [`docs/rewrite-plan.md`](docs/rewrite-plan.md) for the design and
   and control bounds in a TOML file. A single general optimal-time connection
   solver (controllability Gramian + arrival-time optimization) replaces the
   legacy per-model closed forms — no MATLAB/Maple.
-- **3D geometry & collision** — robot and obstacles as spheres/boxes; broad +
-  narrow phase collision checking; trajectory collision checking.
+- **3D geometry & collision** — spheres, oriented boxes, capsules, cylinders, and
+  triangle meshes loaded from `.obj` (or any format `trimesh`/`pyvista` can
+  read), for both the robot and the obstacles. Shapes can be rotated, and the
+  robot's orientation can be driven from the state (Euler indices or a
+  quaternion). Collision runs natively via `parry3d` when the Rust core is
+  built, with a pure-Python GJK narrow phase as the fallback; both are
+  cross-validated to agree exactly.
 - **kRRT\* planner** — nearest/near search, best-parent selection, and rewiring
   over the pluggable `Dynamics` interface.
 - **Save / load experiments** — persist the tree, config, and metadata as a
@@ -31,7 +36,8 @@ See [`docs/rewrite-plan.md`](docs/rewrite-plan.md) for the design and
 - **Rust hot path (optional)** — a `krrtstar_core` extension runs the whole
   connection in native code: the Euclidean neighbor pre-filter, batched
   connection costs (sharing a precomputed time grid), and full trajectory
-  reconstruction. The package falls back to pure Python when it is not built.
+  reconstruction, plus `parry3d` collision checking (~15x faster than the Python
+  fallback). The package falls back to pure Python when it is not built.
 - **Learned dynamics (best-effort)** — an optional PyTorch backend steers via
   gradient/shooting and is treated as best-effort.
 
@@ -85,6 +91,10 @@ poetry run pytest
 ```
 
 ## Layout
+
+> Mesh obstacles are treated as **surfaces**, not filled solids: a shape that
+> fits entirely inside a closed mesh without touching a triangle is not in
+> collision. Prefer primitives for large hollow volumes.
 
 ```
 krrtstar/        Python package (config, dynamics, geometry, planner, IO, viz)

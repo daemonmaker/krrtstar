@@ -12,3 +12,7 @@ pyo3 = { version = "0.22", features = ["extension-module", "abi3-py310"] }
 numpy = "0.22"
 nalgebra = "0.33"
 ndarray = "0.16"
+# The 64-bit build of parry3d, renamed so the code reads `parry3d::`. It shares
+# nalgebra 0.33 with this crate, and matches the float64 Python shape model
+# (plain `parry3d` is single precision).
+parry3d = { package = "parry3d-f64", version = "0.17" }

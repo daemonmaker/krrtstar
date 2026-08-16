@@ -26,7 +26,7 @@ $RECYCLE.BIN/
 .LSOverride
 
 # Icon must ends with two \r.
-Icon
+Icon
 
 # Thumbnails
 ._*
@@ -231,6 +231,9 @@ krrtstar/krrtstar/stats_log.txt
 krrtstar/krrtstar/path_log.txt
 krrtstar/krrtstar/test_path.path
 *.rrt
+# Mesh assets are source data, not C/C++ object files (*.obj is ignored above).
+!examples/assets/*.obj
+
 # krrtstar build/dev artifacts
 .venv/
 __pycache__/
