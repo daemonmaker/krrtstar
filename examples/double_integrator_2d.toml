@@ -23,7 +23,12 @@ connection_radius = 12.0
 goal_bias = 0.1
 goal_tolerance = 1.0
 rewire = true
-euclidean_gate = 6.0
+# Calibrated so the pre-filter never discards candidates inside the cost
+# radius. A hand-picked number here (this example used to ship 6.0) silently
+# drops most of the near set and costs solution quality.
+euclidean_gate = "auto"
+# Shrink the near-set radius as the tree grows (see docs/rewrite-plan.md).
+radius_schedule = "rrtstar"
 seed = 7
 x_init = [-4, -4, 0, 0]
 x_goal = [4, 4, 0, 0]

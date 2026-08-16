@@ -17,7 +17,10 @@ See [`docs/rewrite-plan.md`](docs/rewrite-plan.md) for the design and
 - **3D geometry & collision** — robot and obstacles as spheres/boxes; broad +
   narrow phase collision checking; trajectory collision checking.
 - **kRRT\* planner** — nearest/near search, best-parent selection, and rewiring
-  over the pluggable `Dynamics` interface.
+  over the pluggable `Dynamics` interface. The near-set radius can be held
+  constant or shrunk as the tree grows (`radius_schedule = "rrtstar"`), and the
+  Euclidean pre-filter can be calibrated automatically
+  (`euclidean_gate = "auto"`) so it never discards valid neighbours.
 - **Save / load experiments** — persist the tree, config, and metadata as a
   self-describing bundle.
 - **Visualization** — 3D rendering of the tree, trajectories, robot, and
@@ -77,6 +80,40 @@ from krrtstar.run import run_from_file
 result = run_from_file("examples/double_integrator_2d.toml")
 print(result.found, result.cost)
 ```
+
+## Tuning the near-set radius
+
+The connection radius is the cost threshold within which candidate parents and
+rewiring targets are considered. It trades solution quality against work:
+
+```toml
+[planner]
+connection_radius = 12.0
+radius_schedule = "rrtstar"   # "constant" (default) | "rrtstar" | "geometric"
+euclidean_gate = "auto"       # a number, "auto", or "none" for an exact near set
+```
+
+Measured on `examples/double_integrator_2d.toml` (10 seeds, exact near set):
+
+| Setting | Mean solution cost | Mean time |
+|---|---|---|
+| `constant`, radius 3 | no solution found | — |
+| `constant`, radius 6 | 15.57 | 0.17 s |
+| `constant`, radius 9 | 14.02 | 1.09 s |
+| `constant`, radius 12 | 13.88 | 2.08 s |
+| `constant`, radius 18 | 13.88 | 3.45 s |
+
+Quality saturates around radius 12, past which extra radius only costs time. At
+600 nodes the shrinking `rrtstar` schedule reaches the *same* cost as the best
+constant radius about 20% faster, and a more aggressive shrink trades ~1.5% cost
+for ~59% less time.
+
+> **The Euclidean gate must be large enough.** It pre-filters candidates before
+> the cost query, but Euclidean distance does not bound the optimal-control cost,
+> so a hand-picked gate can silently drop valid near neighbours. The examples
+> previously shipped `euclidean_gate = 6.0` against a cost radius of 12, which
+> discarded more of the near set than it kept and cost ~14% in solution quality.
+> Use `"auto"` (calibrated from the dynamics) or `"none"`.
 
 ## Testing
 

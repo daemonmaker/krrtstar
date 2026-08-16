@@ -408,6 +408,33 @@ End-to-end on `examples/double_integrator_2d.toml` (identical solution cost):
 | Rust reconstruction | ~10s |
 | Rust batched cost + reconstruction | **~1.5s** |
 
+### Connection-radius schedule
+
+The near-set radius is now configurable via `[planner] radius_schedule`:
+`constant` (default), `rrtstar` (`r(n) = gamma * (log n / n)^(1/d)`, which is
+what RRT*'s asymptotic-optimality argument requires), or `geometric` (the legacy
+`RADIUS_MULTIPLIER` behaviour). `gamma` is pinned by default so the radius
+reaches `connection_radius` at a quarter of the target node count and then
+shrinks below it, with a floor at half the configured radius.
+
+Measured on the 2D double integrator (10 seeds, exact near set): quality
+saturates around radius 12 (radius 3 finds nothing; 12 and 18 give identical
+cost, 18 just costs more time). At 600 nodes the shrinking schedule matches the
+best constant radius' cost about 20% faster; shrinking harder trades ~1.5% cost
+for ~59% less time. Pinning `gamma` at the *target* node count is a trap -- the
+radius then never drops below `connection_radius`, producing identical solutions
+~26% slower.
+
+Tuning this surfaced a correctness bug in the Euclidean pre-filter. The gate
+rejects candidates by Euclidean distance before the cost query, but Euclidean
+distance does not bound the optimal-control cost, so the hand-picked
+`euclidean_gate = 6.0` shipped in the examples was discarding 2986 candidates
+that were inside the cost radius of 12 while keeping only 2408 -- over half the
+near set silently dropped, worth ~14% of solution quality, and enough to make the
+radius schedule look like it did nothing at all. The gate is now optional, can be
+calibrated from the dynamics (`euclidean_gate = "auto"`), and is documented as an
+approximation.
+
 Follow-on work (not yet done): richer geometry (meshes, oriented boxes,
-capsules), moving collision checking into Rust, and asymptotic-optimality tuning
-of the connection-radius schedule.
+capsules) and moving collision checking into Rust (both in progress separately),
+and a rigorous rather than sampled bound for the Euclidean gate.

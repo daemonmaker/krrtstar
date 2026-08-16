@@ -45,10 +45,18 @@ class PlannerConfig:
     goal_bias: float = 0.1
     goal_tolerance: float = 0.5
     rewire: bool = True
-    euclidean_gate: Optional[float] = None
+    # Euclidean pre-filter for candidate neighbours: a number, the string
+    # "auto" to calibrate it from the dynamics, or None for an exact near set.
+    euclidean_gate: Optional[Any] = None
     seed: int = 0
     x_init: Optional[np.ndarray] = None
     x_goal: Optional[np.ndarray] = None
+    # Near-set radius schedule: "constant" (default), "rrtstar" or "geometric".
+    radius_schedule: str = "constant"
+    radius_gamma: Optional[float] = None
+    radius_multiplier: float = 1.0
+    radius_min: Optional[float] = None
+    radius_max: Optional[float] = None
 
 
 @dataclass
@@ -125,6 +133,22 @@ def _parse_environment(data: Dict[str, Any]) -> Environment:
     return Environment(bounds=bounds, obstacles=obstacles)
 
 
+def _parse_gate(value):
+    """Parse ``euclidean_gate``: a number, ``"auto"``, ``"none"``, or unset."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text == "auto":
+            return "auto"
+        if text in {"none", "off", "exact"}:
+            return None
+        raise ValueError(
+            f"Invalid euclidean_gate {value!r}; expected a number, 'auto' or 'none'"
+        )
+    return float(value)
+
+
 def _parse_planner(data: Dict[str, Any]) -> PlannerConfig:
     return PlannerConfig(
         target_nodes=int(data.get("target_nodes", 1000)),
@@ -132,10 +156,15 @@ def _parse_planner(data: Dict[str, Any]) -> PlannerConfig:
         goal_bias=float(data.get("goal_bias", 0.1)),
         goal_tolerance=float(data.get("goal_tolerance", 0.5)),
         rewire=bool(data.get("rewire", True)),
-        euclidean_gate=(None if data.get("euclidean_gate") is None else float(data["euclidean_gate"])),
+        euclidean_gate=_parse_gate(data.get("euclidean_gate")),
         seed=int(data.get("seed", 0)),
         x_init=_arr(data.get("x_init")),
         x_goal=_arr(data.get("x_goal")),
+        radius_schedule=str(data.get("radius_schedule", "constant")),
+        radius_gamma=(None if data.get("radius_gamma") is None else float(data["radius_gamma"])),
+        radius_multiplier=float(data.get("radius_multiplier", 1.0)),
+        radius_min=(None if data.get("radius_min") is None else float(data["radius_min"])),
+        radius_max=(None if data.get("radius_max") is None else float(data["radius_max"])),
     )
 
 
