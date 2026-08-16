@@ -37,6 +37,8 @@ def build_planner(cfg: ExperimentConfig) -> KRRTStar:
         rewire=planner_cfg.rewire,
         euclidean_gate=planner_cfg.euclidean_gate,
         seed=planner_cfg.seed,
+        max_connect_attempts=planner_cfg.max_connect_attempts,
+        sample_regions=planner_cfg.sample_regions,
     )
 
 

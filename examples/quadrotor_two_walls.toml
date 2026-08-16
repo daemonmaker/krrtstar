@@ -1,0 +1,145 @@
+# Quadrotor in the original's TwoWalls world (the QUADROTOR system).
+#
+# THIS IS THE ORIGINAL'S HARD BENCHMARK, and it is genuinely hard: the original
+# ran it with DEFAULT_TARGET_NODES = 10000. The quadrotor's collision body is a
+# disc 0.54 across which has to thread two openings only 1.0 wide and 0.5 tall,
+# on opposite sides of the world and at different heights, and the torque bounds
+# reject roughly 90% of candidate connections. In our runs it had not found a
+# solution by ~5000 samples (the tree reaches ~600 nodes); every individual leg
+# (start -> window 1 -> window 2 -> goal) is control-feasible, so it is a
+# narrow-passage sampling problem rather than a dynamics one. Raise
+# target_nodes and expect minutes, or start from examples/quadrotor_window.toml,
+# which is the same system in a gentler world and solves in seconds.
+#
+#   state = [x, y, z, vx, vy, vz, roll, pitch, roll_rate, pitch_rate]
+#   control = [thrust, roll_torque, pitch_torque]
+#
+# This is the linearized (near-hover) quadrotor from the original
+# implementation. Gravity couples attitude into horizontal acceleration:
+# a pitch produces +x acceleration and a roll produces -y acceleration, which is
+# why the A matrix has g at (3,7) and -g at (4,6). Yaw is not modelled.
+#
+# Constants from dynamicrrt.h: gravity 9.81, mass 0.5, inertia 0.1,
+# arm length 0.3429/2 = 0.17145. Hence B(5,0) = 1/mass = 2 and
+# B(8,1) = B(9,2) = length/inertia = 1.7145. The control penalty R is
+# diag(0.25, 0.5, 0.5) * 0.1 as in setupParameters().
+
+[dynamics]
+kind = "linear"
+x_dim = 10
+u_dim = 3
+A = [[0, 0, 0, 1, 0, 0, 0,    0,    0, 0],
+     [0, 0, 0, 0, 1, 0, 0,    0,    0, 0],
+     [0, 0, 0, 0, 0, 1, 0,    0,    0, 0],
+     [0, 0, 0, 0, 0, 0, 0,    9.81, 0, 0],
+     [0, 0, 0, 0, 0, 0, -9.81, 0,   0, 0],
+     [0, 0, 0, 0, 0, 0, 0,    0,    0, 0],
+     [0, 0, 0, 0, 0, 0, 0,    0,    1, 0],
+     [0, 0, 0, 0, 0, 0, 0,    0,    0, 1],
+     [0, 0, 0, 0, 0, 0, 0,    0,    0, 0],
+     [0, 0, 0, 0, 0, 0, 0,    0,    0, 0]]
+B = [[0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [2.0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [0, 1.7145, 0],
+     [0, 0, 1.7145]]
+R = [[0.025, 0, 0], [0, 0.05, 0], [0, 0, 0.05]]
+# Thrust is asymmetric about hover; torques are symmetric (setupParameters()).
+u_bounds = [[-4.545, 9.935], [-3.62, 3.62], [-3.62, 3.62]]
+tau_max = 8.0
+
+[planner]
+target_nodes = 400
+connection_radius = 40.0
+goal_bias = 0.1
+goal_tolerance = 0.6
+rewire = true
+seed = 5
+# TwoWalls start/goal, from the original World constructor.
+x_init = [2.5, -1.0, 4.0, 0, 0, 0, 0, 0, 0, 0]
+x_goal = [-2.5, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0]
+# The original's QuadrotorStateSpace zeroed everything past the first six
+# components, i.e. it sampled position and velocity but always requested a level
+# attitude with zero angular rates. Degenerate bounds reproduce that exactly.
+state_bounds = [
+  [-4, -4, 0, -2, -2, -2, 0, 0, 0, 0],
+  [ 4,  4, 5,  2,  2,  2, 0, 0, 0, 0],
+]
+# Cap connect() calls per iteration: the torque bounds reject roughly 90% of
+# candidate connections here, so an unbounded scan makes the work per iteration
+# grow with the tree.
+max_connect_attempts = 20
+
+# TwoWalls::randPosition drew 10% of samples from inside each window. Without
+# this bias a uniform sample lands in a window under 0.2% of the time and the
+# planner effectively cannot thread them.
+[[planner.sample_regions]]
+weight = 0.1
+bounds = [
+  [0.5, 0.5, 0.75, -2, -2, -2, 0, 0, 0, 0],
+  [1.5, 1.5, 1.25,  2,  2,  2, 0, 0, 0, 0],
+]
+[[planner.sample_regions]]
+weight = 0.1
+bounds = [
+  [-1.5, -1.5, 3.75, -2, -2, -2, 0, 0, 0, 0],
+  [-0.5, -0.5, 4.25,  2,  2,  2, 0, 0, 0, 0],
+]
+
+# The original flew the Quadrotor robot; its collision body is a disc spanning
+# the rotor tips (radius = arm length + rotor radius).
+[robot]
+preset = "quadrotor"
+
+# TwoWalls: two thin walls at x = 1 and x = -1, each with a small window.
+# Each wall is four boxes (below, above, left and right of the opening), exactly
+# as the original's BUILD_SEGMENTS macro produced them.
+[environment]
+bounds = [[-4, -4, 0], [4, 4, 5]]
+
+# Wall at x = 1, window centred at (1, 1, 1), 1.0 wide (y) x 0.5 tall (z).
+[[environment.obstacles]]
+type = "box"
+center = [1.0, 0.0, 0.375]
+extents = [0.1, 8.0, 0.75]
+[[environment.obstacles]]
+type = "box"
+center = [1.0, 0.0, 3.125]
+extents = [0.1, 8.0, 3.75]
+[[environment.obstacles]]
+type = "box"
+center = [1.0, 2.75, 1.0]
+extents = [0.1, 2.5, 0.5]
+[[environment.obstacles]]
+type = "box"
+center = [1.0, -1.75, 1.0]
+extents = [0.1, 4.5, 0.5]
+
+# Wall at x = -1, window centred at (-1, -1, 4).
+[[environment.obstacles]]
+type = "box"
+center = [-1.0, 0.0, 1.875]
+extents = [0.1, 8.0, 3.75]
+[[environment.obstacles]]
+type = "box"
+center = [-1.0, 0.0, 4.625]
+extents = [0.1, 8.0, 0.75]
+[[environment.obstacles]]
+type = "box"
+center = [-1.0, 1.75, 4.0]
+extents = [0.1, 4.5, 0.5]
+[[environment.obstacles]]
+type = "box"
+center = [-1.0, -2.75, 4.0]
+extents = [0.1, 2.5, 0.5]
+
+[visualization]
+live = false
+show_robot = true
+show_obstacles = true
+keep_open = true

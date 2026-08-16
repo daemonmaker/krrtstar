@@ -60,6 +60,10 @@ class PlannerConfig:
     rewire: bool = True
     euclidean_gate: Optional[float] = None
     seed: int = 0
+    # Caps expensive connect() calls per iteration; None means unbounded.
+    max_connect_attempts: Optional[int] = None
+    # (weight, bounds) regions to bias sampling toward, e.g. narrow passages.
+    sample_regions: List[Any] = field(default_factory=list)
     x_init: Optional[np.ndarray] = None
     x_goal: Optional[np.ndarray] = None
 
@@ -164,24 +168,59 @@ def _parse_shape(data: Dict[str, Any], base_dir: str = "."):
 
 
 def _parse_pose_mapping(data: Dict[str, Any]) -> PoseMapping:
-    def idx(key):
-        return None if data.get(key) is None else int(data[key])
+    """Read a state->pose index mapping.
+
+    Each axis takes a state index. Write ``false`` or ``"none"`` to pin an axis
+    to zero, which a system with fewer position dimensions than the world needs
+    (e.g. a 1-D double integrator, whose index 1 is velocity, not ``y``).
+    """
+
+    def axis(key, default=None):
+        if key not in data:
+            return default
+        value = data[key]
+        if value is None or value is False:
+            return None
+        if isinstance(value, str):
+            if value.strip().lower() in {"none", "off", "unused"}:
+                return None
+            raise ValueError(f"Invalid pose index for {key!r}: {value!r}")
+        return int(value)
 
     quat = data.get("quat")
     return PoseMapping(
-        x=int(data.get("x", 0)),
-        y=int(data.get("y", 1)),
-        z=idx("z"),
-        roll=idx("roll"),
-        pitch=idx("pitch"),
-        yaw=idx("yaw"),
+        x=axis("x", 0),
+        y=axis("y", 1),
+        z=axis("z"),
+        roll=axis("roll"),
+        pitch=axis("pitch"),
+        yaw=axis("yaw"),
         quat=None if quat is None else [int(v) for v in quat],
     )
 
 
 def _parse_robot(data: Dict[str, Any], base_dir: str = ".") -> Robot:
-    shapes = [_parse_shape(s, base_dir) for s in data.get("geometry", [])]
-    return Robot(shapes=shapes, pose=_parse_pose_mapping(data.get("pose_from_state", {})))
+    """Build a robot from an optional preset plus any explicit geometry.
+
+    ``preset`` names one of the models ported from the original implementation
+    (see :mod:`krrtstar.robots`); its collision geometry is used, and its default
+    state->pose mapping applies unless ``pose_from_state`` overrides it.
+    """
+    from .robots import collision_shapes, default_pose
+
+    shapes = []
+    preset = data.get("preset")
+    if preset is not None:
+        shapes.extend(collision_shapes(str(preset)))
+    shapes.extend(_parse_shape(s, base_dir) for s in data.get("geometry", []))
+
+    if "pose_from_state" in data:
+        pose = _parse_pose_mapping(data["pose_from_state"])
+    elif preset is not None:
+        pose = default_pose(str(preset))
+    else:
+        pose = _parse_pose_mapping({})
+    return Robot(shapes=shapes, pose=pose)
 
 
 def _parse_environment(data: Dict[str, Any], base_dir: str = ".") -> Environment:
@@ -199,6 +238,13 @@ def _parse_planner(data: Dict[str, Any]) -> PlannerConfig:
         rewire=bool(data.get("rewire", True)),
         euclidean_gate=(None if data.get("euclidean_gate") is None else float(data["euclidean_gate"])),
         seed=int(data.get("seed", 0)),
+        max_connect_attempts=(
+            None if data.get("max_connect_attempts") is None
+            else int(data["max_connect_attempts"])
+        ),
+        sample_regions=[
+            (float(r["weight"]), _arr(r["bounds"])) for r in data.get("sample_regions", [])
+        ],
         x_init=_arr(data.get("x_init")),
         x_goal=_arr(data.get("x_goal")),
     )
@@ -243,6 +289,20 @@ def build_dynamics(cfg: DynamicsConfig):
         return AnalyticLinearDynamics(
             A=cfg.A, B=cfg.B, c=cfg.c, R=cfg.R, u_bounds=cfg.u_bounds,
             **{k: cfg.extra[k] for k in ("tau_max", "n_traj_samples") if k in cfg.extra},
+        )
+    if cfg.kind in {"nonholonomic", "linearized"}:
+        from .dynamics.nonlinear import LinearizedDynamics, build_system
+
+        name = cfg.extra.get("system", "nonholonomic" if cfg.kind == "nonholonomic" else None)
+        if name is None:
+            raise ValueError("linearized dynamics require a 'system' name")
+        extra = {
+            k: cfg.extra[k]
+            for k in ("tau_max", "n_traj_samples", "max_endpoint_error")
+            if k in cfg.extra
+        }
+        return LinearizedDynamics(
+            build_system(str(name)), R=cfg.R, u_bounds=cfg.u_bounds, **extra
         )
     if cfg.kind == "torch":
         from .dynamics.torch_dynamics import TorchDynamics
