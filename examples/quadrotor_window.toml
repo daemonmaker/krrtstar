@@ -1,0 +1,94 @@
+# Quadrotor flying through a window (a gentler variant of the original's world).
+#
+# Same linearized quadrotor system as examples/quadrotor_two_walls.toml -- see
+# that file for where every matrix entry comes from -- but with a single wall and
+# a more generous opening, so it solves in seconds. Use this one to see the
+# system work; use the TwoWalls example for the original's hard benchmark.
+#
+#   state = [x, y, z, vx, vy, vz, roll, pitch, roll_rate, pitch_rate]
+#   control = [thrust, roll_torque, pitch_torque]
+
+[dynamics]
+kind = "linear"
+x_dim = 10
+u_dim = 3
+A = [[0, 0, 0, 1, 0, 0, 0,    0,    0, 0],
+     [0, 0, 0, 0, 1, 0, 0,    0,    0, 0],
+     [0, 0, 0, 0, 0, 1, 0,    0,    0, 0],
+     [0, 0, 0, 0, 0, 0, 0,    9.81, 0, 0],
+     [0, 0, 0, 0, 0, 0, -9.81, 0,   0, 0],
+     [0, 0, 0, 0, 0, 0, 0,    0,    0, 0],
+     [0, 0, 0, 0, 0, 0, 0,    0,    1, 0],
+     [0, 0, 0, 0, 0, 0, 0,    0,    0, 1],
+     [0, 0, 0, 0, 0, 0, 0,    0,    0, 0],
+     [0, 0, 0, 0, 0, 0, 0,    0,    0, 0]]
+B = [[0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [2.0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [0, 1.7145, 0],
+     [0, 0, 1.7145]]
+R = [[0.025, 0, 0], [0, 0.05, 0], [0, 0, 0.05]]
+u_bounds = [[-4.545, 9.935], [-3.62, 3.62], [-3.62, 3.62]]
+tau_max = 8.0
+
+[planner]
+target_nodes = 900
+connection_radius = 100.0
+goal_bias = 0.15
+goal_tolerance = 0.6
+rewire = true
+seed = 5
+max_connect_attempts = 20
+x_init = [3.0, 0.0, 2.5, 0, 0, 0, 0, 0, 0, 0]
+x_goal = [-3.0, 0.0, 2.5, 0, 0, 0, 0, 0, 0, 0]
+# Attitude and rates are pinned to zero when sampling, as the original's
+# QuadrotorStateSpace did.
+state_bounds = [
+  [-4, -3, 0, -2, -2, -2, 0, 0, 0, 0],
+  [ 4,  3, 5,  2,  2,  2, 0, 0, 0, 0],
+]
+
+# Bias samples into the slab around the opening so the planner can line up its
+# approach (the original biased sampling into its windows the same way).
+[[planner.sample_regions]]
+weight = 0.25
+bounds = [
+  [-1.0, -1.0, 1.5, -2, -2, -2, 0, 0, 0, 0],
+  [ 1.0,  1.0, 3.5,  2,  2,  2, 0, 0, 0, 0],
+]
+
+[robot]
+preset = "quadrotor"
+
+# One wall at x = 0 with a 2.0 (y) x 2.0 (z) opening centred at (0, 0, 2.5),
+# built from four boxes as in the original's BUILD_SEGMENTS macro.
+[environment]
+bounds = [[-4, -3, 0], [4, 3, 5]]
+
+[[environment.obstacles]]
+type = "box"
+center = [0.0, 0.0, 0.75]
+extents = [0.1, 6.0, 1.5]
+[[environment.obstacles]]
+type = "box"
+center = [0.0, 0.0, 4.25]
+extents = [0.1, 6.0, 1.5]
+[[environment.obstacles]]
+type = "box"
+center = [0.0, 2.0, 2.5]
+extents = [0.1, 2.0, 2.0]
+[[environment.obstacles]]
+type = "box"
+center = [0.0, -2.0, 2.5]
+extents = [0.1, 2.0, 2.0]
+
+[visualization]
+live = false
+show_robot = true
+show_obstacles = true
+keep_open = true

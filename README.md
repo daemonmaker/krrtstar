@@ -41,6 +41,53 @@ See [`docs/rewrite-plan.md`](docs/rewrite-plan.md) for the design and
 - **Learned dynamics (best-effort)** — an optional PyTorch backend steers via
   gradient/shooting and is treated as best-effort.
 
+## Systems
+
+Every dynamical system from the legacy C++ implementation, defined by config:
+
+| System | State / control | Example |
+|---|---|---|
+| Single integrator 2D | 2 / 2 | `examples/single_integrator_2d.toml` |
+| Double integrator 1D | 2 / 1 | `examples/double_integrator_1d.toml` |
+| Double integrator 2D | 4 / 2 | `examples/double_integrator_2d.toml` |
+| Double integrator 3D | 6 / 3 | `examples/double_integrator_3d.toml` |
+| Quadrotor (linearized) | 10 / 3 | `examples/quadrotor_window.toml`, `examples/quadrotor_two_walls.toml` |
+| Nonholonomic car | 5 / 2 | `examples/nonholonomic_car.toml` |
+
+The first five are linear, so they are pure configuration (`kind = "linear"` with
+`A`/`B`/`c`/`R`). The car is genuinely nonlinear, so it uses
+`kind = "nonholonomic"`: each connection linearizes the system about its start
+state and solves that linear problem exactly, which is what the original did.
+The returned trajectory therefore satisfies the *linearized* dynamics and only
+approximately the true ones — see `krrtstar/dynamics/nonlinear.py`, which can
+forward-simulate the real system to measure the deviation and optionally reject
+connections that drift too far.
+
+## Robot models
+
+The robot models are ported from `includes/robots.hpp`. As in the original, each
+has a coarse **collision** body (what the planner tests) and a detailed
+**display** model (what you look at); the images below show the display model
+with the collision body overlaid in translucent blue.
+
+Render them yourself with:
+
+```bash
+poetry run python -m krrtstar.robot_viz --out /tmp/robot_models
+```
+
+| Puck | Quadrotor | Car |
+|---|---|---|
+| ![puck](docs/images/robot_puck.png) | ![quadrotor](docs/images/robot_quadrotor.png) | ![car](docs/images/robot_car.png) |
+
+- **Puck** — a disc (radius 1.25), used by the integrator systems.
+- **Quadrotor** — cross beams, four motors and translucent rotors, a hub rotated
+  45°, and an orange nose flag; collision body is a disc spanning the rotor tips.
+- **Car** — a 5 × 3 × 2.5 box. Note the original placed it offset by half its
+  length and width, so heading swings the body *around* the state point rather
+  than turning it in place; that is reproduced, and `car_collision(centered=True)`
+  opts out.
+
 ## Install
 
 ```bash

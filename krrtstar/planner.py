@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 
@@ -76,12 +76,41 @@ class PlanResult:
 
 
 class UniformSampler:
-    def __init__(self, bounds: np.ndarray, rng: np.random.Generator):
+    """Uniform state sampler, optionally biased toward sub-regions.
+
+    ``regions`` is a list of ``(weight, bounds)`` pairs. With probability
+    ``weight`` a sample is drawn from that region instead of the full state
+    space, which is how the original biased sampling into narrow passages (see
+    ``TwoWalls::randPosition``, which drew 10% of samples from each window). It
+    is what makes threading a small opening tractable: a uniform sample lands in
+    such a region only a fraction of a percent of the time.
+    """
+
+    def __init__(
+        self,
+        bounds: np.ndarray,
+        rng: np.random.Generator,
+        regions: Optional[List[Tuple[float, np.ndarray]]] = None,
+    ):
         self.lo = np.asarray(bounds[0], float)
         self.hi = np.asarray(bounds[1], float)
         self.rng = rng
+        self.regions: List[Tuple[float, np.ndarray, np.ndarray]] = []
+        for weight, region in regions or []:
+            region = np.asarray(region, float)
+            self.regions.append((float(weight), region[0], region[1]))
+        total = sum(w for w, _, _ in self.regions)
+        if total > 1.0 + 1e-9:
+            raise ValueError(f"sample region weights sum to {total} > 1")
 
     def sample(self) -> np.ndarray:
+        if self.regions:
+            draw = self.rng.random()
+            acc = 0.0
+            for weight, lo, hi in self.regions:
+                acc += weight
+                if draw < acc:
+                    return self.rng.uniform(lo, hi)
         return self.rng.uniform(self.lo, self.hi)
 
 
@@ -99,6 +128,8 @@ class KRRTStar:
         rewire: bool = True,
         euclidean_gate: Optional[float] = None,
         seed: int = 0,
+        max_connect_attempts: Optional[int] = None,
+        sample_regions: Optional[List[Tuple[float, np.ndarray]]] = None,
     ) -> None:
         self.dyn = dynamics
         self.state_bounds = np.asarray(state_bounds, float)
@@ -110,12 +141,19 @@ class KRRTStar:
         self.goal_tolerance = float(goal_tolerance)
         self.rewire = bool(rewire)
         self.euclidean_gate = euclidean_gate
+        # Caps the expensive connect() calls per iteration. Systems whose control
+        # bounds reject most connections (e.g. the quadrotor) would otherwise try
+        # every ranked candidate, making the work per iteration grow with the
+        # tree. ``None`` means unbounded.
+        self.max_connect_attempts = (
+            None if max_connect_attempts is None else int(max_connect_attempts)
+        )
         self.rng = np.random.default_rng(seed)
 
         self.tree = Tree(x_dim=dynamics.x_dim)
         self.tree.add(Node(self.x_init, parent=-1, cost_from_start=0.0))
         self.goal_index: Optional[int] = None
-        self._sampler = UniformSampler(self.state_bounds, self.rng)
+        self._sampler = UniformSampler(self.state_bounds, self.rng, sample_regions)
         self.elapsed: Optional[float] = None
         self.iterations: Optional[int] = None
 
@@ -161,6 +199,8 @@ class KRRTStar:
                 continue
             ranked.append((self.tree.nodes[i].cost_from_start + c, i))
         ranked.sort(key=lambda t: t[0])
+        if self.max_connect_attempts is not None:
+            ranked = ranked[: self.max_connect_attempts]
         for _, i in ranked:
             node = self.tree.nodes[i]
             traj = self.dyn.connect(node.state, x_new)
@@ -194,7 +234,12 @@ class KRRTStar:
         if not idxs:
             return
         costs = self._batch_costs(idxs, x_new, to_target=False)
-        for i, c in zip(idxs, costs):
+        order = np.argsort(costs)
+        if self.max_connect_attempts is not None:
+            order = order[: self.max_connect_attempts]
+        for k in order:
+            i = idxs[k]
+            c = costs[k]
             node = self.tree.nodes[i]
             if not np.isfinite(c) or c > self.radius:
                 continue

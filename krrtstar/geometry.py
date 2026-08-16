@@ -416,13 +416,15 @@ def load_mesh(path: str) -> Tuple[np.ndarray, np.ndarray]:
 class PoseMapping:
     """Maps a planner state to a world-frame rigid transform of the robot.
 
-    Position comes from the ``x``/``y``/``z`` state indices. Orientation is
-    optional: either Euler angles from the ``roll``/``pitch``/``yaw`` indices or
+    Position comes from the ``x``/``y``/``z`` state indices; any of them may be
+    ``None``, which pins that world axis to 0 (useful for systems with fewer
+    position dimensions than the world, e.g. a 1-D double integrator). Orientation
+    is optional: either Euler angles from the ``roll``/``pitch``/``yaw`` indices or
     a quaternion from four ``quat`` indices (``w, x, y, z``).
     """
 
-    x: int = 0
-    y: int = 1
+    x: Optional[int] = 0
+    y: Optional[int] = 1
     z: Optional[int] = None
     roll: Optional[int] = None
     pitch: Optional[int] = None
@@ -433,8 +435,8 @@ class PoseMapping:
         state = np.asarray(state, float).reshape(-1)
         return np.array(
             [
-                state[self.x],
-                state[self.y],
+                state[self.x] if self.x is not None else 0.0,
+                state[self.y] if self.y is not None else 0.0,
                 state[self.z] if self.z is not None else 0.0,
             ],
             dtype=float,

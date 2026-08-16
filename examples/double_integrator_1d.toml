@@ -1,0 +1,45 @@
+# 1D double integrator (the original's DOUBLE_INTEGRATOR_1D).
+#
+#   state = [position, velocity], control = [acceleration]
+#
+# The simplest kinodynamic system: a point mass accelerating along a line. With
+# only one position dimension there is nothing to steer around, so the world is
+# empty (the original used EmptyWorld here too) and the interesting part is the
+# time/effort tradeoff in the connection cost.
+
+[dynamics]
+kind = "linear"
+x_dim = 2
+u_dim = 1
+A = [[0, 1],
+     [0, 0]]
+B = [[0],
+     [1]]
+R = [[1]]
+u_bounds = [[-10, 10]]
+
+[planner]
+target_nodes = 200
+# The original's DOUBLE_INTEGRATOR_1D used START_RADIUS = 100.
+connection_radius = 100.0
+goal_bias = 0.1
+goal_tolerance = 0.5
+rewire = true
+seed = 3
+x_init = [-8, 0]
+x_goal = [8, 0]
+state_bounds = [[-10, -5], [10, 5]]
+
+# The original drove this system with the Puck robot.
+[robot]
+preset = "puck"
+# Index 1 is velocity, not a second position axis, so pin y to zero.
+pose_from_state = { x = 0, y = "none" }
+
+[environment]
+bounds = [[-10, -2, -2], [10, 2, 2]]
+
+[visualization]
+live = false
+show_robot = true
+show_obstacles = true
