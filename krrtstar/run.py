@@ -17,6 +17,7 @@ from .config import (
     load_config,
 )
 from .planner import KRRTStar, PlanResult
+from .radius import build_schedule, calibrate_euclidean_gate
 
 
 def build_planner(cfg: ExperimentConfig) -> KRRTStar:
@@ -25,9 +26,27 @@ def build_planner(cfg: ExperimentConfig) -> KRRTStar:
     planner_cfg = cfg.planner
     if planner_cfg.x_init is None or planner_cfg.x_goal is None:
         raise ValueError("planner config requires x_init and x_goal")
+    schedule = build_schedule(
+        kind=planner_cfg.radius_schedule,
+        connection_radius=planner_cfg.connection_radius,
+        dim=dynamics.x_dim,
+        target_nodes=planner_cfg.target_nodes,
+        gamma=planner_cfg.radius_gamma,
+        multiplier=planner_cfg.radius_multiplier,
+        r_min=planner_cfg.radius_min,
+        r_max=planner_cfg.radius_max,
+    )
+
+    state_bounds = _state_bounds(cfg)
+    gate = planner_cfg.euclidean_gate
+    if gate == "auto":
+        # Calibrate against the largest radius the schedule will ever use, so
+        # the gate cannot discard candidates at any point in the run.
+        peak = max(schedule.radius(n) for n in (1, 2, 5, 10, 50, planner_cfg.target_nodes))
+        gate = calibrate_euclidean_gate(dynamics, state_bounds, peak, seed=planner_cfg.seed)
     return KRRTStar(
         dynamics=dynamics,
-        state_bounds=_state_bounds(cfg),
+        state_bounds=state_bounds,
         x_init=planner_cfg.x_init,
         x_goal=planner_cfg.x_goal,
         collision=collision,
@@ -35,8 +54,9 @@ def build_planner(cfg: ExperimentConfig) -> KRRTStar:
         goal_bias=planner_cfg.goal_bias,
         goal_tolerance=planner_cfg.goal_tolerance,
         rewire=planner_cfg.rewire,
-        euclidean_gate=planner_cfg.euclidean_gate,
+        euclidean_gate=gate,
         seed=planner_cfg.seed,
+        radius_schedule=schedule,
     )
 
 

@@ -18,6 +18,7 @@ import numpy as np
 from . import accel
 from .dynamics.base import Dynamics, Trajectory
 from .geometry import CollisionChecker
+from .radius import ConstantRadius, RadiusSchedule
 
 ProgressCallback = Callable[[int, "Tree"], None]
 
@@ -99,13 +100,19 @@ class KRRTStar:
         rewire: bool = True,
         euclidean_gate: Optional[float] = None,
         seed: int = 0,
+        radius_schedule: Optional[RadiusSchedule] = None,
     ) -> None:
         self.dyn = dynamics
         self.state_bounds = np.asarray(state_bounds, float)
         self.x_init = np.asarray(x_init, float).reshape(-1)
         self.x_goal = np.asarray(x_goal, float).reshape(-1)
         self.collision = collision
-        self.radius = float(connection_radius)
+        # ``radius`` is the threshold used for the current iteration; when a
+        # schedule is supplied it is refreshed as the tree grows.
+        self.schedule: RadiusSchedule = radius_schedule or ConstantRadius(
+            float(connection_radius)
+        )
+        self.radius = float(self.schedule.radius(1))
         self.goal_bias = float(goal_bias)
         self.goal_tolerance = float(goal_tolerance)
         self.rewire = bool(rewire)
@@ -237,6 +244,8 @@ class KRRTStar:
     ) -> PlanResult:
         started = time.perf_counter()
         for it in range(n):
+            # Refresh the near-set radius for the current tree size.
+            self.radius = float(self.schedule.radius(len(self.tree.nodes)))
             x_new = self._sample()
             parent = self._choose_parent(x_new)
             if parent is not None:
