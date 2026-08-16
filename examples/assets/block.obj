@@ -1,0 +1,28 @@
+# A 2x2x2 cube centred at the origin, as a triangle mesh.
+# Used to demonstrate mesh obstacles loaded from file.
+v -1.0 -1.0 -1.0
+v  1.0 -1.0 -1.0
+v  1.0  1.0 -1.0
+v -1.0  1.0 -1.0
+v -1.0 -1.0  1.0
+v  1.0 -1.0  1.0
+v  1.0  1.0  1.0
+v -1.0  1.0  1.0
+# bottom (z = -1)
+f 1 3 2
+f 1 4 3
+# top (z = +1)
+f 5 6 7
+f 5 7 8
+# front (y = -1)
+f 1 2 6
+f 1 6 5
+# back (y = +1)
+f 4 3 7
+f 4 7 8
+# left (x = -1)
+f 1 5 8
+f 1 8 4
+# right (x = +1)
+f 2 3 7
+f 2 7 6

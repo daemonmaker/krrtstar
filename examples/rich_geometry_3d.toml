@@ -1,0 +1,90 @@
+# 3D double integrator navigating an environment built from every supported
+# shape type: sphere, oriented box, capsule, cylinder, and a mesh loaded from
+# an OBJ file. The robot itself is a capsule.
+#
+#   state = [x, y, z, vx, vy, vz], control = [ax, ay, az]
+
+[dynamics]
+kind = "linear"
+x_dim = 6
+u_dim = 3
+A = [[0, 0, 0, 1, 0, 0],
+     [0, 0, 0, 0, 1, 0],
+     [0, 0, 0, 0, 0, 1],
+     [0, 0, 0, 0, 0, 0],
+     [0, 0, 0, 0, 0, 0],
+     [0, 0, 0, 0, 0, 0]]
+B = [[0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [1, 0, 0],
+     [0, 1, 0],
+     [0, 0, 1]]
+R = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+u_bounds = [[-6, 6], [-6, 6], [-6, 6]]
+
+[planner]
+target_nodes = 600
+connection_radius = 16.0
+goal_bias = 0.1
+goal_tolerance = 1.0
+rewire = true
+euclidean_gate = 9.0
+seed = 5
+x_init = [-7, -7, 0, 0, 0, 0]
+x_goal = [7, 7, 0, 0, 0, 0]
+state_bounds = [[-8, -8, -4, -3, -3, -3], [8, 8, 4, 3, 3, 3]]
+
+# The robot is a capsule standing along its local Z axis.
+[robot]
+pose_from_state = { x = 0, y = 1, z = 2 }
+[[robot.geometry]]
+type = "capsule"
+center = [0, 0, 0]
+radius = 0.25
+height = 0.6
+
+[environment]
+bounds = [[-8, -8, -4], [8, 8, 4]]
+
+# A wall rotated 45 degrees about Z (rotation given as roll/pitch/yaw radians).
+[[environment.obstacles]]
+type = "box"
+center = [0, 0, 0]
+extents = [8.0, 0.8, 6.0]
+euler = [0.0, 0.0, 0.7853981633974483]
+
+# A round pillar.
+[[environment.obstacles]]
+type = "cylinder"
+center = [-4.0, 3.5, 0.0]
+radius = 1.0
+height = 6.0
+
+# A capsule laid along the X axis (rotate local Z onto X = pitch 90 degrees).
+[[environment.obstacles]]
+type = "capsule"
+center = [4.0, -3.0, 0.0]
+radius = 0.8
+height = 3.0
+euler = [0.0, 1.5707963267948966, 0.0]
+
+# A plain ball.
+[[environment.obstacles]]
+type = "sphere"
+center = [-3.0, -4.5, 1.0]
+radius = 1.2
+
+# A mesh obstacle loaded from an OBJ file (2x2x2 cube, scaled down).
+[[environment.obstacles]]
+type = "mesh"
+path = "assets/block.obj"
+center = [4.5, 4.0, 0.0]
+scale = 0.9
+euler = [0.0, 0.0, 0.3]
+
+[visualization]
+live = false
+show_robot = true
+show_obstacles = true
+keep_open = true

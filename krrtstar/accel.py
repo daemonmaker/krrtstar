@@ -57,6 +57,55 @@ def linear_cost(
     )
 
 
+def _add_shape(scene, side: str, shape) -> None:
+    """Register one shape with the native scene (``side`` is robot/obstacle)."""
+    from .geometry import Box, Capsule, Cylinder, Mesh, Sphere
+
+    center = np.ascontiguousarray(shape.center, float)
+    if isinstance(shape, Sphere):
+        scene.add_sphere(side, center, float(shape.radius))
+        return
+    rot = np.ascontiguousarray(getattr(shape, "rotation", np.eye(3)), float).reshape(-1)
+    if isinstance(shape, Box):
+        scene.add_box(side, center, rot, np.ascontiguousarray(shape.extents, float))
+    elif isinstance(shape, Capsule):
+        scene.add_capsule(side, center, rot, float(shape.radius), float(shape.height))
+    elif isinstance(shape, Cylinder):
+        scene.add_cylinder(side, center, rot, float(shape.radius), float(shape.height))
+    elif isinstance(shape, Mesh):
+        scene.add_mesh(
+            side,
+            center,
+            rot,
+            np.ascontiguousarray(shape.vertices, float),
+            np.ascontiguousarray(shape.faces, np.uint32),
+            float(shape.scale),
+        )
+    else:
+        raise TypeError(f"Unsupported shape for the native scene: {type(shape)!r}")
+
+
+def make_collision_scene(robot, environment):
+    """Build a native collision scene, or return ``None`` if unavailable.
+
+    Robot shapes are registered in the robot frame; obstacles in world
+    coordinates. Queries supply the robot's world transform, so the state ->
+    pose mapping stays in Python (see :class:`krrtstar.geometry.PoseMapping`).
+    """
+    if not HAVE_RUST or not hasattr(_core, "CollisionScene"):
+        return None
+    try:
+        scene = _core.CollisionScene()
+        for shape in robot.shapes:
+            _add_shape(scene, "robot", shape)
+        for shape in environment.obstacles:
+            _add_shape(scene, "obstacle", shape)
+        scene.finalize()
+        return scene
+    except Exception:  # pragma: no cover - unsupported shape or older core
+        return None
+
+
 def make_connector(
     A: np.ndarray,
     B: np.ndarray,

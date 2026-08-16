@@ -17,7 +17,7 @@ from typing import Any, Callable, List, Optional
 
 import numpy as np
 
-from .geometry import Box, PoseMapping, Sphere
+from .geometry import Box, Capsule, Cylinder, Mesh, PoseMapping, Sphere
 
 _MISSING_MSG = (
     "pyvista is required for visualization; install with `poetry install --with viz`"
@@ -40,17 +40,115 @@ def _require_pyvista():
 # --------------------------------------------------------------------------- #
 # Geometry -> mesh helpers
 # --------------------------------------------------------------------------- #
-def _shape_to_mesh(pyvista, shape: Any):
-    """Convert a :class:`Box` or :class:`Sphere` into a PyVista mesh."""
-    if isinstance(shape, Box):
-        center = np.asarray(shape.center, float).reshape(-1)
-        ex, ey, ez = (float(v) for v in np.asarray(shape.extents, float).reshape(-1))
-        return pyvista.Cube(
-            center=tuple(center), x_length=ex, y_length=ey, z_length=ez
+_LOCAL_Z = np.array([0.0, 0.0, 1.0])
+
+
+def _rotation_of(shape: Any) -> np.ndarray:
+    """Rotation matrix of a shape, defaulting to the identity."""
+    rotation = getattr(shape, "rotation", None)
+    if rotation is None:
+        return np.eye(3)
+    return np.asarray(rotation, float).reshape(3, 3)
+
+
+def _rigid_matrix(rotation: np.ndarray, translation: np.ndarray) -> np.ndarray:
+    """Compose a 4x4 homogeneous transform from a rotation and a translation."""
+    matrix = np.eye(4)
+    matrix[:3, :3] = rotation
+    matrix[:3, 3] = translation
+    return matrix
+
+
+def _axis_direction(shape: Any) -> np.ndarray:
+    """World-space direction of a shape's local Z axis (its symmetry axis)."""
+    return _rotation_of(shape) @ _LOCAL_Z
+
+
+def _box_mesh(pyvista, shape: Box):
+    """Cube built at the origin, then placed by the box's rotation + center."""
+    ex, ey, ez = (float(v) for v in np.asarray(shape.extents, float).reshape(-1))
+    try:
+        mesh = pyvista.Cube(
+            x_length=ex, y_length=ey, z_length=ez, point_dtype="float64"
         )
+    except TypeError:  # pragma: no cover - older PyVista without point_dtype
+        mesh = pyvista.Cube(x_length=ex, y_length=ey, z_length=ez)
+    center = np.asarray(shape.center, float).reshape(-1)
+    mesh.transform(_rigid_matrix(_rotation_of(shape), center), inplace=True)
+    return mesh
+
+
+def _capsule_mesh(pyvista, shape: Capsule):
+    """Capsule via ``pyvista.Capsule``, or a cylinder plus two end-cap spheres."""
+    center = np.asarray(shape.center, float).reshape(-1)
+    radius = float(shape.radius)
+    direction = _axis_direction(shape)
+    capsule = getattr(pyvista, "Capsule", None)
+    if capsule is not None:
+        try:
+            return capsule(
+                center=tuple(center),
+                direction=tuple(direction),
+                radius=radius,
+                cylinder_length=float(shape.height),
+            )
+        except TypeError:  # pragma: no cover - signature differs across versions
+            pass
+    start, end = shape.segment()
+    body = pyvista.Cylinder(
+        center=tuple(center),
+        direction=tuple(direction),
+        radius=radius,
+        height=float(shape.height),
+    )
+    caps = [
+        pyvista.Sphere(radius=radius, center=tuple(np.asarray(p, float)))
+        for p in (start, end)
+    ]
+    return body.merge(caps)
+
+
+def _cylinder_mesh(pyvista, shape: Cylinder):
+    center = np.asarray(shape.center, float).reshape(-1)
+    return pyvista.Cylinder(
+        center=tuple(center),
+        direction=tuple(_axis_direction(shape)),
+        radius=float(shape.radius),
+        height=float(shape.height),
+    )
+
+
+def _triangle_mesh(pyvista, shape: Mesh):
+    """Triangle soup as ``PolyData``, using the mesh's world-frame vertices."""
+    vertices = np.asarray(shape.world_vertices(), float).reshape(-1, 3)
+    faces = np.asarray(shape.faces, np.int64).reshape(-1, 3)
+    # VTK cell array: each triangle is prefixed by its vertex count.
+    cells = np.hstack(
+        [np.full((faces.shape[0], 1), 3, dtype=np.int64), faces]
+    ).ravel()
+    return pyvista.PolyData(vertices, cells)
+
+
+def _shape_to_mesh(pyvista, shape: Any):
+    """Convert a :mod:`krrtstar.geometry` shape into a PyVista mesh.
+
+    Handles :class:`Sphere`, :class:`Box` (oriented or not), :class:`Capsule`,
+    :class:`Cylinder` and triangle :class:`Mesh`.
+
+    Raises:
+        TypeError: for shape types that cannot be rendered. Callers skip those.
+    """
+    if isinstance(shape, Box):
+        return _box_mesh(pyvista, shape)
     if isinstance(shape, Sphere):
         center = np.asarray(shape.center, float).reshape(-1)
         return pyvista.Sphere(radius=float(shape.radius), center=tuple(center))
+    if isinstance(shape, Capsule):
+        return _capsule_mesh(pyvista, shape)
+    if isinstance(shape, Cylinder):
+        return _cylinder_mesh(pyvista, shape)
+    if isinstance(shape, Mesh):
+        return _triangle_mesh(pyvista, shape)
     raise TypeError(f"Unsupported shape for rendering: {type(shape)!r}")
 
 

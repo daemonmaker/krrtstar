@@ -408,6 +408,25 @@ End-to-end on `examples/double_integrator_2d.toml` (identical solution cost):
 | Rust reconstruction | ~10s |
 | Rust batched cost + reconstruction | **~1.5s** |
 
-Follow-on work (not yet done): richer geometry (meshes, oriented boxes,
-capsules), moving collision checking into Rust, and asymptotic-optimality tuning
-of the connection-radius schedule.
+### Geometry and collision
+
+Richer geometry and native collision checking are implemented:
+
+* Shapes: sphere, box (axis-aligned or oriented), capsule, cylinder, and
+  triangle mesh loaded from `.obj` (or via `trimesh`/`pyvista`). Every shape may
+  carry its own rotation, and the robot's orientation can be driven from the
+  state through Euler indices or a quaternion.
+* Two interchangeable narrow phases, cross-validated to agree exactly: a
+  pure-Python GJK engine (`krrtstar/collision.py`, accurate to ~1e-15 on convex
+  cases) and a native `parry3d` scene in the Rust core (~15x faster: 1.9us vs
+  29.2us per query on the bundled rich-geometry scene).
+* Shapes are modelled as a convex *core* plus a *margin* (the round radius), so
+  a single support-function-based GJK path covers all convex pairs; meshes are
+  handled triangle-by-triangle with AABB pre-filtering.
+* Meshes are **surfaces**, not filled solids: a shape entirely inside a closed
+  mesh that touches no triangle is not in collision. Treating meshes as solids
+  (containment testing) remains open.
+
+Follow-on work (not yet done): asymptotic-optimality tuning of the
+connection-radius schedule, and optional solid (containment) semantics for
+meshes.

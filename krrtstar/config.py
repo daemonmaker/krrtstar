@@ -20,7 +20,20 @@ except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib  # type: ignore
 
 from .dynamics.linear import AnalyticLinearDynamics
-from .geometry import Box, CollisionChecker, Environment, PoseMapping, Robot, Sphere
+from .geometry import (
+    Box,
+    Capsule,
+    CollisionChecker,
+    Cylinder,
+    Environment,
+    Mesh,
+    PoseMapping,
+    Robot,
+    Sphere,
+    load_mesh,
+    rotation_from_euler,
+    rotation_from_quat,
+)
 
 
 @dataclass
@@ -98,30 +111,82 @@ def _parse_dynamics(data: Dict[str, Any]) -> DynamicsConfig:
     )
 
 
-def _parse_shape(data: Dict[str, Any]):
+def _parse_rotation(data: Dict[str, Any]):
+    """Read an optional orientation from a shape entry.
+
+    Accepts ``rotation`` as Euler angles ``[roll, pitch, yaw]``, a quaternion
+    ``[w, x, y, z]``, or a full 3x3 matrix; ``euler`` and ``quaternion`` are
+    accepted as explicit aliases.
+    """
+    if "euler" in data:
+        return rotation_from_euler(*[float(v) for v in data["euler"]])
+    if "quaternion" in data:
+        return rotation_from_quat([float(v) for v in data["quaternion"]])
+    if "rotation" in data:
+        return _arr(data["rotation"])  # geometry normalizes 3 / 4 / 3x3
+    return None
+
+
+def _parse_shape(data: Dict[str, Any], base_dir: str = "."):
     t = data["type"]
+    rotation = _parse_rotation(data)
     if t == "sphere":
-        center = _arr(data.get("center", [0, 0, 0]))
-        return Sphere(center=center, radius=float(data["radius"]))
+        return Sphere(center=_arr(data.get("center", [0, 0, 0])), radius=float(data["radius"]))
     if t == "box":
-        return Box(center=_arr(data["center"]), extents=_arr(data["extents"]))
+        return Box(center=_arr(data["center"]), extents=_arr(data["extents"]), rotation=rotation)
+    if t == "capsule":
+        return Capsule(
+            center=_arr(data.get("center", [0, 0, 0])),
+            radius=float(data["radius"]),
+            height=float(data["height"]),
+            rotation=rotation,
+        )
+    if t == "cylinder":
+        return Cylinder(
+            center=_arr(data.get("center", [0, 0, 0])),
+            radius=float(data["radius"]),
+            height=float(data["height"]),
+            rotation=rotation,
+        )
+    if t == "mesh":
+        path = data["path"]
+        if not os.path.isabs(path):
+            path = os.path.join(base_dir, path)
+        vertices, faces = load_mesh(path)
+        return Mesh(
+            vertices=vertices,
+            faces=faces,
+            center=_arr(data.get("center", [0, 0, 0])),
+            rotation=rotation,
+            scale=float(data.get("scale", 1.0)),
+        )
     raise ValueError(f"Unsupported shape type: {t}")
 
 
-def _parse_robot(data: Dict[str, Any]) -> Robot:
-    shapes = [_parse_shape(s) for s in data.get("geometry", [])]
-    pose_data = data.get("pose_from_state", {})
-    pose = PoseMapping(
-        x=int(pose_data.get("x", 0)),
-        y=int(pose_data.get("y", 1)),
-        z=None if pose_data.get("z") is None else int(pose_data["z"]),
+def _parse_pose_mapping(data: Dict[str, Any]) -> PoseMapping:
+    def idx(key):
+        return None if data.get(key) is None else int(data[key])
+
+    quat = data.get("quat")
+    return PoseMapping(
+        x=int(data.get("x", 0)),
+        y=int(data.get("y", 1)),
+        z=idx("z"),
+        roll=idx("roll"),
+        pitch=idx("pitch"),
+        yaw=idx("yaw"),
+        quat=None if quat is None else [int(v) for v in quat],
     )
-    return Robot(shapes=shapes, pose=pose)
 
 
-def _parse_environment(data: Dict[str, Any]) -> Environment:
+def _parse_robot(data: Dict[str, Any], base_dir: str = ".") -> Robot:
+    shapes = [_parse_shape(s, base_dir) for s in data.get("geometry", [])]
+    return Robot(shapes=shapes, pose=_parse_pose_mapping(data.get("pose_from_state", {})))
+
+
+def _parse_environment(data: Dict[str, Any], base_dir: str = ".") -> Environment:
     bounds = _arr(data["bounds"])
-    obstacles = [_parse_shape(s) for s in data.get("obstacles", [])]
+    obstacles = [_parse_shape(s, base_dir) for s in data.get("obstacles", [])]
     return Environment(bounds=bounds, obstacles=obstacles)
 
 
@@ -155,8 +220,10 @@ def parse_config(data: Dict[str, Any], base_dir: str = ".") -> ExperimentConfig:
         dynamics=_parse_dynamics(data.get("dynamics", {})),
         planner=_parse_planner(data.get("planner", {})),
         visualization=_parse_visualization(data.get("visualization", {})),
-        robot=_parse_robot(data.get("robot", {})),
-        environment=_parse_environment(data.get("environment", {"bounds": [[-10, -10, -10], [10, 10, 10]]})),
+        robot=_parse_robot(data.get("robot", {}), base_dir),
+        environment=_parse_environment(
+            data.get("environment", {"bounds": [[-10, -10, -10], [10, 10, 10]]}), base_dir
+        ),
         raw=data,
         base_dir=base_dir,
     )
